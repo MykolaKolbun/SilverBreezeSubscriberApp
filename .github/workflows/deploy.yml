@@ -87,9 +87,9 @@ jobs:
             API_IMAGE=ghcr.io/mykolakolbun/parkingsubscription-api:latest
             SECRETS
 
-            # GHCR login so the Pi can pull the private image.
-            echo "${{ secrets.GHCR_PULL_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
-
+            # The Pi is expected to already be logged in to GHCR (one-time
+            # `docker login ghcr.io` during setup), so the private image pulls
+            # automatically — same as the EVCharging deployment.
             docker compose pull
             docker compose up -d --remove-orphans
 

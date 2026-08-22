@@ -29,7 +29,6 @@ Raspberry Pi (ARM64) ── Docker Compose
 - `deploy/nginx-apk.conf` — static/APK server config
 - `deploy/apk/` — drop the mobile `.apk` here
 - `.github/workflows/deploy.yml` — CI: test → build arm64 → push GHCR → deploy
-- `.github/workflows/health-check.yml` — periodic uptime check
 
 ## Database strategy (important)
 
@@ -71,12 +70,17 @@ cp .env.example .env && nano .env      # fill DB_PASSWORD + JWT_SIGNING_KEY
 | `PI_USER`             | SSH user (e.g. `pi`)                                         |
 | `PI_SSH_PRIVATE_KEY`  | SSH private key (no passphrase)                             |
 | `DB_PASSWORD`         | PostgreSQL password                                         |
-| `JWT_SIGNING_KEY`     | Long random string (`openssl rand -base64 48`)             |
-| `GHCR_PULL_TOKEN`     | PAT with `read:packages` so the Pi can pull the image       |
-| `HEALTHCHECK_URL`     | (optional) public `/health` URL for the health-check workflow |
+| `JWT_SIGNING_KEY`     | Long random string (signs JWT access tokens)               |
 
-> If you make the GHCR package **public**, the Pi doesn't need `GHCR_PULL_TOKEN`
-> and you can drop the `docker login` line from `deploy.yml`.
+> **GHCR image pull:** the image is private. Log the Pi in to GHCR **once**
+> (stored in `~/.docker/config.json`), then `docker compose pull` works on every
+> deploy — no CI token needed. Same as the EVCharging setup:
+>
+> ```bash
+> echo <PAT_with_read:packages> | docker login ghcr.io -u mykolakolbun --password-stdin
+> ```
+>
+> (If the Pi already runs EVCharging from the same account, it's already logged in.)
 
 ## Deploy
 
