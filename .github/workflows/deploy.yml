@@ -80,7 +80,7 @@ jobs:
 
             # Write .env from secrets (kept out of shell history).
             cat > .env <<'SECRETS'
-            DB_NAME=parking
+            DB_NAME=SWeb_DB
             DB_USER=parking
             DB_PASSWORD=${{ secrets.DB_PASSWORD }}
             JWT_SIGNING_KEY=${{ secrets.JWT_SIGNING_KEY }}

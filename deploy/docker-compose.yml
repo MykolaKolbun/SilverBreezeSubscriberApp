@@ -12,14 +12,14 @@ services:
     ports:
       - "5433:5432"
     environment:
-      POSTGRES_DB: ${DB_NAME:-parking}
+      POSTGRES_DB: ${DB_NAME:-SWeb_DB}
       POSTGRES_USER: ${DB_USER:-parking}
       POSTGRES_PASSWORD: ${DB_PASSWORD}
     volumes:
       - postgres_data:/var/lib/postgresql/data
       - ./init.sql:/docker-entrypoint-initdb.d/init.sql:ro
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-parking} -d ${DB_NAME:-parking}"]
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-parking} -d ${DB_NAME:-SWeb_DB}"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -32,7 +32,7 @@ services:
     environment:
       ASPNETCORE_ENVIRONMENT: Production
       Database__Provider: Postgres
-      ConnectionStrings__Default: "Host=postgres;Port=5432;Database=${DB_NAME:-parking};Username=${DB_USER:-parking};Password=${DB_PASSWORD}"
+      ConnectionStrings__Default: "Host=postgres;Port=5432;Database=${DB_NAME:-SWeb_DB};Username=${DB_USER:-parking};Password=${DB_PASSWORD}"
       Jwt__SigningKey: ${JWT_SIGNING_KEY}
       Auth__ExposeDevTokens: "false"
     depends_on:

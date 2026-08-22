@@ -8,4 +8,5 @@
 -- postgres:16-alpine image does not bundle pg_cron anyway.
 
 -- Store timestamps in UTC (the app already uses UTC everywhere).
-ALTER DATABASE parking SET timezone TO 'UTC';
+-- The name is double-quoted so PostgreSQL keeps the mixed case of "SWeb_DB".
+ALTER DATABASE "SWeb_DB" SET timezone TO 'UTC';
