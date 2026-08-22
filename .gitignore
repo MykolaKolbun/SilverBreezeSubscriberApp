@@ -1,0 +1,25 @@
+# Build output
+[Bb]in/
+[Oo]bj/
+*.user
+
+# Local SQLite databases
+*.db
+*.db-shm
+*.db-wal
+
+# Rider / VS
+.idea/
+.vs/
+
+# Logs
+*.log
+
+# Secrets / deployment
+.env
+deploy/.env
+*.pem
+*.key
+
+# Mobile build artifacts served for sharing
+deploy/apk/*.apk

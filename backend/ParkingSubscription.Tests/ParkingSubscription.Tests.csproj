@@ -1,0 +1,32 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <IsPackable>false</IsPackable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="coverlet.collector" />
+    <PackageReference Include="Microsoft.AspNetCore.Mvc.Testing" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite" />
+    <PackageReference Include="Microsoft.NET.Test.Sdk" />
+    <PackageReference Include="Microsoft.OpenApi" />
+    <PackageReference Include="SQLitePCLRaw.bundle_e_sqlite3" />
+    <PackageReference Include="xunit" />
+    <PackageReference Include="xunit.runner.visualstudio" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Using Include="Xunit" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\ParkingSubscription.Api\ParkingSubscription.Api.csproj" />
+    <ProjectReference Include="..\ParkingSubscription.Application\ParkingSubscription.Application.csproj" />
+    <ProjectReference Include="..\ParkingSubscription.Infrastructure\ParkingSubscription.Infrastructure.csproj" />
+    <ProjectReference Include="..\ParkingSubscription.Domain\ParkingSubscription.Domain.csproj" />
+  </ItemGroup>
+
+</Project>

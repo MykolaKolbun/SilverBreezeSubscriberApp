@@ -1,0 +1,24 @@
+# Normalize line endings. Text files are stored LF in the repo.
+* text=auto
+
+# Files consumed on Linux (Pi / CI / containers) must stay LF regardless of host.
+*.sh          text eol=lf
+*.sql         text eol=lf
+*.conf        text eol=lf
+*.yml         text eol=lf
+*.yaml        text eol=lf
+*.json        text eol=lf
+Dockerfile    text eol=lf
+.dockerignore text eol=lf
+.env*         text eol=lf
+
+# C# / project files: LF is fine and consistent across platforms.
+*.cs          text eol=lf
+*.csproj      text eol=lf
+*.props       text eol=lf
+*.sln         text eol=lf
+
+# Binary assets must never be altered.
+*.apk         binary
+*.png         binary
+*.pkpass      binary

@@ -1,0 +1,19 @@
+name: Health Check
+
+on:
+  schedule:
+    - cron: '*/15 * * * *'   # every 15 minutes
+  workflow_dispatch:
+
+jobs:
+  health:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check API health
+        run: |
+          # Set the HEALTHCHECK_URL secret to your public endpoint,
+          # e.g. https://api.example.com/health (via Cloudflare Tunnel).
+          curl -fsS "${{ secrets.HEALTHCHECK_URL }}" || {
+            echo "Health check failed for ${{ secrets.HEALTHCHECK_URL }}"
+            exit 1
+          }
