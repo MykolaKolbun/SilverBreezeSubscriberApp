@@ -63,6 +63,7 @@ jobs:
           host: ${{ secrets.PI_HOST }}
           username: ${{ secrets.PI_USER }}
           key: ${{ secrets.PI_SSH_PRIVATE_KEY }}
+          port: ${{ secrets.PI_PORT || '22' }}
           source: "deploy/docker-compose.yml,deploy/init.sql,deploy/nginx-apk.conf"
           target: "~/projects/subscribeapp"
           strip_components: 1
@@ -73,6 +74,7 @@ jobs:
           host: ${{ secrets.PI_HOST }}
           username: ${{ secrets.PI_USER }}
           key: ${{ secrets.PI_SSH_PRIVATE_KEY }}
+          port: ${{ secrets.PI_PORT || '22' }}
           script: |
             set -e
             cd ~/projects/subscribeapp
