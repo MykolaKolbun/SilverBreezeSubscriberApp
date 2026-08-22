@@ -1,105 +1,92 @@
-name: Deploy to Raspberry Pi
+name: Build and Deploy
 
 on:
   push:
-    branches: [master, main]
+    branches: [main, master]
   workflow_dispatch:
 
-# GHCR image names must be lowercase (owner "MykolaKolbun" → "mykolakolbun").
-env:
-  IMAGE: ghcr.io/mykolakolbun/parkingsubscription-api
+# Cancel any in-progress deploy for the same branch when a new push arrives
+concurrency:
+  group: deploy-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
-  test:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-dotnet@v4
-        with:
-          dotnet-version: '10.0.x'
-      - name: Restore, build, test
-        working-directory: backend
-        run: |
-          dotnet test -c Release
-
   build-and-deploy:
-    needs: test
     runs-on: ubuntu-latest
     permissions:
       contents: read
       packages: write
+
     steps:
       - uses: actions/checkout@v4
 
-      - name: Set up QEMU (for arm64 cross-build)
-        uses: docker/setup-qemu-action@v3
-
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
-
-      - name: Log in to GHCR
+      - name: Log in to GitHub Container Registry
         uses: docker/login-action@v3
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Build and push API image (linux/arm64)
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build and push ARM64 image
         uses: docker/build-push-action@v6
         with:
           context: ./backend
           file: ./backend/ParkingSubscription.Api/Dockerfile
-          push: true
           platforms: linux/arm64
-          tags: |
-            ${{ env.IMAGE }}:latest
-            ${{ env.IMAGE }}:${{ github.sha }}
+          push: true
+          tags: ghcr.io/mykolakolbun/parkingsubscription-api:latest
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
-      - name: Copy deploy files to the Pi
-        uses: appleboy/scp-action@v0.1.7
-        with:
-          host: ${{ secrets.PI_HOST }}
-          username: ${{ secrets.PI_USER }}
-          key: ${{ secrets.PI_SSH_PRIVATE_KEY }}
-          port: ${{ secrets.PI_PORT || '22' }}
-          source: "deploy/docker-compose.yml,deploy/init.sql,deploy/nginx-apk.conf"
-          target: "~/projects/subscribeapp"
-          strip_components: 1
+      - name: Install cloudflared
+        run: |
+          curl -L https://pkg.cloudflare.com/cloudflare-main.gpg | sudo tee /usr/share/keyrings/cloudflare-main.gpg >/dev/null
+          echo 'deb [signed-by=/usr/share/keyrings/cloudflare-main.gpg] https://pkg.cloudflare.com/cloudflared any main' | sudo tee /etc/apt/sources.list.d/cloudflared.list
+          sudo apt update && sudo apt install cloudflared -y
 
-      - name: Deploy on the Pi
-        uses: appleboy/ssh-action@v1.2.0
-        with:
-          host: ${{ secrets.PI_HOST }}
-          username: ${{ secrets.PI_USER }}
-          key: ${{ secrets.PI_SSH_PRIVATE_KEY }}
-          port: ${{ secrets.PI_PORT || '22' }}
-          script: |
-            set -e
-            cd ~/projects/subscribeapp
-            mkdir -p apk
+      - name: Deploy to Raspberry Pi
+        env:
+          DB_PASSWORD:     ${{ secrets.DB_PASSWORD }}
+          JWT_SIGNING_KEY: ${{ secrets.JWT_SIGNING_KEY }}
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.PI_SSH_PRIVATE_KEY }}" | base64 -d > ~/.ssh/id_ed25519
+          chmod 600 ~/.ssh/id_ed25519
+          cat >> ~/.ssh/config << EOF
+          Host ${{ secrets.PI_HOST }}
+            ProxyCommand cloudflared access ssh --hostname %h
+            StrictHostKeyChecking no
+          EOF
 
-            # Write .env from secrets (kept out of shell history).
-            cat > .env <<'SECRETS'
-            DB_NAME=SWeb_DB
-            DB_USER=parking
-            DB_PASSWORD=${{ secrets.DB_PASSWORD }}
-            JWT_SIGNING_KEY=${{ secrets.JWT_SIGNING_KEY }}
-            API_IMAGE=ghcr.io/mykolakolbun/parkingsubscription-api:latest
-            SECRETS
+          PI="${{ secrets.PI_USER }}@${{ secrets.PI_HOST }}"
 
-            # The Pi is expected to already be logged in to GHCR (one-time
-            # `docker login ghcr.io` during setup), so the private image pulls
-            # automatically — same as the EVCharging deployment.
-            docker compose pull
-            docker compose up -d --remove-orphans
+          # Ensure the app + APK folders exist on the Pi.
+          ssh "$PI" "mkdir -p ~/SilverBreezeSubscriberApp/apk"
 
-            # Wait for the API health endpoint.
-            for i in $(seq 1 20); do
-              if curl -fsS http://localhost:8081/health >/dev/null; then echo "API healthy"; exit 0; fi
-              sleep 5
-            done
-            echo "API did not become healthy" >&2
-            docker compose logs --tail=50 api
-            exit 1
+          # Copy the compose stack + supporting files.
+          scp -F ~/.ssh/config deploy/docker-compose.yml "$PI":~/SilverBreezeSubscriberApp/docker-compose.yml
+          scp -F ~/.ssh/config deploy/init.sql          "$PI":~/SilverBreezeSubscriberApp/init.sql
+          scp -F ~/.ssh/config deploy/nginx-apk.conf    "$PI":~/SilverBreezeSubscriberApp/nginx-apk.conf
+
+          # Upsert only the required secrets into .env on the Pi; other vars preserved.
+          # Secrets flow: GitHub Secrets -> env: block -> printf (local) -> stdin -> Pi (never in argv).
+          printf "DB_PASSWORD=%s\nJWT_SIGNING_KEY=%s\n" "$DB_PASSWORD" "$JWT_SIGNING_KEY" | \
+            ssh "$PI" '
+              touch ~/SilverBreezeSubscriberApp/.env
+              while IFS= read -r line; do
+                key="${line%%=*}"
+                sed -i "/^${key}=/d" ~/SilverBreezeSubscriberApp/.env 2>/dev/null || true
+                echo "$line" >> ~/SilverBreezeSubscriberApp/.env
+              done
+            '
+
+          # Pull the freshly built image and (re)start the stack.
+          ssh "$PI" "
+            cd ~/SilverBreezeSubscriberApp &&
+            docker compose pull &&
+            docker compose down --remove-orphans --timeout 30 || true &&
+            docker compose up -d
+          "

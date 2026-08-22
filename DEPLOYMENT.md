@@ -46,52 +46,57 @@ Raspberry Pi (ARM64) ── Docker Compose
     -o Persistence/Migrations
   ```
 
+## GitHub Secrets — reuse the EVCharging ones
+
+`deploy.yml` uses the **same deploy mechanism and the same secrets** as the
+EVCharging repos: it SSHes to the Pi through **Cloudflare Access** (`cloudflared
+access ssh`) and decodes a **base64-encoded** private key. So set these to the
+**exact same values** you already use for EVCharging (or, if they're
+organization secrets, just add this repo to each secret's repository-access list —
+then nothing needs re-entering):
+
+| Secret                | Value (same as EVCharging)                                   |
+|-----------------------|-------------------------------------------------------------|
+| `PI_HOST`             | The Cloudflare Access SSH hostname (used as `--hostname`)    |
+| `PI_USER`             | Pi username (`sorrow`)                                       |
+| `PI_SSH_PRIVATE_KEY`  | **base64-encoded** private key (decoded on the runner)      |
+| `DB_PASSWORD`         | PostgreSQL password (app-specific — pick a new one is fine)  |
+| `JWT_SIGNING_KEY`     | Long random string (signs JWT access tokens)                |
+
+> To base64-encode a key on Windows (their documented method):
+> ```powershell
+> [Convert]::ToBase64String([System.IO.File]::ReadAllBytes("$env:USERPROFILE\.ssh\id_ed25519"))
+> ```
+
+> **GHCR image pull:** the image is private. The Pi pulls it using the **one-time**
+> `docker login ghcr.io -u mykolakolbun` you already did for EVCharging (stored in
+> `~/.docker/config.json`) — no CI token needed.
+
 ## One-time Pi setup
 
+The Pi already has Docker, the Cloudflare tunnel, and the GHCR login from your
+EVCharging setup. This repo only needs its own folder (CI creates it and writes
+`.env` automatically on first deploy, but you can pre-create it):
+
 ```bash
-ssh pi@<pi-host>
-
-# Docker (includes Compose v2 plugin)
-curl -sSL https://get.docker.com | sh
-sudo usermod -aG docker $USER          # re-login afterwards
-
-mkdir -p ~/projects/subscribeapp/apk
-cd ~/projects/subscribeapp
-# Copy deploy/docker-compose.yml, init.sql, nginx-apk.conf here
-# (CI does this automatically; or scp them once manually).
-cp .env.example .env && nano .env      # fill DB_PASSWORD + JWT_SIGNING_KEY
+mkdir -p ~/SilverBreezeSubscriberApp/apk
 ```
 
-## GitHub Secrets
-
-| Secret                | Purpose                                                      |
-|-----------------------|-------------------------------------------------------------|
-| `PI_HOST`             | Pi IP/hostname                                               |
-| `PI_USER`             | SSH user (e.g. `pi`)                                         |
-| `PI_SSH_PRIVATE_KEY`  | SSH private key (no passphrase)                             |
-| `DB_PASSWORD`         | PostgreSQL password                                         |
-| `JWT_SIGNING_KEY`     | Long random string (signs JWT access tokens)               |
-
-> **GHCR image pull:** the image is private. Log the Pi in to GHCR **once**
-> (stored in `~/.docker/config.json`), then `docker compose pull` works on every
-> deploy — no CI token needed. Same as the EVCharging setup:
->
-> ```bash
-> echo <PAT_with_read:packages> | docker login ghcr.io -u mykolakolbun --password-stdin
-> ```
->
-> (If the Pi already runs EVCharging from the same account, it's already logged in.)
+Add Cloudflare tunnel ingress + DNS for the new services if you want them public
+(see the Cloudflare section below): API `:8081`, APK share `:8084`.
 
 ## Deploy
 
-Push to `master`/`main` (or run the workflow manually). CI runs tests, builds the
-`linux/arm64` image, pushes it to GHCR, copies the compose files to the Pi, writes
-`.env` from secrets, and runs `docker compose up -d`, then waits for `/health`.
+Push to `main` (or run the workflow manually). CI builds the `linux/arm64` image,
+pushes it to GHCR, connects to the Pi via `cloudflared access ssh`, copies
+`docker-compose.yml` + `init.sql` + `nginx-apk.conf` into `~/SilverBreezeSubscriberApp`,
+upserts `DB_PASSWORD` + `JWT_SIGNING_KEY` into the Pi's `.env`, and runs
+`docker compose pull && down && up`.
 
 Manual deploy on the Pi:
 
 ```bash
-cd ~/projects/subscribeapp
+cd ~/SilverBreezeSubscriberApp
 docker compose pull
 docker compose up -d
 curl -f http://localhost:8081/health
@@ -101,7 +106,7 @@ curl -f http://localhost:8081/health
 
 ```bash
 # copy your mobile build to the Pi share folder
-scp app-release.apk pi@<pi-host>:~/projects/subscribeapp/apk/
+scp app-release.apk pi@<pi-host>:~/SilverBreezeSubscriberApp/apk/
 ```
 
 - Direct download: `http://<pi-host>:8084/app-release.apk`
@@ -109,32 +114,35 @@ scp app-release.apk pi@<pi-host>:~/projects/subscribeapp/apk/
 
 (`.apk` is served as `application/vnd.android.package-archive` with a download header.)
 
-## Optional: public access via Cloudflare Tunnel
+## Optional: public access via your existing Cloudflare Tunnel
+
+You already run one tunnel for EVCharging — **add ingress rules to it**, don't
+create a new tunnel. Edit the live config (per your EVCharging manual, the service
+reads `/etc/cloudflared/config.yml`, not `~/.cloudflared/`):
 
 ```bash
-curl -L --output cloudflared.deb \
-  https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-linux-arm64.deb
-sudo dpkg -i cloudflared.deb
-cloudflared tunnel login
-cloudflared tunnel create subscribeapp
-cloudflared tunnel route dns subscribeapp api.example.com
-cloudflared tunnel route dns subscribeapp apk.example.com
-
-mkdir -p ~/.cloudflared
-cat > ~/.cloudflared/config.yml <<'EOF'
-tunnel: subscribeapp
-credentials-file: /home/pi/.cloudflared/<tunnel-id>.json
-ingress:
-  - hostname: api.example.com
-    service: http://localhost:8081
-  - hostname: apk.example.com
-    service: http://localhost:8084
-  - service: http_status:404
-EOF
-
-sudo cloudflared service install
-sudo systemctl start cloudflared
+sudo nano /etc/cloudflared/config.yml
 ```
+
+Add two rules **before** the final `http_status:404` line (use one-level
+subdomains so Cloudflare's free SSL covers them):
+
+```yaml
+  - hostname: sweb.alternatiview.com.ua        # the API
+    service: http://localhost:8081
+  - hostname: sweb-app.alternatiview.com.ua    # the APK download
+    service: http://localhost:8084
+```
+
+Then restart and add matching CNAMEs (Target: `<tunnel-id>.cfargotunnel.com`,
+Proxy: ON) in the Cloudflare dashboard:
+
+```bash
+sudo systemctl restart cloudflared
+```
+
+The mobile app would then use `https://sweb.alternatiview.com.ua` as its API base
+URL, and testers download the APK from `https://sweb-app.alternatiview.com.ua`.
 
 ## Troubleshooting
 
