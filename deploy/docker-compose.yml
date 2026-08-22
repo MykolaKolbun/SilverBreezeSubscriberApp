@@ -4,15 +4,17 @@
 #
 # Copy this file + .env + init.sql + nginx-apk.conf to the Pi (~/SilverBreezeSubscriberApp)
 # and run:  docker compose up -d
-# Host ports are chosen to not collide with the EVCharging stack (8081-8084) on the same Pi:
-#   API 8085, APK share 8086, Postgres 5433.
+# Host ports are chosen to not collide with the EVCharging stack on the same Pi:
+#   API 8085, APK share 8086. Postgres is NOT published (internal network only).
 
 services:
   postgres:
     image: postgres:16-alpine
     restart: unless-stopped
-    ports:
-      - "5433:5432"
+    # No published port — the API reaches Postgres over the internal Docker
+    # network (Host=postgres:5432). Avoids clashing with EVCharging's DB on the
+    # host and keeps the database off the host network. For an external DB tool,
+    # use: docker compose exec postgres psql -U parking -d SWeb_DB
     environment:
       POSTGRES_DB: ${DB_NAME:-SWeb_DB}
       POSTGRES_USER: ${DB_USER:-parking}

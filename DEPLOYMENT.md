@@ -16,7 +16,7 @@ EVCharging template:
 
 ```
 Raspberry Pi (ARM64) ── Docker Compose
-  ├─ postgres        (5433 → 5432)
+  ├─ postgres        (internal only — not published)
   ├─ api             (8085 → 8080)   /health, Scalar only in Development
   └─ apk-share       (8086 → 80)     serves ./apk/*.apk
         ↓ (optional) Cloudflare Tunnel → public domain
