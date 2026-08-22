@@ -80,7 +80,7 @@ curl -X POST $B/auth/register -H "Content-Type: application/json" \
 
 Повна інструкція — [DEPLOYMENT.md](DEPLOYMENT.md). Коротко: push у `master`/`main` запускає CI, яка
 тестує, збирає ARM64-образ, пушить у GHCR і розгортає docker-compose стек на Pi
-(PostgreSQL + API `:8081` + Nginx APK-share `:8084`).
+(PostgreSQL + API `:8085` + Nginx APK-share `:8086`).
 
 ## Керування версіями пакетів
 

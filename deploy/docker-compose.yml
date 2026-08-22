@@ -2,8 +2,10 @@
 # Services: PostgreSQL 16 + API + Nginx APK/static share.
 # (No RabbitMQ — the app uses in-process background workers; no admin UI yet.)
 #
-# Copy this file + .env + init.sql + nginx-apk.conf to the Pi (e.g. ~/projects/subscribeapp)
+# Copy this file + .env + init.sql + nginx-apk.conf to the Pi (~/SilverBreezeSubscriberApp)
 # and run:  docker compose up -d
+# Host ports are chosen to not collide with the EVCharging stack (8081-8084) on the same Pi:
+#   API 8085, APK share 8086, Postgres 5433.
 
 services:
   postgres:
@@ -27,8 +29,9 @@ services:
   api:
     image: ${API_IMAGE:-ghcr.io/mykolakolbun/parkingsubscription-api:latest}
     restart: unless-stopped
+    # 8085 — EVCharging already uses 8081-8084 on this Pi.
     ports:
-      - "8081:8080"
+      - "8085:8080"
     environment:
       ASPNETCORE_ENVIRONMENT: Production
       Database__Provider: Postgres
@@ -46,12 +49,13 @@ services:
       start_period: 40s
 
   # Static file server for sharing the mobile APK (and any other static downloads).
-  # Drop app-release.apk into ./apk on the Pi → downloadable at http://<pi>:8084/app-release.apk
+  # Drop app-release.apk into ./apk on the Pi → downloadable at http://<pi>:8086/app-release.apk
+  # 8086 — EVCharging already uses 8084 for its own APK download service.
   apk-share:
     image: nginx:alpine
     restart: unless-stopped
     ports:
-      - "8084:80"
+      - "8086:80"
     volumes:
       - ./apk:/usr/share/nginx/html:ro
       - ./nginx-apk.conf:/etc/nginx/conf.d/default.conf:ro

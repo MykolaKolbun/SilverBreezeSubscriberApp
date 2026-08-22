@@ -6,16 +6,19 @@ EVCharging template:
 | Template service        | Here                                                    |
 |-------------------------|---------------------------------------------------------|
 | Blazor WASM admin (8083)| **Removed** — mobile is React Native (not built yet)    |
-| Nginx APK/static (8084) | **Kept** — used to share the mobile `.apk`              |
+| Nginx APK/static (8084) | **Kept as 8086** — 8084 is taken by EVCharging's APK    |
 | RabbitMQ                | **Removed** — app uses in-process background workers     |
 | PostgreSQL 16 + pg_cron | **PostgreSQL 16** (no pg_cron; workers do the cleanup)  |
-| API (8081)              | **API (8081)** — ASP.NET Core .NET 10, `/health`        |
+| API (8081)              | **API on 8085** — 8081 is taken by EVCharging's API     |
+
+> Host ports are shifted to **8085 (API)** and **8086 (APK)** so this stack
+> coexists with the EVCharging stack (8081–8084) on the same Pi.
 
 ```
 Raspberry Pi (ARM64) ── Docker Compose
   ├─ postgres        (5433 → 5432)
-  ├─ api             (8081 → 8080)   /health, Scalar only in Development
-  └─ apk-share       (8084 → 80)     serves ./apk/*.apk
+  ├─ api             (8085 → 8080)   /health, Scalar only in Development
+  └─ apk-share       (8086 → 80)     serves ./apk/*.apk
         ↓ (optional) Cloudflare Tunnel → public domain
 ```
 
@@ -83,7 +86,7 @@ mkdir -p ~/SilverBreezeSubscriberApp/apk
 ```
 
 Add Cloudflare tunnel ingress + DNS for the new services if you want them public
-(see the Cloudflare section below): API `:8081`, APK share `:8084`.
+(see the Cloudflare section below): API `:8085`, APK share `:8086`.
 
 ## Deploy
 
@@ -99,7 +102,7 @@ Manual deploy on the Pi:
 cd ~/SilverBreezeSubscriberApp
 docker compose pull
 docker compose up -d
-curl -f http://localhost:8081/health
+curl -f http://localhost:8085/health
 ```
 
 ## Sharing the APK
@@ -109,8 +112,8 @@ curl -f http://localhost:8081/health
 scp app-release.apk pi@<pi-host>:~/SilverBreezeSubscriberApp/apk/
 ```
 
-- Direct download: `http://<pi-host>:8084/app-release.apk`
-- Browse all files: `http://<pi-host>:8084/`
+- Direct download: `http://<pi-host>:8086/app-release.apk`
+- Browse all files: `http://<pi-host>:8086/`
 
 (`.apk` is served as `application/vnd.android.package-archive` with a download header.)
 
@@ -129,9 +132,9 @@ subdomains so Cloudflare's free SSL covers them):
 
 ```yaml
   - hostname: sweb.alternatiview.com.ua        # the API
-    service: http://localhost:8081
+    service: http://localhost:8085
   - hostname: sweb-app.alternatiview.com.ua    # the APK download
-    service: http://localhost:8084
+    service: http://localhost:8086
 ```
 
 Then restart and add matching CNAMEs (Target: `<tunnel-id>.cfargotunnel.com`,
