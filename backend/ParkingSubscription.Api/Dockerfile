@@ -21,12 +21,15 @@ RUN dotnet publish ParkingSubscription.Api/ParkingSubscription.Api.csproj \
 
 FROM mcr.microsoft.com/dotnet/aspnet:10.0-alpine AS runtime
 WORKDIR /app
-# curl is used by the docker-compose healthcheck.
-RUN apk add --no-cache curl
+# curl -> docker-compose healthcheck; icu-libs -> globalization (uk/en cultures,
+# ТЗ §9). Without ICU the Alpine runtime falls back to invariant mode and
+# `new CultureInfo("uk")` throws at startup.
+RUN apk add --no-cache curl icu-libs
 COPY --from=build /app/publish .
 
 # ASP.NET Core listens on 8080 inside the container by default (ASPNETCORE_HTTP_PORTS).
 EXPOSE 8080
-ENV ASPNETCORE_ENVIRONMENT=Production
+ENV ASPNETCORE_ENVIRONMENT=Production \
+    DOTNET_SYSTEM_GLOBALIZATION_INVARIANT=false
 
 ENTRYPOINT ["dotnet", "ParkingSubscription.Api.dll"]
