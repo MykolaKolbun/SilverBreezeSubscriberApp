@@ -1,0 +1,33 @@
+@page
+@model CardsModel
+@{
+    ViewData["Title"] = "My cards";
+}
+
+<h1>My parking cards</h1>
+
+@if (Model.Error is not null)
+{
+    <div class="alert">@Model.Error</div>
+}
+
+@if (Model.Cards.Count == 0 && Model.Error is null)
+{
+    <p>You don't have a parking card yet. <a href="/">Buy a subscription</a> to get one.</p>
+}
+
+<div class="cards">
+    @foreach (var card in Model.Cards)
+    {
+        <div class="card">
+            <span class="status status-@card.Status.ToLower()">@card.Status</span>
+            <p><strong>@card.StartDate.ToString("dd.MM.yyyy") – @card.EndDate.ToString("dd.MM.yyyy")</strong></p>
+            <img class="qr" src="?handler=Qr&cardId=@card.Id" alt="QR code for the parking barrier" width="200" height="200" />
+            <p class="muted">Show this QR at the parking barrier</p>
+            <p>
+                <a href="?handler=ApplePass&cardId=@card.Id">🍎 Apple Wallet</a> ·
+                <a href="?handler=Google&cardId=@card.Id" target="_blank" rel="noopener">📱 Google Wallet</a>
+            </p>
+        </div>
+    }
+</div>

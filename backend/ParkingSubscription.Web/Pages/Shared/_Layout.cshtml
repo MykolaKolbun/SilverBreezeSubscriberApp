@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>@ViewData["Title"] — Parking Subscription</title>
+    <link rel="stylesheet" href="~/site.css" />
+</head>
+<body>
+@{
+    var loggedIn = Context.Session.GetString("accessToken") is not null;
+}
+<header class="topbar">
+    <a class="brand" href="/">🅿️ Parking Subscription</a>
+    <nav>
+        <a href="/">Plans</a>
+        @if (loggedIn)
+        {
+            <a href="/Cards">My cards</a>
+            <form method="post" asp-page="/Logout" class="inline-form">
+                <button type="submit" class="link-button">Log out</button>
+            </form>
+        }
+        else
+        {
+            <a href="/Login">Log in</a>
+            <a href="/Register" class="accent">Register</a>
+        }
+    </nav>
+</header>
+
+<main>
+    @RenderBody()
+</main>
+
+<footer>
+    <small>Dev build — payments and wallet passes are simulated.</small>
+</footer>
+</body>
+</html>

@@ -1,0 +1,725 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500;700&display=swap">
+  <style>
+    @keyframes vw-pulse-dot { 0%,100% { opacity: 1; transform: scale(1); } 50% { opacity: .55; transform: scale(.85); } }
+    body { margin: 0; -webkit-font-smoothing: antialiased; }
+  </style>
+</helmet>
+
+<div style="{{ pageStyle }}">
+  <div style="{{ rootVars }}">
+    <x-import component-from-global-scope="IOSDevice" from="./ios-frame.jsx" width="{{ 402 }}" height="{{ 874 }}" dark="{{ isDark }}" hint-size="402,874">
+
+      <div style="height:100%; display:flex; flex-direction:column; background:var(--bg); font-family:'Inter',system-ui,sans-serif;">
+
+        <!-- ============ PLANS SCREEN ============ -->
+        <sc-if value="{{ screen.plans }}" hint-placeholder-val="{{ true }}">
+          <div style="flex:1; overflow-y:auto; display:flex; flex-direction:column; padding-bottom:100px;">
+            <div style="padding:60px 20px 4px;">
+              <div style="font:600 11px/14px 'Inter'; letter-spacing:0.08em; text-transform:uppercase; color:var(--fg-3);">Harborview Garage</div>
+              <h1 style="margin:4px 0 0; font:600 24px/32px 'Space Grotesk'; letter-spacing:-0.02em; color:var(--fg-1);">Choose your plan</h1>
+              <div style="margin-top:4px; font:400 13px/18px 'Inter'; color:var(--fg-2);">148 Harbor St &middot; Downtown</div>
+            </div>
+
+            <!-- billing toggle -->
+            <div style="display:flex; gap:8px; padding:16px 20px 4px;">
+              <button onClick="{{ setBillingMonthly }}" style="{{ billingBtnStyle.monthly }}">Monthly</button>
+              <button onClick="{{ setBillingAnnual }}" style="{{ billingBtnStyle.annual }}">Annual &middot; 2 months free</button>
+            </div>
+
+            <div style="flex:1; display:flex; flex-direction:column; gap:12px; padding:16px 20px 24px;">
+
+              <div onClick="{{ selectBasic }}" style="{{ planCardStyle.basic }}">
+                <div style="display:flex; align-items:center; justify-content:space-between;">
+                  <div style="font:600 18px/24px 'Space Grotesk'; color:var(--fg-1);">Basic</div>
+                  <span style="{{ planRadioStyle.basic }}"></span>
+                </div>
+                <div style="margin-top:6px; font:500 32px/36px 'JetBrains Mono'; color:var(--fg-1); font-feature-settings:'tnum';">{{ planPrice.basic }}<span style="font:400 13px/18px 'Inter'; color:var(--fg-3);"> {{ planPeriod }}</span></div>
+                <div style="margin-top:10px; display:flex; flex-direction:column; gap:6px;">
+                  <div style="font:400 13px/18px 'Inter'; color:var(--fg-2);">Nights &amp; weekends only</div>
+                  <div style="font:400 13px/18px 'Inter'; color:var(--fg-2);">1 vehicle &middot; standard spaces</div>
+                </div>
+              </div>
+
+              <div onClick="{{ selectPlus }}" style="{{ planCardStyle.plus }}">
+                <div style="display:flex; align-items:center; justify-content:space-between;">
+                  <div style="display:flex; align-items:center; gap:8px;">
+                    <span style="font:600 18px/24px 'Space Grotesk'; color:var(--fg-1);">Plus</span>
+                    <span style="padding:3px 8px; border-radius:999px; background:var(--volt-soft); color:var(--volt); font:600 11px/14px 'Inter';">Most popular</span>
+                  </div>
+                  <span style="{{ planRadioStyle.plus }}"></span>
+                </div>
+                <div style="margin-top:6px; font:500 32px/36px 'JetBrains Mono'; color:var(--fg-1); font-feature-settings:'tnum';">{{ planPrice.plus }}<span style="font:400 13px/18px 'Inter'; color:var(--fg-3);"> {{ planPeriod }}</span></div>
+                <div style="margin-top:10px; display:flex; flex-direction:column; gap:6px;">
+                  <div style="font:400 13px/18px 'Inter'; color:var(--fg-2);">Anytime access</div>
+                  <div style="font:400 13px/18px 'Inter'; color:var(--fg-2);">1 vehicle &middot; reserved level</div>
+                </div>
+              </div>
+
+              <div onClick="{{ selectUnlimited }}" style="{{ planCardStyle.unlimited }}">
+                <div style="display:flex; align-items:center; justify-content:space-between;">
+                  <div style="font:600 18px/24px 'Space Grotesk'; color:var(--fg-1);">Unlimited</div>
+                  <span style="{{ planRadioStyle.unlimited }}"></span>
+                </div>
+                <div style="margin-top:6px; font:500 32px/36px 'JetBrains Mono'; color:var(--fg-1); font-feature-settings:'tnum';">{{ planPrice.unlimited }}<span style="font:400 13px/18px 'Inter'; color:var(--fg-3);"> {{ planPeriod }}</span></div>
+                <div style="margin-top:10px; display:flex; flex-direction:column; gap:6px;">
+                  <div style="font:400 13px/18px 'Inter'; color:var(--fg-2);">Anytime access</div>
+                  <div style="font:400 13px/18px 'Inter'; color:var(--fg-2);">2 vehicles &middot; reserved level + EV bay</div>
+                </div>
+              </div>
+
+              <div style="margin-top:4px; background:var(--bg-elevated); border:1px solid var(--border); border-radius:16px; padding:14px 16px; display:flex; align-items:center; justify-content:space-between; gap:12px;">
+                <div>
+                  <div style="font:600 11px/14px 'Inter'; letter-spacing:0.08em; text-transform:uppercase; color:var(--fg-3);">Start date</div>
+                  <div style="font:600 15px/22px 'Inter'; color:var(--fg-1); margin-top:2px;">{{ startDateFmt }}</div>
+                </div>
+                <input type="date" value="{{ startDate }}" onChange="{{ onStartDateChange }}" style="height:40px; padding:0 10px; background:var(--surface-2); border:1.5px solid var(--border); border-radius:12px; color:var(--fg-1); font:500 13px/18px 'Inter'; outline:none;"/>
+              </div>
+            </div>
+
+            <div style="padding:14px 20px 28px;">
+              <button onClick="{{ goPayment }}" style="width:100%; height:56px; border:none; border-radius:24px; background:var(--volt); color:#0F1117; font:600 16px/22px 'Inter'; cursor:pointer; box-shadow:0 6px 20px rgba(34,224,122,0.22);">Subscribe &middot; {{ planPrice.selected }} {{ planPeriod }}</button>
+            </div>
+          </div>
+        </sc-if>
+
+        <!-- ============ PAYMENT SCREEN ============ -->
+        <sc-if value="{{ screen.payment }}" hint-placeholder-val="{{ false }}">
+          <div style="flex:1; overflow-y:auto; display:flex; flex-direction:column; padding-bottom:100px;">
+            <div style="padding:60px 20px 8px; display:flex; align-items:center; gap:12px;">
+              <button onClick="{{ backToPlans }}" style="width:40px; height:40px; border-radius:16px; background:var(--surface-2); border:1px solid var(--border); color:var(--fg-1); cursor:pointer; display:flex; align-items:center; justify-content:center;">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"></polyline></svg>
+              </button>
+              <h2 style="margin:0; font:600 24px/32px 'Space Grotesk'; letter-spacing:-0.02em; color:var(--fg-1);">Payment</h2>
+            </div>
+
+            <div style="margin:14px 20px 18px;">
+              <div style="padding:20px 22px; background:var(--bg-elevated); border:1px solid var(--border); border-radius:24px; display:flex; align-items:flex-end; justify-content:space-between;">
+                <div>
+                  <div style="font:600 11px/14px 'Inter'; letter-spacing:0.08em; text-transform:uppercase; color:var(--fg-3);">Amount due</div>
+                  <div style="font:500 44px/48px 'JetBrains Mono'; color:var(--fg-1); margin-top:4px; font-feature-settings:'tnum'; letter-spacing:-0.02em;">{{ planPrice.selected }}</div>
+                </div>
+                <span style="font:500 13px/18px 'Inter'; color:var(--fg-2); text-align:right;">{{ planName.selected }} &middot; {{ planPeriod }}<br/><span style="font:500 11px/14px 'JetBrains Mono'; color:var(--fg-3);">Starts {{ startDateFmt }}</span></span>
+              </div>
+            </div>
+
+            <div style="flex:1; overflow-y:auto; padding:0 20px 16px; display:flex; flex-direction:column; gap:10px;">
+              <div style="font:600 11px/14px 'Inter'; letter-spacing:0.08em; text-transform:uppercase; color:var(--fg-3);">Select method</div>
+
+              <div onClick="{{ selectApplePay }}" style="{{ methodCardStyle.applepay }}">
+                <div style="width:44px; height:30px; border-radius:6px; background:#000; color:#fff; display:flex; align-items:center; justify-content:center; font-size:16px; flex-shrink:0;"></div>
+                <div style="flex:1; min-width:0;">
+                  <div style="font:600 15px/22px 'Inter'; color:var(--fg-1);">Apple Pay</div>
+                  <div style="font:500 11px/14px 'JetBrains Mono'; color:var(--fg-3);">Touch ID &middot; ready</div>
+                </div>
+                <span style="{{ methodRadioStyle.applepay }}"></span>
+              </div>
+
+              <div onClick="{{ selectCard }}" style="{{ methodCardStyle.card }}">
+                <div style="display:flex; align-items:center; gap:14px;">
+                  <div style="width:44px; height:30px; border-radius:6px; background:var(--surface-2); display:flex; align-items:center; justify-content:center; flex-shrink:0; color:var(--fg-2);">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="5" width="20" height="14" rx="2"></rect><line x1="2" y1="10" x2="22" y2="10"></line></svg>
+                  </div>
+                  <div style="flex:1; min-width:0;">
+                    <div style="font:600 15px/22px 'Inter'; color:var(--fg-1);">Credit or debit card</div>
+                    <div style="font:500 11px/14px 'JetBrains Mono'; color:var(--fg-3);">Not saved after checkout</div>
+                  </div>
+                  <span style="{{ methodRadioStyle.card }}"></span>
+                </div>
+
+                <sc-if value="{{ showCardFields }}" hint-placeholder-val="{{ true }}">
+                  <div style="margin-top:14px; display:flex; flex-direction:column; gap:10px;">
+                    <input value="{{ cardNumber }}" onChange="{{ onCardNumberChange }}" placeholder="Card number" style="height:48px; padding:0 14px; background:var(--surface-2); border:1.5px solid var(--border); border-radius:12px; color:var(--fg-1); font:500 15px/22px 'JetBrains Mono'; outline:none;"/>
+                    <div style="display:flex; gap:10px;">
+                      <input value="{{ cardExpiry }}" onChange="{{ onCardExpiryChange }}" placeholder="MM/YY" style="flex:1; height:48px; padding:0 14px; background:var(--surface-2); border:1.5px solid var(--border); border-radius:12px; color:var(--fg-1); font:500 15px/22px 'JetBrains Mono'; outline:none;"/>
+                      <input value="{{ cardCvc }}" onChange="{{ onCardCvcChange }}" placeholder="CVC" style="flex:1; height:48px; padding:0 14px; background:var(--surface-2); border:1.5px solid var(--border); border-radius:12px; color:var(--fg-1); font:500 15px/22px 'JetBrains Mono'; outline:none;"/>
+                    </div>
+                  </div>
+                </sc-if>
+              </div>
+            </div>
+
+            <div style="padding:14px 20px 28px;">
+              <button onClick="{{ confirmPayment }}" style="{{ payButtonStyle }}">
+                <sc-if value="{{ payState.default }}" hint-placeholder-val="{{ true }}"><span>Confirm payment &middot; {{ planPrice.selected }}</span></sc-if>
+                <sc-if value="{{ payState.loading }}" hint-placeholder-val="{{ false }}"><span>Processing&hellip;</span></sc-if>
+                <sc-if value="{{ payState.success }}" hint-placeholder-val="{{ false }}"><span>Payment Confirmed!</span></sc-if>
+              </button>
+              <div style="margin-top:10px; display:flex; align-items:center; justify-content:center; gap:6px; font:500 13px/18px 'Inter'; color:var(--fg-3);">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
+                Secured by 256-bit SSL encryption
+              </div>
+            </div>
+          </div>
+        </sc-if>
+
+        <!-- ============ PASS SCREEN ============ -->
+        <sc-if value="{{ screen.pass }}" hint-placeholder-val="{{ false }}">
+          <div style="flex:1; overflow-y:auto; display:flex; flex-direction:column; padding-bottom:110px;">
+            <div style="padding:58px 20px 0;">
+              <div style="background:var(--bg-elevated); border:1.5px solid var(--volt); border-radius:24px; padding:22px; box-shadow:0 0 0 4px rgba(34,224,122,0.10);">
+                <div style="display:flex; justify-content:center;">
+                  <div style="background:#FFFFFF; border-radius:16px; padding:14px; display:flex; flex-direction:column; align-items:center; gap:8px;">
+                    <svg width="132" height="132" viewBox="0 0 132 132">
+                      <rect x="0" y="0" width="132" height="132" fill="#FFFFFF"></rect>
+                      <rect x="6" y="6" width="36" height="36" fill="none" stroke="#0F1117" stroke-width="6"></rect>
+                      <rect x="16" y="16" width="16" height="16" fill="#0F1117"></rect>
+                      <rect x="90" y="6" width="36" height="36" fill="none" stroke="#0F1117" stroke-width="6"></rect>
+                      <rect x="100" y="16" width="16" height="16" fill="#0F1117"></rect>
+                      <rect x="6" y="90" width="36" height="36" fill="none" stroke="#0F1117" stroke-width="6"></rect>
+                      <rect x="16" y="100" width="16" height="16" fill="#0F1117"></rect>
+                      <rect x="50" y="6" width="8" height="8" fill="#0F1117"></rect>
+                      <rect x="66" y="6" width="8" height="8" fill="#0F1117"></rect>
+                      <rect x="50" y="18" width="8" height="8" fill="#0F1117"></rect>
+                      <rect x="66" y="30" width="8" height="8" fill="#0F1117"></rect>
+                      <rect x="50" y="42" width="8" height="8" fill="#0F1117"></rect>
+                      <rect x="66" y="54" width="8" height="8" fill="#0F1117"></rect>
+                      <rect x="50" y="66" width="8" height="8" fill="#0F1117"></rect>
+                      <rect x="66" y="66" width="8" height="8" fill="#0F1117"></rect>
+                      <rect x="6" y="50" width="8" height="8" fill="#0F1117"></rect>
+                      <rect x="18" y="58" width="8" height="8" fill="#0F1117"></rect>
+                      <rect x="30" y="50" width="8" height="8" fill="#0F1117"></rect>
+                      <rect x="6" y="66" width="8" height="8" fill="#0F1117"></rect>
+                      <rect x="30" y="70" width="8" height="8" fill="#0F1117"></rect>
+                      <rect x="90" y="50" width="8" height="8" fill="#0F1117"></rect>
+                      <rect x="106" y="50" width="8" height="8" fill="#0F1117"></rect>
+                      <rect x="118" y="58" width="8" height="8" fill="#0F1117"></rect>
+                      <rect x="90" y="66" width="8" height="8" fill="#0F1117"></rect>
+                      <rect x="106" y="74" width="8" height="8" fill="#0F1117"></rect>
+                      <rect x="90" y="90" width="8" height="8" fill="#0F1117"></rect>
+                      <rect x="106" y="90" width="8" height="8" fill="#0F1117"></rect>
+                      <rect x="118" y="98" width="8" height="8" fill="#0F1117"></rect>
+                      <rect x="90" y="106" width="8" height="8" fill="#0F1117"></rect>
+                      <rect x="106" y="118" width="8" height="8" fill="#0F1117"></rect>
+                      <rect x="50" y="90" width="8" height="8" fill="#0F1117"></rect>
+                      <rect x="66" y="98" width="8" height="8" fill="#0F1117"></rect>
+                      <rect x="50" y="106" width="8" height="8" fill="#0F1117"></rect>
+                      <rect x="66" y="118" width="8" height="8" fill="#0F1117"></rect>
+                      <rect x="42" y="42" width="8" height="8" fill="#0F1117"></rect>
+                      <rect x="82" y="42" width="8" height="8" fill="#0F1117"></rect>
+                      <rect x="42" y="82" width="8" height="8" fill="#0F1117"></rect>
+                    </svg>
+                    <span style="font:600 11px/14px 'Inter'; letter-spacing:0.08em; text-transform:uppercase; color:#6A7187;">Backup entry code</span>
+                  </div>
+                </div>
+
+                <div style="margin-top:20px; display:flex; align-items:center; justify-content:space-between;">
+                  <span style="display:inline-flex; align-items:center; gap:6px; padding:4px 10px; border-radius:999px; background:var(--volt-soft); color:var(--volt); border:1px solid rgba(34,224,122,0.35); font:600 12px/16px 'Inter';">
+                    <span style="width:8px; height:8px; border-radius:50%; background:var(--volt); animation:vw-pulse-dot 2s cubic-bezier(0.2,0.8,0.2,1) infinite; display:inline-block;"></span>
+                    Active
+                  </span>
+                  <span style="font:600 15px/22px 'Space Grotesk'; color:var(--fg-1);">{{ activePlanName }}</span>
+                </div>
+
+                <div style="margin-top:20px; font:600 11px/14px 'Inter'; letter-spacing:0.08em; text-transform:uppercase; color:var(--fg-3);">License plate</div>
+                <div style="margin-top:6px; font:700 40px/44px 'JetBrains Mono'; color:var(--fg-1); letter-spacing:0.02em;">{{ plate }}</div>
+                <sc-if value="{{ hasPlate }}" hint-placeholder-val="{{ true }}">
+                  <div style="margin-top:8px; font:400 13px/18px 'Inter'; color:var(--fg-2);">Recognized automatically at entry &mdash; no scan needed.</div>
+                  <sc-if value="{{ hasExtraPlates }}" hint-placeholder-val="{{ false }}">
+                    <div style="margin-top:2px; font:500 12px/18px 'Inter'; color:var(--fg-3);">+{{ extraPlateCount }} more vehicle on file &middot; manage in Profile</div>
+                  </sc-if>
+                </sc-if>
+
+                <div style="margin-top:20px; height:1px; background:var(--border);"></div>
+
+                <div style="margin-top:16px; display:flex; justify-content:space-between; align-items:center;">
+                  <div>
+                    <div style="font:600 11px/14px 'Inter'; letter-spacing:0.08em; text-transform:uppercase; color:var(--fg-3);">Garage</div>
+                    <div style="font:600 15px/22px 'Inter'; color:var(--fg-1); margin-top:2px;">Harborview Garage</div>
+                  </div>
+                  <div style="text-align:right;">
+                    <div style="font:600 11px/14px 'Inter'; letter-spacing:0.08em; text-transform:uppercase; color:var(--fg-3);">End date</div>
+                    <div style="font:600 20px/24px 'JetBrains Mono'; color:var(--fg-1); margin-top:2px;">{{ activeEndFmt }}</div>
+                  </div>
+                </div>
+
+                <div style="margin-top:16px; display:flex; justify-content:space-between; align-items:baseline;">
+                  <span style="font:400 13px/18px 'Inter'; color:var(--fg-2);">Price</span>
+                  <span style="font:600 16px/20px 'JetBrains Mono'; color:var(--fg-1);">{{ activePriceFmt }}</span>
+                </div>
+              </div>
+            </div>
+
+            <div style="padding:16px 20px 0;">
+              <button onClick="{{ backToPlans }}" style="width:100%; height:48px; border-radius:16px; background:transparent; border:1px solid var(--border-strong); color:var(--fg-1); font:600 14px/22px 'Inter'; cursor:pointer;">Manage plan</button>
+            </div>
+
+            <sc-if value="{{ hasFutureSubs }}" hint-placeholder-val="{{ false }}">
+              <div style="padding:12px 20px 0; display:flex; flex-direction:column; gap:8px;">
+                <div style="font:600 11px/14px 'Inter'; letter-spacing:0.08em; text-transform:uppercase; color:var(--fg-3);">Upcoming</div>
+                <sc-for list="{{ futureSubs }}" as="sub" hint-placeholder-count="1">
+                  <div style="height:48px; padding:0 16px; background:var(--bg-elevated); border:1px solid var(--border); border-radius:16px; display:flex; align-items:center; justify-content:space-between; gap:12px;">
+                    <span style="font:600 14px/18px 'Inter'; color:var(--fg-1);">{{ sub.label }}</span>
+                    <span style="font:500 12px/16px 'JetBrains Mono'; color:var(--fg-2);">{{ sub.rangeFmt }}</span>
+                  </div>
+                </sc-for>
+              </div>
+            </sc-if>
+          </div>
+        </sc-if>
+
+        <!-- ============ PROFILE SCREEN ============ -->
+        <sc-if value="{{ screen.profile }}" hint-placeholder-val="{{ false }}">
+          <div style="flex:1; overflow-y:auto; display:flex; flex-direction:column; padding-bottom:110px;">
+            <div style="padding:60px 20px 4px;">
+              <h2 style="margin:0; font:600 24px/32px 'Space Grotesk'; letter-spacing:-0.02em; color:var(--fg-1);">Profile</h2>
+            </div>
+
+            <div style="padding:16px 20px 0; display:flex; flex-direction:column; gap:14px;">
+              <div style="background:var(--bg-elevated); border:1px solid var(--border); border-radius:24px; padding:20px; display:flex; align-items:center; gap:16px;">
+                <div style="width:64px; height:64px; border-radius:50%; background:linear-gradient(135deg,#22E07A,#0FB45F); display:flex; align-items:center; justify-content:center; color:#0F1117; font:700 24px 'Space Grotesk'; box-shadow:0 8px 24px rgba(34,224,122,0.32); flex-shrink:0;">JM</div>
+                <div style="flex:1; min-width:0;">
+                  <div style="font:600 18px/24px 'Inter'; color:var(--fg-1);">Jordan Mercer</div>
+                  <div style="font:500 13px/18px 'Inter'; color:var(--fg-2); margin-top:2px;">Member since Jan 2025</div>
+                </div>
+              </div>
+
+              <div style="display:flex; align-items:center; justify-content:space-between; margin-top:6px;">
+                <div style="font:600 11px/14px 'Inter'; letter-spacing:0.08em; text-transform:uppercase; color:var(--fg-3);">Vehicles</div>
+                <span style="font:500 12px/16px 'Inter'; color:var(--fg-3);">{{ vehicleCards.length }}/3 &middot; swipe for more</span>
+              </div>
+
+              <div style="display:flex; gap:12px; overflow-x:auto; scroll-snap-type:x mandatory; padding-bottom:4px; margin:0 -20px; padding-left:20px; padding-right:20px;">
+                <sc-for list="{{ vehicleCards }}" as="v" hint-placeholder-count="1">
+                  <div style="flex:0 0 calc(100% - 40px); min-width:0; box-sizing:border-box; scroll-snap-align:center; position:relative; background:var(--bg-elevated); border:1px solid var(--border); border-radius:16px; padding:16px 18px; display:flex; flex-direction:column; gap:10px;">
+                    <button onClick="{{ v.onRemove }}" style="position:absolute; top:12px; right:12px; width:28px; height:28px; border-radius:50%; background:var(--surface-2); border:1px solid var(--border); color:#FF6B6B; cursor:pointer; font:700 15px/1 'Inter'; display:flex; align-items:center; justify-content:center;">&times;</button>
+                    <div style="display:flex; align-items:center; gap:10px;">
+                      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--fg-2)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 17h14M5 17a2 2 0 1 1-4 0 2 2 0 0 1 4 0zm14 0a2 2 0 1 0 4 0 2 2 0 0 0-4 0zM3 17V11l2-5h10l4 5v6M5 11h14"></path></svg>
+                      <span style="font:600 13px/18px 'Inter'; color:var(--fg-2);">Vehicle</span>
+                    </div>
+                    <div style="display:flex; gap:10px;">
+                      <input value="{{ v.make.value }}" onChange="{{ v.make.onChange }}" placeholder="Make" style="flex:1; min-width:0; height:44px; padding:0 12px; background:var(--surface-2); border:1.5px solid var(--border); border-radius:12px; color:var(--fg-1); font:500 14px/20px 'Inter'; outline:none;"/>
+                      <input value="{{ v.model.value }}" onChange="{{ v.model.onChange }}" placeholder="Model" style="flex:1; min-width:0; height:44px; padding:0 12px; background:var(--surface-2); border:1.5px solid var(--border); border-radius:12px; color:var(--fg-1); font:500 14px/20px 'Inter'; outline:none;"/>
+                    </div>
+                    <input value="{{ v.plate.value }}" onChange="{{ v.plate.onChange }}" placeholder="License plate" style="width:100%; box-sizing:border-box; height:56px; padding:0 14px; background:var(--surface-2); border:1.5px solid var(--border); border-radius:12px; color:var(--fg-1); font:500 23px/30px 'JetBrains Mono'; text-align:center; outline:none;"/>
+                    <div style="display:flex; gap:10px; margin-top:2px;">
+                      <button onClick="{{ v.onSave }}" style="{{ v.saveBtnStyle }}">Save</button>
+                    </div>
+                  </div>
+                </sc-for>
+
+                <sc-if value="{{ canAddVehicle }}" hint-placeholder-val="{{ true }}">
+                  <button onClick="{{ addVehicle }}" style="flex:0 0 calc(100% - 40px); min-width:0; box-sizing:border-box; scroll-snap-align:center; height:auto; min-height:180px; border-radius:16px; background:transparent; border:1.5px dashed var(--border-strong); color:var(--fg-1); cursor:pointer; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:10px; font:600 15px/22px 'Inter';">
+                    <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+                    Add car
+                  </button>
+                </sc-if>
+              </div>
+
+              <div style="font:400 12px/16px 'Inter'; color:var(--fg-3); margin-top:-4px;">Any plate on file is recognized automatically at Harborview Garage entry.</div>
+
+              <div style="background:var(--bg-elevated); border:1px solid var(--border); border-radius:16px; overflow:hidden;">
+                <div style="display:flex; align-items:center; gap:14px; padding:14px 16px;">
+                  <span style="width:36px; height:36px; border-radius:12px; background:var(--surface-2); color:var(--fg-2); display:flex; align-items:center; justify-content:center; flex-shrink:0;">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.13.96.37 1.9.72 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.9.35 1.85.59 2.81.72A2 2 0 0 1 22 16.92z"></path></svg>
+                  </span>
+                  <div style="flex:1; min-width:0;">
+                    <div style="font:500 13px/18px 'Inter'; color:var(--fg-3);">Phone</div>
+                    <div style="font:600 15px/22px 'Inter'; color:var(--fg-1);">+1 415 555 0148</div>
+                  </div>
+                </div>
+                <div style="height:1px; background:var(--border); margin:0 16px;"></div>
+                <div style="display:flex; align-items:center; gap:14px; padding:14px 16px;">
+                  <span style="width:36px; height:36px; border-radius:12px; background:var(--surface-2); color:var(--fg-2); display:flex; align-items:center; justify-content:center; flex-shrink:0;">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path><polyline points="22,6 12,13 2,6"></polyline></svg>
+                  </span>
+                  <div style="flex:1; min-width:0;">
+                    <div style="font:500 13px/18px 'Inter'; color:var(--fg-3);">Email</div>
+                    <div style="font:600 15px/22px 'Inter'; color:var(--fg-1);">jordan@mercer.io</div>
+                  </div>
+                </div>
+              </div>
+
+              <div onClick="{{ setTabPass }}" style="background:var(--volt-soft); border:1px solid rgba(34,224,122,0.3); border-radius:16px; padding:14px 16px; display:flex; align-items:center; justify-content:space-between; cursor:pointer;">
+                <div>
+                  <div style="font:600 11px/14px 'Inter'; letter-spacing:0.08em; text-transform:uppercase; color:var(--volt);">Subscription</div>
+                  <div style="font:600 15px/22px 'Inter'; color:var(--fg-1); margin-top:2px;">{{ activePlanName }} &middot; Harborview Garage</div>
+                </div>
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--fg-1)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg>
+              </div>
+
+              <div style="font:600 11px/14px 'Inter'; letter-spacing:0.08em; text-transform:uppercase; color:var(--fg-3); margin-top:6px;">Settings</div>
+              <div style="background:var(--bg-elevated); border:1px solid var(--border); border-radius:16px; overflow:hidden;">
+                <div style="display:flex; align-items:center; gap:14px; padding:14px 16px;">
+                  <span style="width:36px; height:36px; border-radius:12px; background:var(--surface-2); color:var(--fg-2); display:flex; align-items:center; justify-content:center; flex-shrink:0;">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"></path><path d="M13.73 21a2 2 0 0 1-3.46 0"></path></svg>
+                  </span>
+                  <span style="flex:1; font:600 15px/22px 'Inter'; color:var(--fg-1);">Notifications</span>
+                  <button onClick="{{ toggleNotif }}" style="{{ notifToggleStyle }}"><span style="{{ notifKnobStyle }}"></span></button>
+                </div>
+                <div style="height:1px; background:var(--border); margin:0 16px;"></div>
+                <div style="display:flex; align-items:center; gap:14px; padding:14px 16px;">
+                  <span style="width:36px; height:36px; border-radius:12px; background:var(--surface-2); color:var(--fg-2); display:flex; align-items:center; justify-content:center; flex-shrink:0;">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"></circle><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"></path></svg>
+                  </span>
+                  <span style="flex:1; font:600 15px/22px 'Inter'; color:var(--fg-1);">Appearance</span>
+                  <div style="display:inline-flex; height:36px; border-radius:999px; background:var(--bg); border:1px solid var(--border); overflow:hidden; padding:2px; gap:2px;">
+                    <button onClick="{{ setThemeLight }}" style="{{ themeBtnStyle.light }}">
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"></circle><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"></path></svg>
+                    </button>
+                    <button onClick="{{ setThemeDark }}" style="{{ themeBtnStyle.dark }}">
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path></svg>
+                    </button>
+                  </div>
+                </div>
+                <div style="height:1px; background:var(--border); margin:0 16px;"></div>
+                <div style="display:flex; align-items:center; gap:14px; padding:14px 16px; cursor:pointer;">
+                  <span style="width:36px; height:36px; border-radius:12px; background:var(--surface-2); color:#FF6B6B; display:flex; align-items:center; justify-content:center; flex-shrink:0;">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line></svg>
+                  </span>
+                  <span style="flex:1; font:600 15px/22px 'Inter'; color:#FF6B6B;">Sign out</span>
+                </div>
+              </div>
+
+              <div style="text-align:center; font:500 11px/14px 'JetBrains Mono'; color:var(--fg-3); padding:8px 0 4px;">Parking pass v1.0</div>
+            </div>
+          </div>
+        </sc-if>
+
+        <!-- ============ BOTTOM NAV (pass / wallet / profile) ============ -->
+        <sc-if value="{{ showNav }}" hint-placeholder-val="{{ false }}">
+          <div style="position:absolute; left:12px; right:12px; bottom:22px; height:70px; padding:8px; background:rgba(15,17,23,0.82); backdrop-filter:blur(24px) saturate(180%); -webkit-backdrop-filter:blur(24px) saturate(180%); border:1px solid rgba(255,255,255,0.06); border-radius:32px; box-shadow:0 12px 40px rgba(0,0,0,0.5); display:flex; align-items:center; justify-content:space-around; z-index:40;">
+            <button onClick="{{ setTabPass }}" style="{{ navBtnStyle.pass }}">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="5" width="20" height="14" rx="2"></rect><line x1="2" y1="10" x2="22" y2="10"></line></svg>
+              <span style="font:600 11px/14px 'Inter';">Pass</span>
+            </button>
+            <button onClick="{{ setTabProfile }}" style="{{ navBtnStyle.profile }}">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
+              <span style="font:600 11px/14px 'Inter';">Profile</span>
+            </button>
+          </div>
+        </sc-if>
+
+      </div>
+    </x-import>
+  </div>
+</div>
+
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;: {&quot;width&quot;: 500, &quot;height&quot;: 950}, &quot;theme&quot;: {&quot;editor&quot;: &quot;enum&quot;, &quot;options&quot;: [&quot;dark&quot;, &quot;light&quot;], &quot;default&quot;: &quot;dark&quot;, &quot;tsType&quot;: &quot;'dark' | 'light'&quot;, &quot;section&quot;: &quot;Appearance&quot;}}">
+class Component extends DCLogic {
+  static TODAY_ISO = (() => {
+    const d = new Date();
+    const y = d.getFullYear();
+    const m = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    return y + '-' + m + '-' + day;
+  })();
+
+  state = {
+    screen: 'pass',
+    billing: 'monthly',
+    planId: 'plus',
+    payMethod: 'card',
+    cardNumber: '',
+    cardExpiry: '',
+    cardCvc: '',
+    payState: 'default',
+    startDate: Component.TODAY_ISO,
+    vehicles: [{ id: 1, make: 'Tesla', model: 'Model 3', plate: '34 ABC 567' }],
+    vehicleDrafts: [{ id: 1, make: 'Tesla', model: 'Model 3', plate: '34 ABC 567' }],
+    notif: true,
+    themeOverride: null,
+    subscriptions: [{ id: 1, planId: 'plus', billing: 'monthly', startDate: Component.TODAY_ISO }],
+  };
+
+  nextSubId = 2;
+  nextVehicleId = 2;
+
+  PLAN_BASE = { basic: 39, plus: 69, unlimited: 99 };
+  PLAN_LABEL = { basic: 'Basic', plus: 'Plus', unlimited: 'Unlimited' };
+
+  fmtEuro(n) { return '\u20ac' + n.toFixed(2); }
+
+  toLocalISO(d) {
+    const y = d.getFullYear();
+    const m = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    return y + '-' + m + '-' + day;
+  }
+  fmtDate(iso) {
+    if (!iso) return '';
+    const d = new Date(iso + 'T00:00:00');
+    return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+  }
+  addPeriod(iso, billing) {
+    const d = new Date(iso + 'T00:00:00');
+    if (billing === 'annual') d.setFullYear(d.getFullYear() + 1);
+    else d.setMonth(d.getMonth() + 1);
+    d.setDate(d.getDate() - 1);
+    return this.toLocalISO(d);
+  }
+
+  price(id, billing) {
+    const base = this.PLAN_BASE[id];
+    if (billing === 'annual') return Math.round(base * 10); // 2 months free
+    return base;
+  }
+
+  cardStyle(active) {
+    return {
+      background: active ? 'var(--volt-soft)' : 'var(--bg-elevated)',
+      border: (active ? '1.5px' : '1px') + ' solid ' + (active ? 'var(--volt)' : 'var(--border)'),
+      borderRadius: '16px', padding: '18px', cursor: 'pointer',
+    };
+  }
+  radioStyle(active) {
+    return active
+      ? { width: 22, height: 22, borderRadius: '50%', background: 'var(--volt)', display: 'inline-block' }
+      : { width: 22, height: 22, borderRadius: '50%', border: '2px solid var(--border-strong)', display: 'inline-block' };
+  }
+  toggleBtnStyle(active) {
+    return {
+      flex: 1, height: 40, borderRadius: 12, cursor: 'pointer',
+      background: active ? 'var(--volt)' : 'var(--bg-elevated)',
+      color: active ? '#0F1117' : 'var(--fg-1)',
+      border: '1px solid ' + (active ? 'var(--volt)' : 'var(--border)'),
+      font: (active ? '700' : '500') + ' 13px/18px Inter',
+    };
+  }
+
+  renderVals() {
+    const s = this.state;
+    const theme = s.themeOverride || (this.props.theme ?? 'dark');
+    const isDark = theme !== 'light';
+    const cycle = s.billing;
+    const planPrice = {
+      basic: this.fmtEuro(this.price('basic', cycle)),
+      plus: this.fmtEuro(this.price('plus', cycle)),
+      unlimited: this.fmtEuro(this.price('unlimited', cycle)),
+      selected: this.fmtEuro(this.price(s.planId, cycle)),
+    };
+    const planName = { selected: this.PLAN_LABEL[s.planId] };
+    const planPeriod = cycle === 'annual' ? '/ year' : '/ month';
+    const sortedSubs = s.subscriptions.slice().sort((a, b) => a.startDate < b.startDate ? -1 : 1);
+
+    const dark = {
+      '--bg': '#0F1117', '--bg-elevated': '#171A22', '--surface-2': '#1F2330',
+      '--border': '#252A38', '--border-strong': '#363C4E',
+      '--fg-1': '#F2F4F8', '--fg-2': '#A4ABBD', '--fg-3': '#6A7187',
+      '--volt': '#22E07A', '--volt-soft': 'rgba(34,224,122,0.14)',
+    };
+    const light = {
+      '--bg': '#F4F6FA', '--bg-elevated': '#FFFFFF', '--surface-2': '#FFFFFF',
+      '--border': '#E3E7EE', '--border-strong': '#CFD5E0',
+      '--fg-1': '#0F1117', '--fg-2': '#5B6478', '--fg-3': '#8A92A4',
+      '--volt': '#22E07A', '--volt-soft': 'rgba(34,224,122,0.14)',
+    };
+    const vars = isDark ? dark : light;
+
+    const navBtn = (id) => ({
+      background: 'transparent', border: 'none', cursor: 'pointer',
+      display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4,
+      padding: '4px 10px', flex: 1,
+      color: s.screen === id ? 'var(--volt)' : '#6A7187',
+    });
+
+    return {
+      pageStyle: { minHeight: '100vh', background: isDark ? '#05060a' : '#dfe3ea', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '40px' },
+      rootVars: vars,
+      isDark,
+      themeBtnStyle: {
+        light: {
+          width: 36, height: 32, border: 'none', cursor: 'pointer', borderRadius: '50%',
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          color: !isDark ? '#FFD27A' : '#8A92A4',
+          background: !isDark ? 'rgba(255,210,122,0.18)' : 'transparent',
+        },
+        dark: {
+          width: 36, height: 32, border: 'none', cursor: 'pointer', borderRadius: '50%',
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          color: isDark ? 'var(--volt)' : '#8A92A4',
+          background: isDark ? 'var(--volt-soft)' : 'transparent',
+        },
+      },
+      setThemeLight: () => this.setState({ themeOverride: 'light' }),
+      setThemeDark: () => this.setState({ themeOverride: 'dark' }),
+
+      screen: {
+        plans: s.screen === 'plans',
+        payment: s.screen === 'payment',
+        pass: s.screen === 'pass',
+        profile: s.screen === 'profile',
+      },
+      showNav: true,
+
+      planPrice, planName, planPeriod,
+
+      activePlanName: this.PLAN_LABEL[sortedSubs[0].planId],
+      activePriceFmt: this.fmtEuro(this.price(sortedSubs[0].planId, sortedSubs[0].billing)),
+      activeEndFmt: this.fmtDate(this.addPeriod(sortedSubs[0].startDate, sortedSubs[0].billing)),
+      futureSubs: sortedSubs.slice(1).map((sub) => ({
+        id: sub.id,
+        label: this.PLAN_LABEL[sub.planId],
+        rangeFmt: this.fmtDate(sub.startDate) + ' \u2013 ' + this.fmtDate(this.addPeriod(sub.startDate, sub.billing)),
+      })),
+      hasFutureSubs: sortedSubs.length > 1,
+
+      billingBtnStyle: {
+        monthly: this.toggleBtnStyle(s.billing === 'monthly'),
+        annual: this.toggleBtnStyle(s.billing === 'annual'),
+      },
+      setBillingMonthly: () => this.setState({ billing: 'monthly' }),
+      setBillingAnnual: () => this.setState({ billing: 'annual' }),
+
+      planCardStyle: {
+        basic: this.cardStyle(s.planId === 'basic'),
+        plus: this.cardStyle(s.planId === 'plus'),
+        unlimited: this.cardStyle(s.planId === 'unlimited'),
+      },
+      planRadioStyle: {
+        basic: this.radioStyle(s.planId === 'basic'),
+        plus: this.radioStyle(s.planId === 'plus'),
+        unlimited: this.radioStyle(s.planId === 'unlimited'),
+      },
+      selectBasic: () => this.setState({ planId: 'basic' }),
+      selectPlus: () => this.setState({ planId: 'plus' }),
+      selectUnlimited: () => this.setState({ planId: 'unlimited' }),
+
+      goPayment: () => this.setState({ screen: 'payment' }),
+      backToPlans: () => {
+        const subs = this.state.subscriptions;
+        const ends = subs.map((sub) => this.addPeriod(sub.startDate, sub.billing));
+        const lastEnd = ends.sort().slice(-1)[0];
+        const next = new Date(lastEnd + 'T00:00:00');
+        next.setDate(next.getDate() + 1);
+        const last = subs.slice().sort((a, b) => a.startDate < b.startDate ? 1 : -1)[0];
+        this.setState({
+          screen: 'plans',
+          startDate: this.toLocalISO(next),
+          planId: last.planId,
+          billing: last.billing,
+        });
+      },
+
+      startDate: s.startDate,
+      startDateFmt: this.fmtDate(s.startDate),
+      onStartDateChange: (e) => this.setState({ startDate: e.target.value }),
+      renewDateFmt: this.fmtDate(this.addPeriod(s.startDate, s.billing)),
+
+      methodCardStyle: {
+        card: this.cardStyle(s.payMethod === 'card'),
+        applepay: this.cardStyle(s.payMethod === 'applepay'),
+      },
+      methodRadioStyle: {
+        card: this.radioStyle(s.payMethod === 'card'),
+        applepay: this.radioStyle(s.payMethod === 'applepay'),
+      },
+      selectCard: () => this.setState({ payMethod: 'card' }),
+      selectApplePay: () => this.setState({ payMethod: 'applepay' }),
+      showCardFields: s.payMethod === 'card',
+      cardNumber: s.cardNumber,
+      cardExpiry: s.cardExpiry,
+      cardCvc: s.cardCvc,
+      onCardNumberChange: (e) => this.setState({ cardNumber: e.target.value }),
+      onCardExpiryChange: (e) => this.setState({ cardExpiry: e.target.value }),
+      onCardCvcChange: (e) => this.setState({ cardCvc: e.target.value }),
+
+      payState: {
+        default: s.payState === 'default',
+        loading: s.payState === 'loading',
+        success: s.payState === 'success',
+      },
+      payButtonStyle: {
+        width: '100%', height: 56, border: 'none', borderRadius: 24,
+        background: s.payState === 'success' ? 'var(--volt-deep, #0FB45F)' : 'var(--volt)',
+        color: '#0F1117', font: '600 16px/22px Inter', cursor: 'pointer',
+        opacity: s.payState === 'loading' ? 0.85 : 1,
+        boxShadow: '0 6px 20px rgba(34,224,122,0.22)',
+      },
+      confirmPayment: () => {
+        if (this.state.payState !== 'default') return;
+        this.setState({ payState: 'loading' });
+        setTimeout(() => this.setState({ payState: 'success' }), 1100);
+        setTimeout(() => {
+          const newSub = { id: this.nextSubId++, planId: this.state.planId, billing: this.state.billing, startDate: this.state.startDate };
+          const subs = this.state.subscriptions.concat([newSub]).sort((a, b) => a.startDate < b.startDate ? -1 : 1);
+          this.setState({ payState: 'default', screen: 'pass', subscriptions: subs });
+        }, 2200);
+      },
+
+      plate: (s.vehicles[0] && s.vehicles[0].plate) || 'No plate on file',
+      hasPlate: !!(s.vehicles[0] && s.vehicles[0].plate),
+      extraPlateCount: s.vehicles.length - 1,
+      hasExtraPlates: s.vehicles.length > 1,
+
+      vehicleCards: s.vehicleDrafts.map((draft, i) => {
+        const saved = s.vehicles[i];
+        const changed = JSON.stringify(draft) !== JSON.stringify(saved);
+        const field = (key) => ({
+          value: draft[key],
+          onChange: (e) => {
+            const v = e.target.value;
+            const nextDrafts = this.state.vehicleDrafts.slice();
+            nextDrafts[i] = Object.assign({}, nextDrafts[i], { [key]: v });
+            this.setState({ vehicleDrafts: nextDrafts });
+          },
+        });
+        return {
+          idx: i,
+          make: field('make'),
+          model: field('model'),
+          plate: field('plate'),
+          changed,
+          saveBtnStyle: {
+            flex: 1, height: 40, borderRadius: 12, border: 'none',
+            background: 'var(--volt)', color: '#0F1117', font: '700 13px/18px Inter',
+            opacity: changed ? 1 : 0.4,
+            cursor: changed ? 'pointer' : 'not-allowed',
+            pointerEvents: changed ? 'auto' : 'none',
+          },
+          onSave: () => {
+            const next = this.state.vehicles.slice();
+            next[i] = this.state.vehicleDrafts[i];
+            this.setState({ vehicles: next });
+          },
+          onRemove: () => {
+            const vehicles = this.state.vehicles.slice();
+            const drafts = this.state.vehicleDrafts.slice();
+            vehicles.splice(i, 1);
+            drafts.splice(i, 1);
+            this.setState({ vehicles, vehicleDrafts: drafts });
+          },
+        };
+      }),
+      canAddVehicle: s.vehicles.length < 3,
+      addVehicle: () => {
+        if (this.state.vehicles.length >= 3) return;
+        const blank = { id: this.nextVehicleId++, make: '', model: '', plate: '' };
+        this.setState({
+          vehicles: this.state.vehicles.concat([blank]),
+          vehicleDrafts: this.state.vehicleDrafts.concat([Object.assign({}, blank)]),
+        });
+      },
+
+      notifToggleStyle: {
+        width: 52, height: 32, borderRadius: 999, position: 'relative', cursor: 'pointer', padding: 0, border: 'none',
+        background: s.notif ? 'var(--volt)' : 'var(--surface-2)',
+      },
+      notifKnobStyle: {
+        position: 'absolute', top: 2, left: s.notif ? 22 : 2,
+        width: 24, height: 24, borderRadius: '50%',
+        background: s.notif ? '#0F1117' : 'var(--fg-2)',
+      },
+      toggleNotif: () => this.setState({ notif: !this.state.notif }),
+
+      navBtnStyle: { plans: navBtn('plans'), pass: navBtn('pass'), profile: navBtn('profile') },
+      setTabPlans: () => this.setState({ screen: 'plans' }),
+      setTabPass: () => this.setState({ screen: 'pass' }),
+      setTabProfile: () => this.setState({ screen: 'profile' }),
+    };
+  }
+}
+
+</script>
+</body>
+</html>

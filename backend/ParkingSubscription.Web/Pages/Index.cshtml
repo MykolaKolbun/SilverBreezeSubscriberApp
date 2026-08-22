@@ -1,0 +1,41 @@
+@page
+@model IndexModel
+@{
+    ViewData["Title"] = "Plans";
+}
+
+<h1>Parking subscriptions</h1>
+
+@if (Model.Error is not null)
+{
+    <div class="alert">@Model.Error</div>
+}
+
+@if (!Model.LoggedIn)
+{
+    <p class="lead">
+        Buy a contract parking card, get a QR code and a wallet pass.
+        <a href="/Register">Create an account</a> or <a href="/Login">log in</a> to see the plans.
+    </p>
+}
+else if (Model.Plans.Count == 0)
+{
+    <p>No active plans right now.</p>
+}
+else
+{
+    <div class="cards">
+        @foreach (var plan in Model.Plans)
+        {
+            <div class="card">
+                <h2>@plan.Name</h2>
+                <p class="price">@Money.Format(plan.PriceMinor, plan.Currency)</p>
+                <p class="muted">Valid for @plan.DurationDays days</p>
+                <form method="post">
+                    <input type="hidden" name="planId" value="@plan.Id" />
+                    <button type="submit" class="primary">Buy</button>
+                </form>
+            </div>
+        }
+    </div>
+}

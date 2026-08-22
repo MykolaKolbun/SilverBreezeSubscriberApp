@@ -1,0 +1,23 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "api",
+      "runtimeExecutable": "dotnet",
+      "runtimeArgs": ["run", "--project", "backend/ParkingSubscription.Api", "--no-launch-profile", "--urls", "http://localhost:5024"],
+      "port": 5024
+    },
+    {
+      "name": "web",
+      "runtimeExecutable": "dotnet",
+      "runtimeArgs": ["run", "--project", "backend/ParkingSubscription.Web", "--no-launch-profile", "--urls", "http://localhost:5100"],
+      "port": 5100
+    },
+    {
+      "name": "mobile-web",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": ["run", "web", "--prefix", "mobile", "--", "--port", "8085"],
+      "port": 8085
+    }
+  ]
+}

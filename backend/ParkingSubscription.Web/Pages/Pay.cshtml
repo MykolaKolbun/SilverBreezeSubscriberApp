@@ -1,0 +1,49 @@
+@page
+@model PayModel
+@{
+    ViewData["Title"] = "Payment";
+}
+
+<h1>Payment</h1>
+
+@if (Model.Error is not null)
+{
+    <div class="alert">@Model.Error</div>
+}
+
+@if (Model.Payment is { } p)
+{
+    <div class="panel">
+        <p><strong>Amount:</strong> @Money.Format(p.AmountMinor, p.Currency)</p>
+        <p><strong>Status:</strong> <span class="status status-@p.Status.ToLower()">@p.Status</span></p>
+        @if (p.FailureReason is not null)
+        {
+            <p class="muted">@p.FailureReason</p>
+        }
+    </div>
+
+    @if (p.Status == "Pending")
+    {
+        <p class="muted">
+            The real payment provider is not connected yet. In dev mode you play its role —
+            choose how the payment ends:
+        </p>
+        <form method="post" class="inline-form">
+            <input type="hidden" name="paymentId" value="@Model.PaymentId" />
+            <input type="hidden" name="provider" value="@Model.Provider" />
+            <button type="submit" name="outcome" value="succeeded" class="primary">✔ Simulate successful payment</button>
+            <button type="submit" name="outcome" value="declined" class="danger">✖ Simulate declined</button>
+        </form>
+    }
+    else if (p.Status == "Succeeded")
+    {
+        <div class="success">
+            Payment complete — your parking card is active.
+            @if (p.FiscalReceiptId is not null)
+            {
+                <br /><small>Fiscal receipt: @p.FiscalReceiptId</small>
+            }
+        </div>
+        <p><a class="button primary" href="/Cards">Go to my card →</a></p>
+    }
+}

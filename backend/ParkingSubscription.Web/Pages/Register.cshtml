@@ -1,0 +1,22 @@
+@page
+@model RegisterModel
+@{
+    ViewData["Title"] = "Register";
+}
+
+<h1>Create account</h1>
+
+@if (Model.Error is not null)
+{
+    <div class="alert">@Model.Error</div>
+}
+
+<form method="post" class="form">
+    <label>Email <input type="email" name="email" value="@Model.Email" required /></label>
+    <label>Password (min 8 characters) <input type="password" name="password" minlength="8" required /></label>
+    <label>First name <input type="text" name="firstName" /></label>
+    <label>Surname <input type="text" name="surname" /></label>
+    <button type="submit" class="primary">Register</button>
+</form>
+
+<p class="muted">Already have an account? <a href="/Login">Log in</a></p>

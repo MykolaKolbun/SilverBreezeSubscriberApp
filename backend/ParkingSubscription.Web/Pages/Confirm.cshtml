@@ -1,0 +1,26 @@
+@page
+@model ConfirmModel
+@{
+    ViewData["Title"] = "Confirm email";
+}
+
+<h1>Confirm your email</h1>
+
+<p class="muted">
+    A confirmation code was sent to your email.
+    @if (Model.Token is not null)
+    {
+        <text>(Dev mode: the code is prefilled for you.)</text>
+    }
+</p>
+
+@if (Model.Error is not null)
+{
+    <div class="alert">@Model.Error</div>
+}
+
+<form method="post" class="form">
+    <label>Email <input type="email" name="email" value="@Model.Email" required /></label>
+    <label>Confirmation code <input type="text" name="token" value="@Model.Token" required /></label>
+    <button type="submit" class="primary">Confirm</button>
+</form>
