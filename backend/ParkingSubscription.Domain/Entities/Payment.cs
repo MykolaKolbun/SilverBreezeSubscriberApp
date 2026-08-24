@@ -22,6 +22,13 @@ public class Payment : Entity
     public long AmountMinor { get; set; }
     public string Currency { get; set; } = "UAH";
 
+    /// <summary>
+    /// Start date the user requested at checkout. Honored on success unless it is earlier
+    /// than the stacking floor (day after the latest active card), in which case the floor
+    /// is used. Null → the floor is used.
+    /// </summary>
+    public DateOnly? RequestedStartDate { get; set; }
+
     public PaymentStatus Status { get; set; } = PaymentStatus.Pending;
 
     /// <summary>Reference returned by the payment provider (ТЗ §6 webhook correlation).</summary>

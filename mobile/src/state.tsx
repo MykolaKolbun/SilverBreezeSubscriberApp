@@ -10,7 +10,7 @@ import { Alert } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as WebBrowser from 'expo-web-browser';
 import { Theme, ThemeName, themes } from './theme';
-import { todayISO } from './plans';
+import { nextStartISO, todayISO } from './plans';
 import { Lang, TFunc, translate } from './i18n';
 import { ApiCard, ApiError, ApiPlan, api } from './api/client';
 
@@ -150,6 +150,12 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     })();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // Keep the purchase start date aligned with the stacking rule as cards change
+  // (after login, refresh, or a completed purchase).
+  useEffect(() => {
+    setStartDate(nextStartISO(cards));
+  }, [cards]);
 
   const setThemeName = (name: ThemeName) => {
     setThemeNameState(name);
@@ -302,7 +308,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
 
   // ---- navigation / buy ----
   const openPlans = () => {
-    setStartDate(todayISO());
+    setStartDate(nextStartISO(cards));
     setPlanId((cur) => cur ?? plans[0]?.id ?? null);
     setScreen('plans');
   };

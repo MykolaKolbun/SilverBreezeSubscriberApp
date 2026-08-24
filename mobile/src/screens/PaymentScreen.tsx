@@ -117,7 +117,7 @@ export function PaymentScreen() {
                 color: t.fg3,
               }}
             >
-              {tr('pay.starts', { date: fmtDate(app.startDate) })}
+              {tr('pay.starts', { date: fmtDate(app.startDate, app.lang) })}
             </Text>
           </View>
         </View>

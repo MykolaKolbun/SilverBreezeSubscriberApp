@@ -12,15 +12,18 @@ interface Props {
   theme: Theme;
   value: string; // local YYYY-MM-DD
   onChange: (iso: string) => void;
+  minimum?: string; // local YYYY-MM-DD — user cannot pick earlier
+  lang?: 'uk' | 'en';
 }
 
-export function DateField({ theme, value, onChange }: Props) {
+export function DateField({ theme, value, onChange, minimum, lang = 'uk' }: Props) {
   const [open, setOpen] = useState(false);
 
   if (Platform.OS === 'web') {
     return React.createElement('input', {
       type: 'date',
       value,
+      min: minimum,
       onChange: (e: { target: { value: string } }) => onChange(e.target.value),
       style: {
         height: 40,
@@ -59,13 +62,14 @@ export function DateField({ theme, value, onChange }: Props) {
             color: theme.fg1,
           }}
         >
-          {fmtDate(value)}
+          {fmtDate(value, lang)}
         </Text>
       </Pressable>
       {open && (
         <DateTimePicker
           value={new Date(value + 'T00:00:00')}
           mode="date"
+          minimumDate={minimum ? new Date(minimum + 'T00:00:00') : undefined}
           onChange={(_event, date) => {
             setOpen(Platform.OS === 'ios');
             if (date) onChange(toLocalISO(date));

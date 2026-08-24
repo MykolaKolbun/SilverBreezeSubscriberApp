@@ -32,8 +32,35 @@ export function toLocalISO(d: Date): string {
 
 export const todayISO = () => toLocalISO(new Date());
 
-export function fmtDate(iso: string): string {
+const MONTHS: Record<'uk' | 'en', string[]> = {
+  uk: ['січ', 'лют', 'бер', 'кві', 'тра', 'чер', 'лип', 'сер', 'вер', 'жов', 'лис', 'гру'],
+  en: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'],
+};
+
+// Manual month names (Hermes has no reliable Intl month localization).
+export function fmtDate(iso: string, lang: 'uk' | 'en' = 'uk'): string {
   if (!iso) return '';
   const d = new Date(iso.slice(0, 10) + 'T00:00:00');
-  return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+  const m = MONTHS[lang][d.getMonth()];
+  return lang === 'uk' ? `${d.getDate()} ${m}` : `${m} ${d.getDate()}`;
+}
+
+// Next start date under the stacking rule: the day after the user's latest active
+// (non-deleted, not-yet-ended) card ends; today if there are none. Mirrors the
+// backend's OnSucceededAsync so the app shows the date the card will actually get.
+export function nextStartISO(
+  cards: { status: string; endDate: string; isDeleted: boolean }[]
+): string {
+  const today = todayISO();
+  let latestEnd = '';
+  for (const c of cards) {
+    if (c.isDeleted || c.status !== 'Active') continue;
+    if (c.endDate > latestEnd) latestEnd = c.endDate;
+  }
+  if (latestEnd && latestEnd >= today) {
+    const d = new Date(latestEnd.slice(0, 10) + 'T00:00:00');
+    d.setDate(d.getDate() + 1);
+    return toLocalISO(d);
+  }
+  return today;
 }

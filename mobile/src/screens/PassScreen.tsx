@@ -178,7 +178,7 @@ export function PassScreen() {
                       color: t.fg1,
                     }}
                   >
-                    {fmtDate(active.endDate)}
+                    {fmtDate(active.endDate, app.lang)}
                   </Text>
                 </View>
               </View>
@@ -280,7 +280,7 @@ export function PassScreen() {
                         color: t.fg2,
                       }}
                     >
-                      {fmtDate(c.startDate)} – {fmtDate(c.endDate)}
+                      {fmtDate(c.startDate, app.lang)} – {fmtDate(c.endDate, app.lang)}
                     </Text>
                   </View>
                 ))}

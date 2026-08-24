@@ -62,6 +62,7 @@ public sealed class PaymentService(
             SubscriptionPlanId = plan.Id,
             AmountMinor = plan.PriceMinor,
             Currency = plan.Currency,
+            RequestedStartDate = req.StartDate,
             Status = PaymentStatus.Pending
         };
         db.Payments.Add(payment);
@@ -219,6 +220,10 @@ public sealed class PaymentService(
             .FirstOrDefaultAsync(ct);
         if (latestActiveEnd is DateOnly le && le >= start)
             start = le.AddDays(1);
+
+        // Honor a user-picked start date, but never earlier than the stacking floor.
+        if (payment.RequestedStartDate is DateOnly rs && rs > start)
+            start = rs;
 
         var end = start.AddDays(Math.Max(1, plan.DurationDays) - 1);
         var card = await parkingCards.CreateAsync(

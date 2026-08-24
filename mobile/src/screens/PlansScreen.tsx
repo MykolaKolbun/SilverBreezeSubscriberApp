@@ -7,6 +7,7 @@ import {
   fmtDate,
   fmtUAH,
   monthsFromDuration,
+  nextStartISO,
   planKind,
   uahFromMinor,
 } from '../plans';
@@ -24,6 +25,8 @@ export function PlansScreen() {
   const { theme: t, plans, planId } = app;
   const tr = app.t;
   const selected = plans.find((p) => p.id === planId);
+  // Earliest allowed start (stacking rule); the user may pick this or later.
+  const minStart = nextStartISO(app.cards);
 
   return (
     <ScrollView style={{ flex: 1 }} contentContainerStyle={{ paddingBottom: 100 }}>
@@ -142,10 +145,16 @@ export function PlansScreen() {
                   color: t.fg1,
                 }}
               >
-                {fmtDate(app.startDate)}
+                {fmtDate(app.startDate, app.lang)}
               </Text>
             </View>
-            <DateField theme={t} value={app.startDate} onChange={app.setStartDate} />
+            <DateField
+              theme={t}
+              value={app.startDate}
+              onChange={app.setStartDate}
+              minimum={minStart}
+              lang={app.lang}
+            />
           </View>
         )}
       </View>
