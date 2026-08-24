@@ -37,6 +37,9 @@ public sealed class PaymentService(
     PaymentUrlOptions urls,
     ILogger<PaymentService> logger) : IPaymentService
 {
+    /// <summary>Max concurrent parking cards (current + upcoming) a user may hold.</summary>
+    private const int MaxActiveCards = 3;
+
     public async Task<InitiatePaymentResult> InitiateAsync(InitiatePaymentRequest req, CancellationToken ct = default)
     {
         var user = await db.Users.FirstOrDefaultAsync(u => u.Id == req.UserId && !u.IsDeleted, ct)
@@ -44,6 +47,14 @@ public sealed class PaymentService(
 
         var plan = await db.SubscriptionPlans.FirstOrDefaultAsync(p => p.Id == req.SubscriptionPlanId && p.IsActive, ct)
             ?? throw new NotFoundException($"Subscription plan {req.SubscriptionPlanId} not found.");
+
+        // Cards stack (each new one starts after the last active card ends), but the
+        // number a user may hold at once is capped. Enforced BEFORE payment so money is
+        // never taken when the limit is already reached.
+        var activeCards = await db.ParkingCards.CountAsync(
+            c => c.UserId == user.Id && c.Status == CardStatus.Active && !c.IsDeleted && c.EndDate >= clock.Today, ct);
+        if (activeCards >= MaxActiveCards)
+            throw new ConflictException($"Ліміт активних абонементів досягнуто ({MaxActiveCards}).");
 
         var payment = new Payment
         {
