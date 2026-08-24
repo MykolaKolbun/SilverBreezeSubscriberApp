@@ -31,6 +31,7 @@ function field(t: Theme) {
 export function AuthScreen() {
   const app = useApp();
   const t = app.theme;
+  const tr = app.t;
   const [mode, setMode] = useState<'login' | 'register'>('login');
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
@@ -73,14 +74,14 @@ export function AuthScreen() {
             textAlign: 'center',
           }}
         >
-          {mode === 'login' ? 'Вхід' : 'Реєстрація'}
+          {mode === 'login' ? tr('auth.title.login') : tr('auth.title.register')}
         </Text>
 
         {mode === 'register' && (
           <TextInput
             value={name}
             onChangeText={setName}
-            placeholder="Ім'я (необов'язково)"
+            placeholder={tr('auth.name')}
             placeholderTextColor={t.fg3}
             style={field(t)}
           />
@@ -88,7 +89,7 @@ export function AuthScreen() {
         <TextInput
           value={email}
           onChangeText={setEmail}
-          placeholder="Email"
+          placeholder={tr('auth.email')}
           placeholderTextColor={t.fg3}
           autoCapitalize="none"
           keyboardType="email-address"
@@ -98,7 +99,7 @@ export function AuthScreen() {
         <TextInput
           value={password}
           onChangeText={setPassword}
-          placeholder="Пароль (мін. 8 символів)"
+          placeholder={tr('auth.password')}
           placeholderTextColor={t.fg3}
           secureTextEntry
           style={field(t)}
@@ -141,7 +142,7 @@ export function AuthScreen() {
                 color: ON_VOLT,
               }}
             >
-              {mode === 'login' ? 'Увійти' : 'Створити акаунт'}
+              {mode === 'login' ? tr('auth.submit.login') : tr('auth.submit.register')}
             </Text>
           )}
         </Pressable>
@@ -159,8 +160,8 @@ export function AuthScreen() {
             }}
           >
             {mode === 'login'
-              ? 'Немає акаунта? Зареєструватися'
-              : 'Вже є акаунт? Увійти'}
+              ? tr('auth.switch.toRegister')
+              : tr('auth.switch.toLogin')}
           </Text>
         </Pressable>
       </ScrollView>

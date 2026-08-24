@@ -3,13 +3,14 @@ import React from 'react';
 import { Pressable, ScrollView, Text, View } from 'react-native';
 import { ON_VOLT, fonts } from '../theme';
 import {
-  KIND_LABEL,
   PlanKind,
   fmtDate,
   fmtUAH,
+  monthsFromDuration,
   planKind,
   uahFromMinor,
 } from '../plans';
+import { durationLabel } from '../i18n';
 import { useApp } from '../state';
 import { Overline, Radio, selectableCardStyle } from '../components/ui';
 import { DateField } from '../components/DateField';
@@ -21,6 +22,7 @@ const KINDS: PlanKind[] = ['covered', 'outdoor'];
 export function PlansScreen() {
   const app = useApp();
   const { theme: t, plans, planId } = app;
+  const tr = app.t;
   const selected = plans.find((p) => p.id === planId);
 
   return (
@@ -37,7 +39,7 @@ export function PlansScreen() {
             color: t.fg1,
           }}
         >
-          Оберіть абонемент
+          {tr('plans.title')}
         </Text>
         <View style={{ marginTop: 4 }}>
           <AddressLink theme={t} />
@@ -54,7 +56,7 @@ export function PlansScreen() {
               color: t.fg2,
             }}
           >
-            Тарифи недоступні. Перевірте з’єднання й спробуйте пізніше.
+            {tr('plans.unavailable')}
           </Text>
         )}
 
@@ -63,14 +65,10 @@ export function PlansScreen() {
           if (group.length === 0) return null;
           return (
             <View key={kind} style={{ gap: 10, marginTop: 6 }}>
-              <Overline theme={t}>{KIND_LABEL[kind]}</Overline>
+              <Overline theme={t}>{tr(`kind.${kind}`)}</Overline>
               {group.map((plan) => {
                 const active = planId === plan.id;
-                // Duration lives in the name (e.g. "Паркінг · 1 місяць") — show
-                // just the tail after "·" as the card title.
-                const title = plan.name.includes('·')
-                  ? plan.name.split('·').slice(1).join('·').trim()
-                  : plan.name;
+                const title = durationLabel(monthsFromDuration(plan.durationDays), tr);
                 return (
                   <Pressable
                     key={plan.id}
@@ -134,7 +132,7 @@ export function PlansScreen() {
             }}
           >
             <View>
-              <Overline theme={t}>Дата початку</Overline>
+              <Overline theme={t}>{tr('plans.startDate')}</Overline>
               <Text
                 style={{
                   marginTop: 2,
@@ -174,7 +172,7 @@ export function PlansScreen() {
                 color: ON_VOLT,
               }}
             >
-              Оформити · {fmtUAH(uahFromMinor(selected.priceMinor))}
+              {tr('plans.checkout')} · {fmtUAH(uahFromMinor(selected.priceMinor))}
             </Text>
           </Pressable>
         </View>

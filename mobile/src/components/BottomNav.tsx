@@ -10,11 +10,11 @@ import { CardIcon, UserIcon } from './icons';
 const INACTIVE = '#6A7187';
 
 export function BottomNav() {
-  const { theme, screen, setScreen } = useApp();
+  const { theme, screen, setScreen, t } = useApp();
 
   const tabs = [
-    { id: 'pass' as const, label: 'Pass', Icon: CardIcon },
-    { id: 'profile' as const, label: 'Profile', Icon: UserIcon },
+    { id: 'pass' as const, label: t('nav.pass'), Icon: CardIcon },
+    { id: 'profile' as const, label: t('nav.profile'), Icon: UserIcon },
   ];
 
   return (

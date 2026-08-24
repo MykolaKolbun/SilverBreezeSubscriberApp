@@ -10,6 +10,7 @@ import { Alert } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Theme, ThemeName, themes } from './theme';
 import { todayISO } from './plans';
+import { Lang, TFunc, translate } from './i18n';
 import { ApiCard, ApiError, ApiPlan, api } from './api/client';
 
 export type Screen = 'pass' | 'profile' | 'plans' | 'payment';
@@ -32,12 +33,17 @@ export interface Vehicle {
 }
 
 const THEME_KEY = 'silverbreeze.theme';
+const LANG_KEY = 'silverbreeze.lang';
 const SESSION_KEY = 'silverbreeze.session';
 const MAX_VEHICLES = 3;
 
 interface AppState {
   theme: Theme;
   setThemeName: (name: ThemeName) => void;
+
+  lang: Lang;
+  setLang: (l: Lang) => void;
+  t: TFunc;
 
   screen: Screen;
   setScreen: (s: Screen) => void;
@@ -94,6 +100,8 @@ const Ctx = createContext<AppState | null>(null);
 
 export function AppProvider({ children }: { children: React.ReactNode }) {
   const [themeName, setThemeNameState] = useState<ThemeName>('dark');
+  const [lang, setLangState] = useState<Lang>('uk');
+  const langRef = useRef<Lang>('uk');
   const [screen, setScreen] = useState<Screen>('pass');
 
   const [authStatus, setAuthStatus] = useState<AuthStatus>('loading');
@@ -124,11 +132,16 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   // ---- persistence ----
   useEffect(() => {
     (async () => {
-      const [t, raw] = await Promise.all([
+      const [savedTheme, savedLang, raw] = await Promise.all([
         AsyncStorage.getItem(THEME_KEY),
+        AsyncStorage.getItem(LANG_KEY),
         AsyncStorage.getItem(SESSION_KEY),
       ]);
-      if (t === 'light' || t === 'dark') setThemeNameState(t);
+      if (savedTheme === 'light' || savedTheme === 'dark') setThemeNameState(savedTheme);
+      if (savedLang === 'uk' || savedLang === 'en') {
+        setLangState(savedLang);
+        langRef.current = savedLang;
+      }
       if (raw) {
         try {
           const s: Session = JSON.parse(raw);
@@ -150,6 +163,14 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     setThemeNameState(name);
     AsyncStorage.setItem(THEME_KEY, name).catch(() => {});
   };
+
+  const setLang = (l: Lang) => {
+    setLangState(l);
+    langRef.current = l;
+    AsyncStorage.setItem(LANG_KEY, l).catch(() => {});
+  };
+
+  const t: TFunc = (key, vars) => translate(lang, key, vars);
 
   const persistSession = async (s: Session | null) => {
     sessionRef.current = s;
@@ -231,6 +252,13 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     await loadData();
   };
 
+  const authMsg = (e: unknown, fallbackKey: string) =>
+    e instanceof ApiError && e.status === 0
+      ? translate(langRef.current, 'common.network')
+      : e instanceof Error
+        ? e.message
+        : translate(langRef.current, fallbackKey);
+
   const login = async (email: string, password: string) => {
     setAuthBusy(true);
     setAuthError(null);
@@ -239,7 +267,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       const r = await api.login({ email: em, password });
       await finishSignIn(r, em);
     } catch (e) {
-      setAuthError(e instanceof Error ? e.message : 'Не вдалося увійти.');
+      setAuthError(authMsg(e, 'auth.err.login'));
     } finally {
       setAuthBusy(false);
     }
@@ -258,10 +286,10 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         const r = await api.login({ email: em, password });
         await finishSignIn(r, em);
       } else {
-        setAuthError('Перевірте пошту й підтвердіть акаунт, потім увійдіть.');
+        setAuthError(translate(langRef.current, 'auth.err.confirmManual'));
       }
     } catch (e) {
-      setAuthError(e instanceof Error ? e.message : 'Не вдалося зареєструватися.');
+      setAuthError(authMsg(e, 'auth.err.register'));
     } finally {
       setAuthBusy(false);
     }
@@ -315,8 +343,8 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       } catch (e) {
         setPayState('idle');
         Alert.alert(
-          'Оплата не пройшла',
-          e instanceof Error ? e.message : 'Спробуйте ще раз.'
+          translate(langRef.current, 'pay.err.title'),
+          e instanceof Error ? e.message : translate(langRef.current, 'pay.err.body')
         );
       }
     })();
@@ -349,6 +377,9 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   const value: AppState = {
     theme: themes[themeName],
     setThemeName,
+    lang,
+    setLang,
+    t,
     screen,
     setScreen,
     openPlans,

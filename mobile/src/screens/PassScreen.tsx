@@ -9,7 +9,15 @@ import {
   View,
 } from 'react-native';
 import { ON_VOLT, fonts } from '../theme';
-import { fmtDate, fmtUAH, todayISO, uahFromMinor } from '../plans';
+import {
+  fmtDate,
+  fmtUAH,
+  monthsFromDuration,
+  planKind,
+  todayISO,
+  uahFromMinor,
+} from '../plans';
+import { planFullLabel } from '../i18n';
 import { useApp } from '../state';
 import { Overline, PulseDot } from '../components/ui';
 import { SbLogo } from '../components/SbLogo';
@@ -20,6 +28,7 @@ import { qrUrl } from '../api/client';
 export function PassScreen() {
   const app = useApp();
   const { theme: t, cards, plans, cardsLoading, token } = app;
+  const tr = app.t;
 
   const today = todayISO();
   const active =
@@ -27,8 +36,11 @@ export function PassScreen() {
     cards.find((c) => c.status === 'Active') ??
     cards[0];
   const upcoming = cards.filter((c) => c.id !== active?.id);
-  const planName = (planId?: string | null) =>
-    plans.find((p) => p.id === planId)?.name ?? 'Паркінг';
+  const planName = (planId?: string | null) => {
+    const p = plans.find((x) => x.id === planId);
+    if (!p) return tr('kind.covered');
+    return planFullLabel(monthsFromDuration(p.durationDays), planKind(p.code) === 'outdoor', tr);
+  };
   const planPrice = (planId?: string | null) => {
     const p = plans.find((x) => x.id === planId);
     return p ? fmtUAH(uahFromMinor(p.priceMinor)) : '';
@@ -75,7 +87,7 @@ export function PassScreen() {
                     resizeMode="contain"
                   />
                   <Overline theme={t} color="#6A7187">
-                    Код входу
+                    {tr('pass.entryCode')}
                   </Overline>
                 </View>
               </View>
@@ -111,7 +123,7 @@ export function PassScreen() {
                       color: t.volt,
                     }}
                   >
-                    {active.status === 'Active' ? 'Активна' : active.status}
+                    {active.status === 'Active' ? tr('pass.active') : active.status}
                   </Text>
                 </View>
                 <Text
@@ -139,7 +151,7 @@ export function PassScreen() {
                 }}
               >
                 <View style={{ flex: 1 }}>
-                  <Overline theme={t}>Локація</Overline>
+                  <Overline theme={t}>{tr('pass.location')}</Overline>
                   <Text
                     style={{
                       marginTop: 2,
@@ -156,7 +168,7 @@ export function PassScreen() {
                   </View>
                 </View>
                 <View style={{ alignItems: 'flex-end' }}>
-                  <Overline theme={t}>Діє до</Overline>
+                  <Overline theme={t}>{tr('pass.validUntil')}</Overline>
                   <Text
                     style={{
                       marginTop: 2,
@@ -188,7 +200,7 @@ export function PassScreen() {
                     color: t.fg2,
                   }}
                 >
-                  Вартість
+                  {tr('pass.price')}
                 </Text>
                 <Text
                   style={{
@@ -224,14 +236,14 @@ export function PassScreen() {
                   color: t.fg1,
                 }}
               >
-                Придбати ще
+                {tr('pass.buyMore')}
               </Text>
             </Pressable>
 
             {/* Upcoming */}
             {upcoming.length > 0 && (
               <View style={{ marginTop: 12, gap: 8 }}>
-                <Overline theme={t}>Наступні</Overline>
+                <Overline theme={t}>{tr('pass.upcoming')}</Overline>
                 {upcoming.map((c) => (
                   <View
                     key={c.id}
@@ -301,7 +313,7 @@ export function PassScreen() {
                 textAlign: 'center',
               }}
             >
-              Немає активного абонемента
+              {tr('pass.empty.title')}
             </Text>
             <Text
               style={{
@@ -312,7 +324,7 @@ export function PassScreen() {
                 textAlign: 'center',
               }}
             >
-              Придбайте абонемент на паркінг {VENUE.name}, і тут з’явиться ваш QR.
+              {tr('pass.empty.body', { name: VENUE.name })}
             </Text>
             <Pressable
               onPress={app.openPlans}
@@ -334,7 +346,7 @@ export function PassScreen() {
                   color: ON_VOLT,
                 }}
               >
-                Обрати абонемент
+                {tr('pass.empty.cta')}
               </Text>
             </Pressable>
           </View>

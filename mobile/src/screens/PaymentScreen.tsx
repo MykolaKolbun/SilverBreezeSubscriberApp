@@ -3,7 +3,14 @@
 import React from 'react';
 import { Pressable, ScrollView, Text, TextInput, View } from 'react-native';
 import { ON_VOLT, Theme, fonts } from '../theme';
-import { fmtDate, fmtUAH, uahFromMinor } from '../plans';
+import {
+  fmtDate,
+  fmtUAH,
+  monthsFromDuration,
+  planKind,
+  uahFromMinor,
+} from '../plans';
+import { planFullLabel } from '../i18n';
 import { useApp } from '../state';
 import { Overline, Radio, selectableCardStyle } from '../components/ui';
 import { AppleIcon, CardIcon, ChevronLeft, LockIcon } from '../components/icons';
@@ -36,8 +43,12 @@ function CardInput({
 export function PaymentScreen() {
   const app = useApp();
   const { theme: t, planId, payMethod, payState } = app;
+  const tr = app.t;
   const plan = app.plans.find((p) => p.id === planId);
   const amount = plan ? fmtUAH(uahFromMinor(plan.priceMinor)) : '';
+  const planLabel = plan
+    ? planFullLabel(monthsFromDuration(plan.durationDays), planKind(plan.code) === 'outdoor', tr)
+    : '';
 
   return (
     <ScrollView
@@ -79,7 +90,7 @@ export function PaymentScreen() {
             color: t.fg1,
           }}
         >
-          Payment
+          {tr('pay.title')}
         </Text>
       </View>
 
@@ -99,7 +110,7 @@ export function PaymentScreen() {
           }}
         >
           <View>
-            <Overline theme={t}>Amount due</Overline>
+            <Overline theme={t}>{tr('pay.amountDue')}</Overline>
             <Text
               style={{
                 marginTop: 4,
@@ -124,7 +135,7 @@ export function PaymentScreen() {
                 textAlign: 'right',
               }}
             >
-              {plan?.name ?? ''}
+              {planLabel}
             </Text>
             <Text
               style={{
@@ -134,7 +145,7 @@ export function PaymentScreen() {
                 color: t.fg3,
               }}
             >
-              Starts {fmtDate(app.startDate)}
+              {tr('pay.starts', { date: fmtDate(app.startDate) })}
             </Text>
           </View>
         </View>
@@ -142,7 +153,7 @@ export function PaymentScreen() {
 
       {/* Methods */}
       <View style={{ paddingHorizontal: 20, gap: 10 }}>
-        <Overline theme={t}>Select method</Overline>
+        <Overline theme={t}>{tr('pay.selectMethod')}</Overline>
 
         <Pressable
           onPress={() => app.setPayMethod('applepay')}
@@ -182,7 +193,7 @@ export function PaymentScreen() {
                 color: t.fg3,
               }}
             >
-              Touch ID · ready
+              {tr('pay.appleReady')}
             </Text>
           </View>
           <Radio theme={t} active={payMethod === 'applepay'} />
@@ -214,7 +225,7 @@ export function PaymentScreen() {
                   color: t.fg1,
                 }}
               >
-                Credit or debit card
+                {tr('pay.card')}
               </Text>
               <Text
                 style={{
@@ -224,7 +235,7 @@ export function PaymentScreen() {
                   color: t.fg3,
                 }}
               >
-                Not saved after checkout
+                {tr('pay.cardNotSaved')}
               </Text>
             </View>
             <Radio theme={t} active={payMethod === 'card'} />
@@ -234,7 +245,7 @@ export function PaymentScreen() {
             <View style={{ marginTop: 14, gap: 10 }}>
               <CardInput
                 theme={t}
-                placeholder="Card number"
+                placeholder={tr('pay.cardNumber')}
                 keyboardType="number-pad"
                 value={app.cardNumber}
                 onChangeText={app.setCardNumber}
@@ -285,9 +296,9 @@ export function PaymentScreen() {
               color: ON_VOLT,
             }}
           >
-            {payState === 'idle' && `Confirm payment · ${amount}`}
-            {payState === 'processing' && 'Processing…'}
-            {payState === 'success' && 'Payment Confirmed!'}
+            {payState === 'idle' && `${tr('pay.confirm')} · ${amount}`}
+            {payState === 'processing' && tr('pay.processing')}
+            {payState === 'success' && tr('pay.confirmed')}
           </Text>
         </Pressable>
         <View
@@ -308,7 +319,7 @@ export function PaymentScreen() {
               color: t.fg3,
             }}
           >
-            Secured by 256-bit SSL encryption
+            {tr('pay.secured')}
           </Text>
         </View>
       </View>

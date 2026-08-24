@@ -11,6 +11,8 @@ import {
   useWindowDimensions,
 } from 'react-native';
 import { ON_VOLT, Theme, fonts } from '../theme';
+import { monthsFromDuration, planKind } from '../plans';
+import { planFullLabel } from '../i18n';
 import { Vehicle, useApp } from '../state';
 import { VENUE } from '../venue';
 import { Overline } from '../components/ui';
@@ -55,6 +57,7 @@ function VehicleCard({
   saved: Vehicle | undefined;
 }) {
   const app = useApp();
+  const tr = app.t;
   const changed =
     !saved ||
     draft.make !== saved.make ||
@@ -113,7 +116,7 @@ function VehicleCard({
             color: t.fg2,
           }}
         >
-          Vehicle
+          {tr('profile.vehicle')}
         </Text>
       </View>
 
@@ -121,14 +124,14 @@ function VehicleCard({
         <TextInput
           value={draft.make}
           onChangeText={(v) => app.updateDraft(draft.id, 'make', v)}
-          placeholder="Make"
+          placeholder={tr('profile.make')}
           placeholderTextColor={t.fg3}
           style={[fieldStyle(t), { flex: 1 }]}
         />
         <TextInput
           value={draft.model}
           onChangeText={(v) => app.updateDraft(draft.id, 'model', v)}
-          placeholder="Model"
+          placeholder={tr('profile.model')}
           placeholderTextColor={t.fg3}
           style={[fieldStyle(t), { flex: 1 }]}
         />
@@ -138,7 +141,7 @@ function VehicleCard({
       <TextInput
         value={draft.plate}
         onChangeText={(v) => app.updateDraft(draft.id, 'plate', v)}
-        placeholder="License plate"
+        placeholder={tr('profile.plate')}
         placeholderTextColor={t.fg3}
         autoCapitalize="characters"
         style={[
@@ -174,7 +177,7 @@ function VehicleCard({
             color: ON_VOLT,
           }}
         >
-          Save
+          {tr('profile.save')}
         </Text>
       </Pressable>
     </View>
@@ -298,10 +301,17 @@ function ContactRow({
 export function ProfileScreen() {
   const app = useApp();
   const { theme: t, vehicles, drafts, cards, plans, email } = app;
-  const activeCard =
-    cards.find((c) => c.status === 'Active') ?? cards[0];
-  const activePlanName = activeCard
-    ? plans.find((p) => p.id === activeCard.subscriptionPlanId)?.name ?? 'Абонемент'
+  const tr = app.t;
+  const activeCard = cards.find((c) => c.status === 'Active') ?? cards[0];
+  const activePlan = activeCard
+    ? plans.find((p) => p.id === activeCard.subscriptionPlanId)
+    : undefined;
+  const activePlanName = activePlan
+    ? planFullLabel(
+        monthsFromDuration(activePlan.durationDays),
+        planKind(activePlan.code) === 'outdoor',
+        tr
+      )
     : null;
   const initials = (email ?? 'SB').replace(/[^a-zA-Zа-яА-ЯіїєґІЇЄҐ]/g, '').slice(0, 2).toUpperCase() || 'SB';
   const { width: screenWidth } = useWindowDimensions();
@@ -326,7 +336,7 @@ export function ProfileScreen() {
             color: t.fg1,
           }}
         >
-          Profile
+          {tr('profile.title')}
         </Text>
       </View>
 
@@ -402,7 +412,7 @@ export function ProfileScreen() {
             justifyContent: 'space-between',
           }}
         >
-          <Overline theme={t}>Vehicles</Overline>
+          <Overline theme={t}>{tr('profile.vehicles')}</Overline>
           <Text
             style={{
               fontFamily: fonts.inter500,
@@ -411,7 +421,8 @@ export function ProfileScreen() {
               color: t.fg3,
             }}
           >
-            {vehicles.length}/3 · swipe for more
+            {vehicles.length}/3
+            {vehicles.length > 1 ? ` · ${tr('profile.swipeMore')}` : ''}
           </Text>
         </View>
       </View>
@@ -461,7 +472,7 @@ export function ProfileScreen() {
                 color: t.fg1,
               }}
             >
-              Add car
+              {tr('profile.addCar')}
             </Text>
           </Pressable>
         )}
@@ -476,7 +487,7 @@ export function ProfileScreen() {
             color: t.fg3,
           }}
         >
-          Any plate on file is recognized automatically at {VENUE.name} entry.
+          {tr('profile.plateNote', { name: VENUE.name })}
         </Text>
 
         {/* Contact info */}
@@ -492,15 +503,15 @@ export function ProfileScreen() {
           <ContactRow
             theme={t}
             icon={<PhoneIcon size={18} color={t.fg2} />}
-            label="Phone"
-            value="Not set"
+            label={tr('profile.phone')}
+            value={tr('profile.notSet')}
           />
           {divider}
           <ContactRow
             theme={t}
             icon={<MailIcon size={18} color={t.fg2} />}
-            label="Email"
-            value={email ?? 'Not set'}
+            label={tr('profile.email')}
+            value={email ?? tr('profile.notSet')}
           />
         </View>
 
@@ -521,7 +532,7 @@ export function ProfileScreen() {
         >
           <View>
             <Overline theme={t} color={t.volt}>
-              Subscription
+              {tr('profile.subscription')}
             </Overline>
             <Text
               style={{
@@ -534,7 +545,7 @@ export function ProfileScreen() {
             >
               {activePlanName
                 ? `${activePlanName} · ${VENUE.name}`
-                : `Немає активного абонемента`}
+                : tr('profile.noActiveSub')}
             </Text>
           </View>
           <ChevronRight size={18} color={t.fg1} />
@@ -542,7 +553,7 @@ export function ProfileScreen() {
 
         {/* Settings */}
         <View style={{ marginTop: 6 }}>
-          <Overline theme={t}>Settings</Overline>
+          <Overline theme={t}>{tr('profile.settings')}</Overline>
         </View>
         <View
           style={{
@@ -556,7 +567,7 @@ export function ProfileScreen() {
           <SettingRow
             theme={t}
             icon={<BellIcon size={18} color={t.fg2} />}
-            label="Notifications"
+            label={tr('profile.notifications')}
             right={
               <Pressable
                 onPress={app.toggleNotifications}
@@ -585,7 +596,7 @@ export function ProfileScreen() {
           <SettingRow
             theme={t}
             icon={<SunIcon size={18} color={t.fg2} />}
-            label="Appearance"
+            label={tr('profile.appearance')}
             right={
               <View
                 style={{
@@ -639,14 +650,69 @@ export function ProfileScreen() {
           {divider}
           <SettingRow
             theme={t}
+            icon={
+              <Text
+                style={{
+                  fontFamily: fonts.inter700,
+                  fontSize: 12,
+                  color: t.fg2,
+                }}
+              >
+                {app.lang.toUpperCase()}
+              </Text>
+            }
+            label={tr('profile.language')}
+            right={
+              <View
+                style={{
+                  flexDirection: 'row',
+                  height: 36,
+                  borderRadius: 999,
+                  backgroundColor: t.bg,
+                  borderWidth: 1,
+                  borderColor: t.border,
+                  padding: 2,
+                  gap: 2,
+                }}
+              >
+                {(['uk', 'en'] as const).map((l) => (
+                  <Pressable
+                    key={l}
+                    onPress={() => app.setLang(l)}
+                    style={{
+                      paddingHorizontal: 12,
+                      height: 30,
+                      borderRadius: 15,
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      backgroundColor: app.lang === l ? t.voltSoft : 'transparent',
+                    }}
+                  >
+                    <Text
+                      style={{
+                        fontFamily: fonts.inter600,
+                        fontSize: 13,
+                        color: app.lang === l ? t.volt : t.fg2,
+                      }}
+                    >
+                      {l.toUpperCase()}
+                    </Text>
+                  </Pressable>
+                ))}
+              </View>
+            }
+          />
+          {divider}
+          <SettingRow
+            theme={t}
             icon={<SignOutIcon size={18} color={t.danger} />}
-            label="Sign out"
+            label={tr('profile.signOut')}
             labelColor={t.danger}
             onPress={() =>
-              Alert.alert('Вийти', 'Вийти з акаунта на цьому пристрої?', [
-                { text: 'Скасувати', style: 'cancel' },
+              Alert.alert(tr('profile.signOut'), tr('profile.signOut.confirmBody'), [
+                { text: tr('common.cancel'), style: 'cancel' },
                 {
-                  text: 'Вийти',
+                  text: tr('profile.signOut'),
                   style: 'destructive',
                   onPress: () => {
                     app.logout();

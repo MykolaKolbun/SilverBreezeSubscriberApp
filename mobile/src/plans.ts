@@ -13,6 +13,8 @@ export const planKind = (code: string): PlanKind =>
 
 export const uahFromMinor = (minor: number) => minor / 100;
 
+export const monthsFromDuration = (days: number) => Math.max(1, Math.round(days / 30));
+
 // "3600" -> "3 600 ₴" (manual grouping — no Intl dependency on Hermes).
 export const fmtUAH = (uah: number) =>
   Math.round(uah)
