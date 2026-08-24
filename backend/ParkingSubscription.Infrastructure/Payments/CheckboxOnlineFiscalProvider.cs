@@ -136,15 +136,42 @@ public sealed class CheckboxOnlineFiscalProvider(
     private async Task EnsureShiftAsync(CheckboxCredentials cfg, string token, CancellationToken ct)
     {
         using var http = httpClientFactory.CreateClient(HttpClientName);
-        using var req = new HttpRequestMessage(HttpMethod.Post, $"{cfg.BaseUrl}/api/v1/shifts");
-        ApplyHeaders(req, cfg, token);
-        var resp = await http.SendAsync(req, ct);
-        // 409 = shift already open — not an error.
-        if (!resp.IsSuccessStatusCode && (int)resp.StatusCode != 409)
+
+        // Request opening (idempotent: 409 = already opening/open).
+        using (var openReq = new HttpRequestMessage(HttpMethod.Post, $"{cfg.BaseUrl}/api/v1/shifts"))
         {
-            var body = await resp.Content.ReadAsStringAsync(ct);
-            throw new InvalidOperationException($"Checkbox open-shift failed: HTTP {(int)resp.StatusCode} {body}");
+            ApplyHeaders(openReq, cfg, token);
+            var openResp = await http.SendAsync(openReq, ct);
+            if (!openResp.IsSuccessStatusCode && (int)openResp.StatusCode != 409)
+            {
+                var body = await openResp.Content.ReadAsStringAsync(ct);
+                throw new InvalidOperationException($"Checkbox open-shift failed: HTTP {(int)openResp.StatusCode} {body}");
+            }
         }
+
+        // Opening a shift is ASYNC — poll the current shift until it is OPENED before selling,
+        // otherwise /receipts/sell returns 400 shift.not_opened.
+        const int maxAttempts = 20;
+        for (var attempt = 1; attempt <= maxAttempts; attempt++)
+        {
+            using var req = new HttpRequestMessage(HttpMethod.Get, $"{cfg.BaseUrl}/api/v1/cashier/shift");
+            ApplyHeaders(req, cfg, token);
+            var resp = await http.SendAsync(req, ct);
+            if (resp.IsSuccessStatusCode)
+            {
+                var body = await resp.Content.ReadAsStringAsync(ct);
+                if (!string.IsNullOrWhiteSpace(body))
+                {
+                    using var doc = JsonDocument.Parse(body);
+                    var status = doc.RootElement.TryGetProperty("status", out var s) ? s.GetString() : null;
+                    if (status == "OPENED") return;
+                    if (status == "CLOSED")
+                        throw new InvalidOperationException("Checkbox shift is CLOSED after an open attempt.");
+                }
+            }
+            await Task.Delay(500, ct);
+        }
+        throw new InvalidOperationException($"Checkbox shift did not reach OPENED after {maxAttempts} attempts.");
     }
 
     private async Task<string?> PollUntilDoneAsync(CheckboxCredentials cfg, string token, string receiptId, CancellationToken ct)
