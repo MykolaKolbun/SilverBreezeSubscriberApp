@@ -202,10 +202,29 @@ public sealed class PaymentService(
             .FirstOrDefaultAsync(p => p.Id == paymentId && p.UserId == userId, ct)
             ?? throw new NotFoundException($"Payment {paymentId} not found.");
 
+        // Prefer the stored copy — no call to the fiscal provider.
+        var stored = await db.FiscalReceiptBlobs.AsNoTracking()
+            .FirstOrDefaultAsync(b => b.PaymentId == paymentId, ct);
+        if (stored is not null)
+            return new FiscalReceiptImage(stored.Content, stored.ContentType);
+
         if (string.IsNullOrEmpty(payment.FiscalReceiptId))
             return null;
 
-        return await fiscal.GetReceiptImageAsync(payment.FiscalReceiptId, ct);
+        // Not captured yet (e.g. fiscalized before this feature) — fetch once and cache.
+        var image = await fiscal.GetReceiptImageAsync(payment.FiscalReceiptId, ct);
+        if (image is null)
+            return null;
+
+        db.FiscalReceiptBlobs.Add(new FiscalReceiptBlob
+        {
+            PaymentId = paymentId,
+            Content = image.Content,
+            ContentType = image.ContentType,
+            CreatedAt = clock.UtcNow,
+        });
+        await db.SaveChangesAsync(ct);
+        return image;
     }
 
     public async Task<PaymentDto> RefundAsync(Guid id, CancellationToken ct = default)
@@ -265,6 +284,18 @@ public sealed class PaymentService(
             var receipt = await fiscal.FiscalizeAsync(payment, ct);
             payment.FiscalReceiptId = receipt.ReceiptId;
             payment.FiscalReceiptUrl = string.IsNullOrEmpty(receipt.Url) ? null : receipt.Url;
+
+            // Capture the rendered receipt image once, store it, and serve from our DB
+            // afterwards (no per-view call to Checkbox).
+            var image = await fiscal.GetReceiptImageAsync(receipt.ReceiptId, ct);
+            if (image is not null)
+                db.FiscalReceiptBlobs.Add(new FiscalReceiptBlob
+                {
+                    PaymentId = payment.Id,
+                    Content = image.Content,
+                    ContentType = image.ContentType,
+                    CreatedAt = clock.UtcNow,
+                });
         }
         catch (Exception ex)
         {

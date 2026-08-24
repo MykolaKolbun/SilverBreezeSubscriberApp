@@ -283,7 +283,15 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     new Promise((resolve, reject) => {
       const reader = new FileReader();
       reader.onerror = () => reject(reader.error);
-      reader.onloadend = () => resolve(reader.result as string);
+      reader.onloadend = () => {
+        let r = reader.result as string;
+        // RN often produces a missing/generic MIME (data:;base64 or
+        // application/octet-stream); force image/png so <Image> renders it.
+        const comma = r.indexOf(',');
+        if (comma > 0 && !/^data:image\//i.test(r))
+          r = 'data:image/png;base64' + r.slice(comma);
+        resolve(r);
+      };
       reader.readAsDataURL(blob);
     });
 

@@ -87,11 +87,13 @@ public sealed class CheckboxOnlineFiscalProvider(
         var resp = await http.SendAsync(req, ct);
         if (!resp.IsSuccessStatusCode)
         {
-            logger.LogWarning("[Checkbox] Receipt image {ReceiptId}: HTTP {Status}", receiptId, (int)resp.StatusCode);
+            var err = await resp.Content.ReadAsStringAsync(ct);
+            logger.LogWarning("[Checkbox] Receipt image {ReceiptId}: HTTP {Status} {Body}", receiptId, (int)resp.StatusCode, err);
             return null;
         }
         var bytes = await resp.Content.ReadAsByteArrayAsync(ct);
         var contentType = resp.Content.Headers.ContentType?.MediaType ?? "image/png";
+        logger.LogInformation("[Checkbox] Receipt image {ReceiptId}: {Bytes} bytes, {ContentType}", receiptId, bytes.Length, contentType);
         return new FiscalReceiptImage(bytes, contentType);
     }
 

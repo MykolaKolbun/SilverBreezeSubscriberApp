@@ -19,6 +19,7 @@ public interface IAppDbContext
     DbSet<AuditLogEntry> AuditLog { get; }
     DbSet<SubscriptionPlan> SubscriptionPlans { get; }
     DbSet<Payment> Payments { get; }
+    DbSet<FiscalReceiptBlob> FiscalReceiptBlobs { get; }
 
     Task<int> SaveChangesAsync(CancellationToken cancellationToken = default);
 }

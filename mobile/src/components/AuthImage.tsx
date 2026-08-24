@@ -41,7 +41,15 @@ export function AuthImage({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [url]);
 
-  if (uri) return <Image source={{ uri }} style={style} resizeMode="contain" />;
+  if (!failed && uri)
+    return (
+      <Image
+        source={{ uri }}
+        style={style}
+        resizeMode="contain"
+        onError={() => setFailed(true)}
+      />
+    );
 
   return (
     <View style={[style as object, { alignItems: 'center', justifyContent: 'center' }]}>
