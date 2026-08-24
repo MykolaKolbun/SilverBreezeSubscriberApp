@@ -58,9 +58,11 @@ public sealed class PaymentService(
 
         // The provider redirects the browser back to our resolve endpoint (good/bad),
         // which confirms the payment server-side and then bounces to the app deep link.
+        // Distinct good/bad paths so both can be whitelisted in the iPay cabinet as fixed
+        // URLs; the paymentId rides as a query param (iPay preserves it on redirect).
         var baseUrl = urls.PublicBaseUrl.TrimEnd('/');
-        var successUrl = $"{baseUrl}/payments/resolve?paymentId={payment.Id}&outcome=good";
-        var failureUrl = $"{baseUrl}/payments/resolve?paymentId={payment.Id}&outcome=bad";
+        var successUrl = $"{baseUrl}/payments/resolve/good?paymentId={payment.Id}";
+        var failureUrl = $"{baseUrl}/payments/resolve/bad?paymentId={payment.Id}";
 
         var intent = await provider.CreatePaymentAsync(
             new PaymentInitiation(
