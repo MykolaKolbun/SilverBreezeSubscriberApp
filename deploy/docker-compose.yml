@@ -39,7 +39,10 @@ services:
       Database__Provider: Postgres
       ConnectionStrings__Default: "Host=postgres;Port=5432;Database=${DB_NAME:-SWeb_DB};Username=${DB_USER:-parking};Password=${DB_PASSWORD}"
       Jwt__SigningKey: ${JWT_SIGNING_KEY}
-      Auth__ExposeDevTokens: "false"
+      # TEST PHASE: email is stubbed, so registration returns the confirmation
+      # token in the response and the app auto-confirms. Set to "false" once a
+      # real email provider is wired in.
+      Auth__ExposeDevTokens: "true"
     depends_on:
       postgres:
         condition: service_healthy

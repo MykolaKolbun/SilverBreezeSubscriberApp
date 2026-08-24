@@ -11,7 +11,6 @@ import {
   useWindowDimensions,
 } from 'react-native';
 import { ON_VOLT, Theme, fonts } from '../theme';
-import { planLabel } from '../plans';
 import { Vehicle, useApp } from '../state';
 import { VENUE } from '../venue';
 import { Overline } from '../components/ui';
@@ -298,7 +297,13 @@ function ContactRow({
 
 export function ProfileScreen() {
   const app = useApp();
-  const { theme: t, vehicles, drafts, subscriptions } = app;
+  const { theme: t, vehicles, drafts, cards, plans, email } = app;
+  const activeCard =
+    cards.find((c) => c.status === 'Active') ?? cards[0];
+  const activePlanName = activeCard
+    ? plans.find((p) => p.id === activeCard.subscriptionPlanId)?.name ?? 'Абонемент'
+    : null;
+  const initials = (email ?? 'SB').replace(/[^a-zA-Zа-яА-ЯіїєґІЇЄҐ]/g, '').slice(0, 2).toUpperCase() || 'SB';
   const { width: screenWidth } = useWindowDimensions();
   const cardWidth = Math.min(screenWidth, 500) - H_PADDING * 2 - 20;
 
@@ -359,19 +364,20 @@ export function ProfileScreen() {
                 color: ON_VOLT,
               }}
             >
-              SB
+              {initials}
             </Text>
           </View>
           <View style={{ flex: 1 }}>
             <Text
+              numberOfLines={1}
               style={{
                 fontFamily: fonts.inter600,
-                fontSize: 18,
-                lineHeight: 24,
+                fontSize: 16,
+                lineHeight: 22,
                 color: t.fg1,
               }}
             >
-              Guest
+              {email ?? 'Акаунт'}
             </Text>
             <Text
               style={{
@@ -382,7 +388,7 @@ export function ProfileScreen() {
                 color: t.fg2,
               }}
             >
-              Not signed in
+              {VENUE.brand}
             </Text>
           </View>
         </View>
@@ -494,7 +500,7 @@ export function ProfileScreen() {
             theme={t}
             icon={<MailIcon size={18} color={t.fg2} />}
             label="Email"
-            value="Not set"
+            value={email ?? 'Not set'}
           />
         </View>
 
@@ -526,9 +532,9 @@ export function ProfileScreen() {
                 color: t.fg1,
               }}
             >
-              {subscriptions[0]
-                ? `${planLabel(subscriptions[0].planId)} · ${VENUE.name}`
-                : `No active plan · ${VENUE.name}`}
+              {activePlanName
+                ? `${activePlanName} · ${VENUE.name}`
+                : `Немає активного абонемента`}
             </Text>
           </View>
           <ChevronRight size={18} color={t.fg1} />
@@ -637,14 +643,16 @@ export function ProfileScreen() {
             label="Sign out"
             labelColor={t.danger}
             onPress={() =>
-              Alert.alert(
-                'Sign out',
-                'This clears the account data on this device.',
-                [
-                  { text: 'Cancel', style: 'cancel' },
-                  { text: 'Sign out', style: 'destructive', onPress: app.signOut },
-                ]
-              )
+              Alert.alert('Вийти', 'Вийти з акаунта на цьому пристрої?', [
+                { text: 'Скасувати', style: 'cancel' },
+                {
+                  text: 'Вийти',
+                  style: 'destructive',
+                  onPress: () => {
+                    app.logout();
+                  },
+                },
+              ])
             }
           />
         </View>

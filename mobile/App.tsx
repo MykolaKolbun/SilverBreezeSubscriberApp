@@ -1,5 +1,5 @@
 import React from 'react';
-import { View } from 'react-native';
+import { ActivityIndicator, View } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { useFonts } from 'expo-font';
 import {
@@ -22,9 +22,35 @@ import { PassScreen } from './src/screens/PassScreen';
 import { PlansScreen } from './src/screens/PlansScreen';
 import { PaymentScreen } from './src/screens/PaymentScreen';
 import { ProfileScreen } from './src/screens/ProfileScreen';
+import { AuthScreen } from './src/screens/AuthScreen';
 
 function Root() {
-  const { theme, screen } = useApp();
+  const { theme, screen, authStatus } = useApp();
+
+  if (authStatus === 'loading') {
+    return (
+      <View
+        style={{
+          flex: 1,
+          backgroundColor: theme.bg,
+          alignItems: 'center',
+          justifyContent: 'center',
+        }}
+      >
+        <ActivityIndicator color={theme.volt} />
+        <StatusBar style={theme.name === 'dark' ? 'light' : 'dark'} />
+      </View>
+    );
+  }
+
+  if (authStatus === 'out') {
+    return (
+      <View style={{ flex: 1, backgroundColor: theme.bg }}>
+        <AuthScreen />
+        <StatusBar style={theme.name === 'dark' ? 'light' : 'dark'} />
+      </View>
+    );
+  }
 
   return (
     <View style={{ flex: 1, backgroundColor: theme.bg }}>

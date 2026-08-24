@@ -1,28 +1,41 @@
-// Pass — the digital parking pass, default/home screen.
+// Pass — the digital parking pass. Shows the user's real cards + QR from the API.
 import React from 'react';
-import { Pressable, ScrollView, Text, View } from 'react-native';
+import {
+  ActivityIndicator,
+  Image,
+  Pressable,
+  ScrollView,
+  Text,
+  View,
+} from 'react-native';
 import { ON_VOLT, fonts } from '../theme';
-import { endDate, fmtDate, fmtUAH, planLabel, planMonths, price } from '../plans';
+import { fmtDate, fmtUAH, todayISO, uahFromMinor } from '../plans';
 import { useApp } from '../state';
 import { Overline, PulseDot } from '../components/ui';
-import { QrPlaceholder } from '../components/QrPlaceholder';
 import { SbLogo } from '../components/SbLogo';
 import { AddressLink } from '../components/AddressLink';
 import { VENUE } from '../venue';
+import { qrUrl } from '../api/client';
 
 export function PassScreen() {
   const app = useApp();
-  const { theme: t, subscriptions, vehicles } = app;
+  const { theme: t, cards, plans, cardsLoading, token } = app;
 
-  const active = subscriptions[0];
-  const upcoming = subscriptions.slice(1);
-  const plate = vehicles[0]?.plate || '';
+  const today = todayISO();
+  const active =
+    cards.find((c) => c.status === 'Active' && c.startDate <= today && today <= c.endDate) ??
+    cards.find((c) => c.status === 'Active') ??
+    cards[0];
+  const upcoming = cards.filter((c) => c.id !== active?.id);
+  const planName = (planId?: string | null) =>
+    plans.find((p) => p.id === planId)?.name ?? 'Паркінг';
+  const planPrice = (planId?: string | null) => {
+    const p = plans.find((x) => x.id === planId);
+    return p ? fmtUAH(uahFromMinor(p.priceMinor)) : '';
+  };
 
   return (
-    <ScrollView
-      style={{ flex: 1 }}
-      contentContainerStyle={{ paddingBottom: 110 }}
-    >
+    <ScrollView style={{ flex: 1 }} contentContainerStyle={{ paddingBottom: 110 }}>
       <View style={{ paddingTop: 58, paddingHorizontal: 20 }}>
         {/* Brand */}
         <View style={{ marginBottom: 18, gap: 6 }}>
@@ -32,7 +45,6 @@ export function PassScreen() {
 
         {active ? (
           <>
-            {/* Hero pass card */}
             <View
               style={{
                 backgroundColor: t.bgElevated,
@@ -43,7 +55,7 @@ export function PassScreen() {
                 boxShadow: '0 0 0 4px rgba(34,224,122,0.10)',
               }}
             >
-              {/* QR block — white in both themes for scannability */}
+              {/* QR */}
               <View style={{ alignItems: 'center' }}>
                 <View
                   style={{
@@ -54,14 +66,21 @@ export function PassScreen() {
                     gap: 8,
                   }}
                 >
-                  <QrPlaceholder size={132} />
+                  <Image
+                    source={{
+                      uri: qrUrl(active.id),
+                      headers: { Authorization: `Bearer ${token}` },
+                    }}
+                    style={{ width: 148, height: 148 }}
+                    resizeMode="contain"
+                  />
                   <Overline theme={t} color="#6A7187">
-                    Backup entry code
+                    Код входу
                   </Overline>
                 </View>
               </View>
 
-              {/* Status row */}
+              {/* Status + plan */}
               <View
                 style={{
                   marginTop: 20,
@@ -92,7 +111,7 @@ export function PassScreen() {
                       color: t.volt,
                     }}
                   >
-                    Active
+                    {active.status === 'Active' ? 'Активна' : active.status}
                   </Text>
                 </View>
                 <Text
@@ -103,60 +122,13 @@ export function PassScreen() {
                     color: t.fg1,
                   }}
                 >
-                  {planLabel(active.planId)}
+                  {planName(active.subscriptionPlanId)}
                 </Text>
               </View>
 
-              {/* License plate */}
-              <View style={{ marginTop: 20 }}>
-                <Overline theme={t}>License plate</Overline>
-              </View>
-              <Text
-                style={{
-                  marginTop: 6,
-                  fontFamily: fonts.mono700,
-                  fontSize: 40,
-                  lineHeight: 44,
-                  letterSpacing: 0.8,
-                  color: t.fg1,
-                }}
-              >
-                {plate || 'No plate on file'}
-              </Text>
-              {!!plate && (
-                <>
-                  <Text
-                    style={{
-                      marginTop: 8,
-                      fontFamily: fonts.inter400,
-                      fontSize: 13,
-                      lineHeight: 18,
-                      color: t.fg2,
-                    }}
-                  >
-                    Recognized automatically at entry — no scan needed.
-                  </Text>
-                  {vehicles.length > 1 && (
-                    <Text
-                      style={{
-                        marginTop: 2,
-                        fontFamily: fonts.inter500,
-                        fontSize: 12,
-                        lineHeight: 18,
-                        color: t.fg3,
-                      }}
-                    >
-                      +{vehicles.length - 1} more vehicle on file · manage in Profile
-                    </Text>
-                  )}
-                </>
-              )}
+              <View style={{ marginTop: 20, height: 1, backgroundColor: t.border }} />
 
-              <View
-                style={{ marginTop: 20, height: 1, backgroundColor: t.border }}
-              />
-
-              {/* Location / End date */}
+              {/* Location / dates */}
               <View
                 style={{
                   marginTop: 16,
@@ -167,7 +139,7 @@ export function PassScreen() {
                 }}
               >
                 <View style={{ flex: 1 }}>
-                  <Overline theme={t}>Location</Overline>
+                  <Overline theme={t}>Локація</Overline>
                   <Text
                     style={{
                       marginTop: 2,
@@ -184,7 +156,7 @@ export function PassScreen() {
                   </View>
                 </View>
                 <View style={{ alignItems: 'flex-end' }}>
-                  <Overline theme={t}>End date</Overline>
+                  <Overline theme={t}>Діє до</Overline>
                   <Text
                     style={{
                       marginTop: 2,
@@ -194,7 +166,7 @@ export function PassScreen() {
                       color: t.fg1,
                     }}
                   >
-                    {fmtDate(endDate(active.startDate, planMonths(active.planId)))}
+                    {fmtDate(active.endDate)}
                   </Text>
                 </View>
               </View>
@@ -216,7 +188,7 @@ export function PassScreen() {
                     color: t.fg2,
                   }}
                 >
-                  Price
+                  Вартість
                 </Text>
                 <Text
                   style={{
@@ -226,12 +198,12 @@ export function PassScreen() {
                     color: t.fg1,
                   }}
                 >
-                  {fmtUAH(price(active.planId))}
+                  {planPrice(active.subscriptionPlanId)}
                 </Text>
               </View>
             </View>
 
-            {/* Manage plan */}
+            {/* Buy another */}
             <Pressable
               onPress={app.openPlans}
               style={{
@@ -252,19 +224,20 @@ export function PassScreen() {
                   color: t.fg1,
                 }}
               >
-                Manage plan
+                Придбати ще
               </Text>
             </Pressable>
 
-            {/* Upcoming (future-dated) passes */}
+            {/* Upcoming */}
             {upcoming.length > 0 && (
               <View style={{ marginTop: 12, gap: 8 }}>
-                <Overline theme={t}>Upcoming</Overline>
-                {upcoming.map((sub) => (
+                <Overline theme={t}>Наступні</Overline>
+                {upcoming.map((c) => (
                   <View
-                    key={sub.id}
+                    key={c.id}
                     style={{
-                      height: 48,
+                      minHeight: 48,
+                      paddingVertical: 12,
                       paddingHorizontal: 16,
                       backgroundColor: t.bgElevated,
                       borderWidth: 1,
@@ -282,9 +255,10 @@ export function PassScreen() {
                         fontSize: 14,
                         lineHeight: 18,
                         color: t.fg1,
+                        flex: 1,
                       }}
                     >
-                      {planLabel(sub.planId)}
+                      {planName(c.subscriptionPlanId)}
                     </Text>
                     <Text
                       style={{
@@ -294,16 +268,19 @@ export function PassScreen() {
                         color: t.fg2,
                       }}
                     >
-                      {fmtDate(sub.startDate)} –{' '}
-                      {fmtDate(endDate(sub.startDate, planMonths(sub.planId)))}
+                      {fmtDate(c.startDate)} – {fmtDate(c.endDate)}
                     </Text>
                   </View>
                 ))}
               </View>
             )}
           </>
+        ) : cardsLoading ? (
+          <View style={{ paddingVertical: 60, alignItems: 'center' }}>
+            <ActivityIndicator color={t.volt} />
+          </View>
         ) : (
-          /* Empty account — no active pass yet */
+          /* No cards yet */
           <View
             style={{
               backgroundColor: t.bgElevated,
@@ -324,7 +301,7 @@ export function PassScreen() {
                 textAlign: 'center',
               }}
             >
-              No active pass
+              Немає активного абонемента
             </Text>
             <Text
               style={{
@@ -335,7 +312,7 @@ export function PassScreen() {
                 textAlign: 'center',
               }}
             >
-              Get a parking pass for {VENUE.name} to see your QR here.
+              Придбайте абонемент на паркінг {VENUE.name}, і тут з’явиться ваш QR.
             </Text>
             <Pressable
               onPress={app.openPlans}
@@ -357,7 +334,7 @@ export function PassScreen() {
                   color: ON_VOLT,
                 }}
               >
-                Get a pass
+                Обрати абонемент
               </Text>
             </Pressable>
           </View>

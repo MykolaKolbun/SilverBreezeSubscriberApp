@@ -3,7 +3,7 @@
 import React from 'react';
 import { Pressable, ScrollView, Text, TextInput, View } from 'react-native';
 import { ON_VOLT, Theme, fonts } from '../theme';
-import { fmtUAH, fmtDate, planLabel, price } from '../plans';
+import { fmtDate, fmtUAH, uahFromMinor } from '../plans';
 import { useApp } from '../state';
 import { Overline, Radio, selectableCardStyle } from '../components/ui';
 import { AppleIcon, CardIcon, ChevronLeft, LockIcon } from '../components/icons';
@@ -36,7 +36,8 @@ function CardInput({
 export function PaymentScreen() {
   const app = useApp();
   const { theme: t, planId, payMethod, payState } = app;
-  const amount = fmtUAH(price(planId));
+  const plan = app.plans.find((p) => p.id === planId);
+  const amount = plan ? fmtUAH(uahFromMinor(plan.priceMinor)) : '';
 
   return (
     <ScrollView
@@ -123,7 +124,7 @@ export function PaymentScreen() {
                 textAlign: 'right',
               }}
             >
-              {planLabel(planId)}
+              {plan?.name ?? ''}
             </Text>
             <Text
               style={{
