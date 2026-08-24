@@ -84,6 +84,7 @@ const uk: Dict = {
   'profile.language': 'Мова',
   'profile.signOut': 'Вийти',
   'profile.signOut.confirmBody': 'Вийти з акаунта на цьому пристрої?',
+  'profile.build': 'Збірка {build} · {commit} · {date}',
 };
 
 const en: Dict = {
@@ -166,6 +167,7 @@ const en: Dict = {
   'profile.language': 'Language',
   'profile.signOut': 'Sign out',
   'profile.signOut.confirmBody': 'Sign out of this account on this device?',
+  'profile.build': 'Build {build} · {commit} · {date}',
 };
 
 export const DICTS: Record<Lang, Dict> = { uk, en };

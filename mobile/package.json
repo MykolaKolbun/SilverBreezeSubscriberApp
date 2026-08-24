@@ -23,10 +23,12 @@
     "typescript": "~6.0.3"
   },
   "scripts": {
+    "stamp": "node scripts/stamp-build.mjs",
     "start": "expo start",
     "android": "expo start --android",
     "ios": "expo start --ios",
-    "web": "expo start --web"
+    "web": "expo start --web",
+    "build:apk": "node scripts/stamp-build.mjs && cd android && gradlew.bat assembleRelease"
   },
   "private": true
 }

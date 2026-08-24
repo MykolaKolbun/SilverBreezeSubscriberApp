@@ -15,6 +15,7 @@ import { monthsFromDuration, planKind } from '../plans';
 import { planFullLabel } from '../i18n';
 import { Vehicle, useApp } from '../state';
 import { VENUE } from '../venue';
+import { BUILD_INFO } from '../buildInfo';
 import { Overline } from '../components/ui';
 import {
   BellIcon,
@@ -734,7 +735,12 @@ export function ProfileScreen() {
             paddingBottom: 4,
           }}
         >
-          {VENUE.brand} v1.0
+          {VENUE.brand} v{BUILD_INFO.version}{'\n'}
+          {tr('profile.build', {
+            build: BUILD_INFO.build,
+            commit: BUILD_INFO.commit,
+            date: BUILD_INFO.builtAt,
+          })}
         </Text>
       </View>
     </ScrollView>
