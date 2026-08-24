@@ -4,17 +4,14 @@ import { Pressable, ScrollView, Text, View } from 'react-native';
 import { ON_VOLT, fonts } from '../theme';
 import {
   PlanKind,
-  fmtDate,
   fmtUAH,
   monthsFromDuration,
-  nextStartISO,
   planKind,
   uahFromMinor,
 } from '../plans';
 import { durationLabel } from '../i18n';
 import { useApp } from '../state';
 import { Overline, Radio, selectableCardStyle } from '../components/ui';
-import { DateField } from '../components/DateField';
 import { AddressLink } from '../components/AddressLink';
 import { VENUE } from '../venue';
 
@@ -25,8 +22,6 @@ export function PlansScreen() {
   const { theme: t, plans, planId } = app;
   const tr = app.t;
   const selected = plans.find((p) => p.id === planId);
-  // Earliest allowed start (stacking rule); the user may pick this or later.
-  const minStart = nextStartISO(app.cards);
 
   return (
     <ScrollView style={{ flex: 1 }} contentContainerStyle={{ paddingBottom: 100 }}>
@@ -117,46 +112,6 @@ export function PlansScreen() {
           );
         })}
 
-        {/* Start date */}
-        {plans.length > 0 && (
-          <View
-            style={{
-              marginTop: 10,
-              backgroundColor: t.bgElevated,
-              borderWidth: 1,
-              borderColor: t.border,
-              borderRadius: 16,
-              paddingVertical: 14,
-              paddingHorizontal: 16,
-              flexDirection: 'row',
-              alignItems: 'center',
-              justifyContent: 'space-between',
-              gap: 12,
-            }}
-          >
-            <View>
-              <Overline theme={t}>{tr('plans.startDate')}</Overline>
-              <Text
-                style={{
-                  marginTop: 2,
-                  fontFamily: fonts.inter600,
-                  fontSize: 15,
-                  lineHeight: 22,
-                  color: t.fg1,
-                }}
-              >
-                {fmtDate(app.startDate, app.lang)}
-              </Text>
-            </View>
-            <DateField
-              theme={t}
-              value={app.startDate}
-              onChange={app.setStartDate}
-              minimum={minStart}
-              lang={app.lang}
-            />
-          </View>
-        )}
       </View>
 
       {/* CTA */}

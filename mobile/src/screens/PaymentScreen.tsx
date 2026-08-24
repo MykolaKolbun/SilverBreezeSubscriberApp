@@ -4,15 +4,17 @@ import React from 'react';
 import { Pressable, ScrollView, Text, View } from 'react-native';
 import { ON_VOLT, fonts } from '../theme';
 import {
-  fmtDate,
+  fmtDateFull,
   fmtUAH,
   monthsFromDuration,
+  nextStartISO,
   planKind,
   uahFromMinor,
 } from '../plans';
 import { planFullLabel } from '../i18n';
 import { useApp } from '../state';
 import { Overline } from '../components/ui';
+import { DateField } from '../components/DateField';
 import { ChevronLeft, LockIcon } from '../components/icons';
 
 export function PaymentScreen() {
@@ -24,6 +26,8 @@ export function PaymentScreen() {
   const planLabel = plan
     ? planFullLabel(monthsFromDuration(plan.durationDays), planKind(plan.code) === 'outdoor', tr)
     : '';
+  // Earliest allowed start (stacking rule); user may pick this or later.
+  const minStart = nextStartISO(app.cards);
 
   return (
     <ScrollView style={{ flex: 1 }} contentContainerStyle={{ paddingBottom: 100 }}>
@@ -67,7 +71,7 @@ export function PaymentScreen() {
       </View>
 
       {/* Amount due */}
-      <View style={{ marginHorizontal: 20, marginTop: 14, marginBottom: 18 }}>
+      <View style={{ marginHorizontal: 20, marginTop: 14, marginBottom: 12 }}>
         <View
           style={{
             paddingVertical: 20,
@@ -76,28 +80,31 @@ export function PaymentScreen() {
             borderWidth: 1,
             borderColor: t.border,
             borderRadius: 24,
-            flexDirection: 'row',
-            alignItems: 'flex-end',
-            justifyContent: 'space-between',
           }}
         >
-          <View>
-            <Overline theme={t}>{tr('pay.amountDue')}</Overline>
-            <Text
-              style={{
-                marginTop: 4,
-                fontFamily: fonts.mono500,
-                fontSize: 44,
-                lineHeight: 48,
-                letterSpacing: -0.88,
-                color: t.fg1,
-                fontVariant: ['tabular-nums'],
-              }}
-            >
-              {amount}
-            </Text>
-          </View>
-          <View style={{ alignItems: 'flex-end' }}>
+          <View
+            style={{
+              flexDirection: 'row',
+              alignItems: 'flex-end',
+              justifyContent: 'space-between',
+            }}
+          >
+            <View>
+              <Overline theme={t}>{tr('pay.amountDue')}</Overline>
+              <Text
+                style={{
+                  marginTop: 4,
+                  fontFamily: fonts.mono500,
+                  fontSize: 44,
+                  lineHeight: 48,
+                  letterSpacing: -0.88,
+                  color: t.fg1,
+                  fontVariant: ['tabular-nums'],
+                }}
+              >
+                {amount}
+              </Text>
+            </View>
             <Text
               style={{
                 fontFamily: fonts.inter500,
@@ -105,21 +112,70 @@ export function PaymentScreen() {
                 lineHeight: 18,
                 color: t.fg2,
                 textAlign: 'right',
+                maxWidth: 130,
               }}
             >
               {planLabel}
             </Text>
+          </View>
+
+          <View style={{ marginTop: 18, height: 1, backgroundColor: t.border }} />
+
+          <View style={{ marginTop: 14 }}>
+            <Overline theme={t}>{tr('plans.startDate')}</Overline>
             <Text
               style={{
-                fontFamily: fonts.mono500,
-                fontSize: 11,
-                lineHeight: 14,
+                marginTop: 4,
+                fontFamily: fonts.grotesk600,
+                fontSize: 26,
+                lineHeight: 32,
+                letterSpacing: -0.4,
+                color: t.fg1,
+              }}
+            >
+              {fmtDateFull(app.startDate, app.lang)}
+            </Text>
+          </View>
+        </View>
+      </View>
+
+      {/* Change start date — right under the amount card */}
+      <View style={{ paddingHorizontal: 20, marginBottom: 18 }}>
+        <View
+          style={{
+            backgroundColor: t.bgElevated,
+            borderWidth: 1,
+            borderColor: t.border,
+            borderRadius: 16,
+            paddingVertical: 14,
+            paddingHorizontal: 16,
+            flexDirection: 'row',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            gap: 12,
+          }}
+        >
+          <View style={{ flex: 1 }}>
+            <Overline theme={t}>{tr('pay.changeStart')}</Overline>
+            <Text
+              style={{
+                marginTop: 2,
+                fontFamily: fonts.inter500,
+                fontSize: 12,
+                lineHeight: 16,
                 color: t.fg3,
               }}
             >
-              {tr('pay.starts', { date: fmtDate(app.startDate, app.lang) })}
+              {tr('pay.notEarlier', { date: fmtDateFull(minStart, app.lang) })}
             </Text>
           </View>
+          <DateField
+            theme={t}
+            value={app.startDate}
+            onChange={app.setStartDate}
+            minimum={minStart}
+            lang={app.lang}
+          />
         </View>
       </View>
 

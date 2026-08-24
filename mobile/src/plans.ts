@@ -37,11 +37,26 @@ const MONTHS: Record<'uk' | 'en', string[]> = {
   en: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'],
 };
 
+// Full month names (uk in genitive: "23 вересня"; en: "September 23").
+const MONTHS_FULL: Record<'uk' | 'en', string[]> = {
+  uk: ['січня', 'лютого', 'березня', 'квітня', 'травня', 'червня',
+       'липня', 'серпня', 'вересня', 'жовтня', 'листопада', 'грудня'],
+  en: ['January', 'February', 'March', 'April', 'May', 'June',
+       'July', 'August', 'September', 'October', 'November', 'December'],
+};
+
 // Manual month names (Hermes has no reliable Intl month localization).
 export function fmtDate(iso: string, lang: 'uk' | 'en' = 'uk'): string {
   if (!iso) return '';
   const d = new Date(iso.slice(0, 10) + 'T00:00:00');
   const m = MONTHS[lang][d.getMonth()];
+  return lang === 'uk' ? `${d.getDate()} ${m}` : `${m} ${d.getDate()}`;
+}
+
+export function fmtDateFull(iso: string, lang: 'uk' | 'en' = 'uk'): string {
+  if (!iso) return '';
+  const d = new Date(iso.slice(0, 10) + 'T00:00:00');
+  const m = MONTHS_FULL[lang][d.getMonth()];
   return lang === 'uk' ? `${d.getDate()} ${m}` : `${m} ${d.getDate()}`;
 }
 
