@@ -2,6 +2,7 @@
 // contact info, subscription shortcut, settings (theme lives here).
 import React from 'react';
 import {
+  Alert,
   Pressable,
   ScrollView,
   Text,
@@ -12,6 +13,7 @@ import {
 import { ON_VOLT, Theme, fonts } from '../theme';
 import { planLabel } from '../plans';
 import { Vehicle, useApp } from '../state';
+import { VENUE } from '../venue';
 import { Overline } from '../components/ui';
 import {
   BellIcon,
@@ -353,11 +355,11 @@ export function ProfileScreen() {
             <Text
               style={{
                 fontFamily: fonts.grotesk700,
-                fontSize: 24,
+                fontSize: 20,
                 color: ON_VOLT,
               }}
             >
-              JM
+              SB
             </Text>
           </View>
           <View style={{ flex: 1 }}>
@@ -369,7 +371,7 @@ export function ProfileScreen() {
                 color: t.fg1,
               }}
             >
-              Jordan Mercer
+              Guest
             </Text>
             <Text
               style={{
@@ -380,7 +382,7 @@ export function ProfileScreen() {
                 color: t.fg2,
               }}
             >
-              Member since Jan 2025
+              Not signed in
             </Text>
           </View>
         </View>
@@ -468,8 +470,7 @@ export function ProfileScreen() {
             color: t.fg3,
           }}
         >
-          Any plate on file is recognized automatically at Harborview Garage
-          entry.
+          Any plate on file is recognized automatically at {VENUE.name} entry.
         </Text>
 
         {/* Contact info */}
@@ -486,14 +487,14 @@ export function ProfileScreen() {
             theme={t}
             icon={<PhoneIcon size={18} color={t.fg2} />}
             label="Phone"
-            value="+1 415 555 0148"
+            value="Not set"
           />
           {divider}
           <ContactRow
             theme={t}
             icon={<MailIcon size={18} color={t.fg2} />}
             label="Email"
-            value="jordan@mercer.io"
+            value="Not set"
           />
         </View>
 
@@ -525,7 +526,9 @@ export function ProfileScreen() {
                 color: t.fg1,
               }}
             >
-              {planLabel(subscriptions[0].planId)} · Harborview Garage
+              {subscriptions[0]
+                ? `${planLabel(subscriptions[0].planId)} · ${VENUE.name}`
+                : `No active plan · ${VENUE.name}`}
             </Text>
           </View>
           <ChevronRight size={18} color={t.fg1} />
@@ -633,7 +636,16 @@ export function ProfileScreen() {
             icon={<SignOutIcon size={18} color={t.danger} />}
             label="Sign out"
             labelColor={t.danger}
-            onPress={() => {}}
+            onPress={() =>
+              Alert.alert(
+                'Sign out',
+                'This clears the account data on this device.',
+                [
+                  { text: 'Cancel', style: 'cancel' },
+                  { text: 'Sign out', style: 'destructive', onPress: app.signOut },
+                ]
+              )
+            }
           />
         </View>
 
@@ -648,7 +660,7 @@ export function ProfileScreen() {
             paddingBottom: 4,
           }}
         >
-          Parking pass v1.0
+          {VENUE.brand} v1.0
         </Text>
       </View>
     </ScrollView>

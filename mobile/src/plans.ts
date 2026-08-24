@@ -1,52 +1,45 @@
-// Plan catalog + date/price rules from the handoff prototype.
-// Prices are local-only for now; swap for GET /plans from the backend later.
+// Plan catalog + date/price rules.
+// Three fixed-duration parking passes, priced in UAH.
+// Swap for GET /plans from the backend later.
 
-export type PlanId = 'basic' | 'plus' | 'unlimited';
-export type Billing = 'monthly' | 'annual';
+export type PlanId = 'm1' | 'm2' | 'm3' | 'out1' | 'out3';
+export type PlanKind = 'covered' | 'outdoor';
 
 export interface Plan {
   id: PlanId;
-  label: string;
-  base: number; // monthly price in EUR
-  features: [string, string];
-  popular?: boolean;
+  kind: PlanKind;
+  label: string; // "1 місяць"
+  months: number; // duration in months
+  price: number; // total price in UAH
 }
 
 export const PLANS: Plan[] = [
-  {
-    id: 'basic',
-    label: 'Basic',
-    base: 39,
-    features: ['Nights & weekends only', '1 vehicle · standard spaces'],
-  },
-  {
-    id: 'plus',
-    label: 'Plus',
-    base: 69,
-    features: ['Anytime access', '1 vehicle · reserved level'],
-    popular: true,
-  },
-  {
-    id: 'unlimited',
-    label: 'Unlimited',
-    base: 99,
-    features: ['Anytime access', '2 vehicles · reserved level + EV bay'],
-  },
+  { id: 'm1', kind: 'covered', label: '1 місяць', months: 1, price: 3600 },
+  { id: 'm2', kind: 'covered', label: '2 місяці', months: 2, price: 7200 },
+  { id: 'm3', kind: 'covered', label: '3 місяці', months: 3, price: 10800 },
+  { id: 'out1', kind: 'outdoor', label: '1 місяць', months: 1, price: 3000 },
+  { id: 'out3', kind: 'outdoor', label: '3 місяці', months: 3, price: 9000 },
 ];
 
-export const planLabel = (id: PlanId) =>
-  PLANS.find((p) => p.id === id)!.label;
+export const KIND_LABEL: Record<PlanKind, string> = {
+  covered: 'Паркінг',
+  outdoor: 'Зовнішній паркінг',
+};
 
-// Annual = monthly × 10 (2 months free).
-export function price(id: PlanId, billing: Billing): number {
-  const base = PLANS.find((p) => p.id === id)!.base;
-  return billing === 'annual' ? Math.round(base * 10) : base;
-}
+const planById = (id: PlanId) => PLANS.find((p) => p.id === id)!;
 
-export const periodSuffix = (billing: Billing) =>
-  billing === 'annual' ? '/ year' : '/ month';
+// Disambiguated label — outdoor plans are prefixed so they read clearly
+// wherever a single plan is shown (pass, payment, profile).
+export const planLabel = (id: PlanId) => {
+  const p = planById(id);
+  return p.kind === 'outdoor' ? `Зовнішній · ${p.label}` : p.label;
+};
+export const planMonths = (id: PlanId) => planById(id).months;
+export const price = (id: PlanId) => planById(id).price;
 
-export const fmtEuro = (n: number) => '€' + n.toFixed(2);
+// "3600" -> "3 600 ₴" (manual grouping — no Intl dependency on Hermes).
+export const fmtUAH = (n: number) =>
+  n.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ' ') + ' ₴';
 
 // ---- dates (all as local YYYY-MM-DD strings) ----
 
@@ -65,11 +58,10 @@ export function fmtDate(iso: string): string {
   return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
 }
 
-// End date = start + 1 billing period − 1 day (Jul 12 monthly → Aug 11).
-export function endDate(startISO: string, billing: Billing): string {
+// End date = start + N months − 1 day (Jul 12 + 1 month → Aug 11).
+export function endDate(startISO: string, months: number): string {
   const d = new Date(startISO + 'T00:00:00');
-  if (billing === 'annual') d.setFullYear(d.getFullYear() + 1);
-  else d.setMonth(d.getMonth() + 1);
+  d.setMonth(d.getMonth() + months);
   d.setDate(d.getDate() - 1);
   return toLocalISO(d);
 }

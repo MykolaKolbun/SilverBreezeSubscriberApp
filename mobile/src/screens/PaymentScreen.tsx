@@ -3,7 +3,7 @@
 import React from 'react';
 import { Pressable, ScrollView, Text, TextInput, View } from 'react-native';
 import { ON_VOLT, Theme, fonts } from '../theme';
-import { fmtEuro, fmtDate, periodSuffix, planLabel, price } from '../plans';
+import { fmtUAH, fmtDate, planLabel, price } from '../plans';
 import { useApp } from '../state';
 import { Overline, Radio, selectableCardStyle } from '../components/ui';
 import { AppleIcon, CardIcon, ChevronLeft, LockIcon } from '../components/icons';
@@ -35,8 +35,8 @@ function CardInput({
 
 export function PaymentScreen() {
   const app = useApp();
-  const { theme: t, billing, planId, payMethod, payState } = app;
-  const amount = fmtEuro(price(planId, billing));
+  const { theme: t, planId, payMethod, payState } = app;
+  const amount = fmtUAH(price(planId));
 
   return (
     <ScrollView
@@ -123,7 +123,7 @@ export function PaymentScreen() {
                 textAlign: 'right',
               }}
             >
-              {planLabel(planId)} · {periodSuffix(billing)}
+              {planLabel(planId)}
             </Text>
             <Text
               style={{

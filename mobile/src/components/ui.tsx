@@ -11,7 +11,7 @@ import {
 } from 'react-native';
 import { Theme, fonts, pulseEasing } from '../theme';
 
-/** 11px uppercase tracked section label ("HARBORVIEW GARAGE", "START DATE"…). */
+/** 11px uppercase tracked section label ("LOCATION", "START DATE"…). */
 export function Overline({
   theme,
   color,

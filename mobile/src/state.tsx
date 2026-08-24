@@ -10,7 +10,7 @@ import React, {
 } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Theme, ThemeName, themes } from './theme';
-import { Billing, PlanId, endDate, toLocalISO, todayISO } from './plans';
+import { PlanId, endDate, planMonths, toLocalISO, todayISO } from './plans';
 
 export type Screen = 'pass' | 'profile' | 'plans' | 'payment';
 export type PayMethod = 'applepay' | 'card';
@@ -19,7 +19,6 @@ export type PayState = 'idle' | 'processing' | 'success';
 export interface Subscription {
   id: number;
   planId: PlanId;
-  billing: Billing;
   startDate: string; // local ISO
 }
 
@@ -30,7 +29,7 @@ export interface Vehicle {
   plate: string;
 }
 
-const THEME_KEY = 'parking-pass.theme';
+const THEME_KEY = 'silverbreeze.theme';
 const MAX_VEHICLES = 3;
 
 interface AppState {
@@ -41,9 +40,9 @@ interface AppState {
   setScreen: (s: Screen) => void;
   /** "Manage plan": open Plans pre-filled so the new period never overlaps. */
   openPlans: () => void;
+  /** Clear the account back to an empty state (no backend session yet). */
+  signOut: () => void;
 
-  billing: Billing;
-  setBilling: (b: Billing) => void;
   planId: PlanId;
   setPlanId: (p: PlanId) => void;
   startDate: string;
@@ -77,18 +76,10 @@ interface AppState {
 
 const Ctx = createContext<AppState | null>(null);
 
-const initialVehicle: Vehicle = {
-  id: 1,
-  make: 'Tesla',
-  model: 'Model 3',
-  plate: '34 ABC 567',
-};
-
 export function AppProvider({ children }: { children: React.ReactNode }) {
   const [themeName, setThemeNameState] = useState<ThemeName>('dark');
   const [screen, setScreen] = useState<Screen>('pass');
-  const [billing, setBilling] = useState<Billing>('monthly');
-  const [planId, setPlanId] = useState<PlanId>('plus');
+  const [planId, setPlanId] = useState<PlanId>('m1');
   const [startDate, setStartDate] = useState(todayISO());
 
   const [payMethod, setPayMethod] = useState<PayMethod>('card');
@@ -97,15 +88,14 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   const [cardCvc, setCardCvc] = useState('');
   const [payState, setPayState] = useState<PayState>('idle');
 
-  const [subscriptions, setSubscriptions] = useState<Subscription[]>([
-    { id: 1, planId: 'plus', billing: 'monthly', startDate: todayISO() },
-  ]);
+  // Empty account by default — no seeded subscription or vehicle.
+  const [subscriptions, setSubscriptions] = useState<Subscription[]>([]);
 
-  const [vehicles, setVehicles] = useState<Vehicle[]>([initialVehicle]);
-  const [drafts, setDrafts] = useState<Vehicle[]>([{ ...initialVehicle }]);
+  const [vehicles, setVehicles] = useState<Vehicle[]>([]);
+  const [drafts, setDrafts] = useState<Vehicle[]>([]);
   const [notifications, setNotifications] = useState(true);
 
-  const nextId = useRef(2);
+  const nextId = useRef(1);
 
   useEffect(() => {
     AsyncStorage.getItem(THEME_KEY).then((v) => {
@@ -119,9 +109,16 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   };
 
   const openPlans = () => {
+    // Empty account: start a first pass today with a sensible default.
+    if (subscriptions.length === 0) {
+      setStartDate(todayISO());
+      setPlanId('m1');
+      setScreen('plans');
+      return;
+    }
     // Next start = day after the latest end date across all subscriptions.
     const lastEnd = subscriptions
-      .map((s) => endDate(s.startDate, s.billing))
+      .map((s) => endDate(s.startDate, planMonths(s.planId)))
       .sort()
       .slice(-1)[0];
     const next = new Date(lastEnd + 'T00:00:00');
@@ -131,8 +128,22 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     )[0];
     setStartDate(toLocalISO(next));
     setPlanId(latest.planId);
-    setBilling(latest.billing);
     setScreen('plans');
+  };
+
+  const signOut = () => {
+    setSubscriptions([]);
+    setVehicles([]);
+    setDrafts([]);
+    setCardNumber('');
+    setCardExpiry('');
+    setCardCvc('');
+    setPayState('idle');
+    setPlanId('m1');
+    setStartDate(todayISO());
+    setNotifications(true);
+    nextId.current = 1;
+    setScreen('pass');
   };
 
   const confirmPayment = () => {
@@ -143,7 +154,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       setSubscriptions((prev) =>
         [
           ...prev,
-          { id: nextId.current++, planId, billing, startDate },
+          { id: nextId.current++, planId, startDate },
         ].sort((a, b) => (a.startDate < b.startDate ? -1 : 1))
       );
       // Card details are never stored — clear them after every checkout.
@@ -187,8 +198,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     screen,
     setScreen,
     openPlans,
-    billing,
-    setBilling,
+    signOut,
     planId,
     setPlanId,
     startDate,
