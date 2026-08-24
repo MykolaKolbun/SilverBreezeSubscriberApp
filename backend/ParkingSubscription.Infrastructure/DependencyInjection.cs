@@ -66,9 +66,22 @@ public static class DependencyInjection
             services.AddScoped<IPaymentProvider, PaymentProviderStub>();
         }
 
+        // Fiscalization provider: "CheckboxOnline" hits api.checkbox.ua (credentials from
+        // FiscalGatewayConfig); anything else uses the stub (tests/dev).
+        var fiscalProvider = config["Fiscal:Provider"] ?? "Stub";
+        if (fiscalProvider.Equals("CheckboxOnline", StringComparison.OrdinalIgnoreCase))
+        {
+            services.AddHttpClient(Payments.CheckboxOnlineFiscalProvider.HttpClientName,
+                c => c.Timeout = TimeSpan.FromSeconds(30));
+            services.AddScoped<IFiscalProvider, Payments.CheckboxOnlineFiscalProvider>();
+        }
+        else
+        {
+            services.AddScoped<IFiscalProvider, FiscalProviderStub>();
+        }
+
         // External-integration stubs (ТЗ §4, §6, §7, §9)
         services.AddScoped<IParkingLogicClient, ParkingLogicClientStub>();
-        services.AddScoped<IFiscalProvider, FiscalProviderStub>();
         services.AddScoped<IWalletPassService, WalletPassServiceStub>();
         services.AddSingleton<IQrCodeGenerator, QrCodeGenerator>();
         services.AddScoped<IEmailSender, LoggingEmailSender>();

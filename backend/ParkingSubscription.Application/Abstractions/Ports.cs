@@ -82,10 +82,20 @@ public interface ICredentialProtector
 
 public sealed record FiscalReceipt(string ReceiptId, string Url);
 
-/// <summary>Fiscalization provider abstraction (ТЗ §6).</summary>
+/// <summary>Rendered fiscal receipt image (Checkbox /receipts/{id}/png).</summary>
+public sealed record FiscalReceiptImage(byte[] Content, string ContentType);
+
+/// <summary>
+/// Fiscalization provider abstraction (ТЗ §6). Swappable via config — Stub for
+/// dev/tests, Checkbox Online in production.
+/// </summary>
 public interface IFiscalProvider
 {
+    /// <summary>Fiscalizes a paid payment and returns the receipt id + tax URL.</summary>
     Task<FiscalReceipt> FiscalizeAsync(Payment payment, CancellationToken ct = default);
+
+    /// <summary>Fetches the rendered receipt image by receipt id; null if unavailable.</summary>
+    Task<FiscalReceiptImage?> GetReceiptImageAsync(string receiptId, CancellationToken ct = default);
 }
 
 public sealed record WalletPass(byte[] Content, string ContentType, string FileName);

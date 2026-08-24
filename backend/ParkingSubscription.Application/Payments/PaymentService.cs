@@ -19,6 +19,10 @@ public interface IPaymentService
     Task<PaymentDto> HandleWebhookAsync(PaymentWebhookRequest req, CancellationToken ct = default);
     Task<PaymentDto> GetAsync(Guid id, CancellationToken ct = default);
     Task<PaymentDto> RefundAsync(Guid id, CancellationToken ct = default);
+    /// <summary>The user's payment history (most recent first).</summary>
+    Task<IReadOnlyList<PaymentDto>> GetHistoryAsync(Guid userId, CancellationToken ct = default);
+    /// <summary>The rendered fiscal receipt image for one of the user's payments; null if none.</summary>
+    Task<FiscalReceiptImage?> GetReceiptImageAsync(Guid paymentId, Guid userId, CancellationToken ct = default);
 }
 
 /// <summary>
@@ -183,6 +187,27 @@ public sealed class PaymentService(
         return ToDto(payment);
     }
 
+    public async Task<IReadOnlyList<PaymentDto>> GetHistoryAsync(Guid userId, CancellationToken ct = default)
+    {
+        var payments = await db.Payments.AsNoTracking()
+            .Where(p => p.UserId == userId)
+            .OrderByDescending(p => p.CreatedAt)
+            .ToListAsync(ct);
+        return payments.Select(ToDto).ToList();
+    }
+
+    public async Task<FiscalReceiptImage?> GetReceiptImageAsync(Guid paymentId, Guid userId, CancellationToken ct = default)
+    {
+        var payment = await db.Payments.AsNoTracking()
+            .FirstOrDefaultAsync(p => p.Id == paymentId && p.UserId == userId, ct)
+            ?? throw new NotFoundException($"Payment {paymentId} not found.");
+
+        if (string.IsNullOrEmpty(payment.FiscalReceiptId))
+            return null;
+
+        return await fiscal.GetReceiptImageAsync(payment.FiscalReceiptId, ct);
+    }
+
     public async Task<PaymentDto> RefundAsync(Guid id, CancellationToken ct = default)
     {
         var payment = await db.Payments.FirstOrDefaultAsync(p => p.Id == id, ct)
@@ -232,17 +257,27 @@ public sealed class PaymentService(
         payment.ParkingCardId = card.Id;
         payment.Status = PaymentStatus.Succeeded;
 
-        // Fiscalize the receipt after successful payment (ТЗ §6).
-        var receipt = await fiscal.FiscalizeAsync(payment, ct);
-        payment.FiscalReceiptId = receipt.ReceiptId;
+        // Fiscalize the receipt after successful payment (ТЗ §6). Best-effort: a fiscal
+        // failure must NOT undo the paid+activated card — log and leave the receipt for a
+        // later retry rather than throwing out of the success path.
+        try
+        {
+            var receipt = await fiscal.FiscalizeAsync(payment, ct);
+            payment.FiscalReceiptId = receipt.ReceiptId;
+            payment.FiscalReceiptUrl = string.IsNullOrEmpty(receipt.Url) ? null : receipt.Url;
+        }
+        catch (Exception ex)
+        {
+            logger.LogError(ex, "Fiscalization failed for payment {PaymentId}; card still activated", payment.Id);
+        }
 
         await push.SendAsync(payment.UserId, "Payment successful",
             $"Your parking card is active until {end:yyyy-MM-dd}.", ct);
         logger.LogInformation("Payment {PaymentId} succeeded; card {CardId} activated, receipt {ReceiptId}",
-            payment.Id, card.Id, receipt.ReceiptId);
+            payment.Id, card.Id, payment.FiscalReceiptId ?? "(pending)");
     }
 
     private static PaymentDto ToDto(Payment p) => new(
         p.Id, p.UserId, p.SubscriptionPlanId, p.ParkingCardId, p.AmountMinor, p.Currency,
-        p.Status.ToString(), p.FiscalReceiptId, p.FailureReason, p.UpdatedAt);
+        p.Status.ToString(), p.FiscalReceiptId, p.FiscalReceiptUrl, p.FailureReason, p.UpdatedAt);
 }

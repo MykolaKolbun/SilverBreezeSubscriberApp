@@ -90,6 +90,17 @@ const uk: Dict = {
   'profile.signOut': 'Вийти',
   'profile.signOut.confirmBody': 'Вийти з акаунта на цьому пристрої?',
   'profile.build': 'Збірка {build} · {commit} · {date}',
+  'profile.history': 'Історія',
+  'profile.historySub': 'Транзакції та чеки',
+  'history.title': 'Історія',
+  'history.empty': 'Транзакцій ще немає.',
+  'history.receiptHint': 'Натисніть транзакцію з чеком, щоб переглянути фіскальний чек.',
+  'history.receiptTitle': 'Фіскальний чек',
+  'status.Succeeded': 'Оплачено',
+  'status.Pending': 'В обробці',
+  'status.Declined': 'Відхилено',
+  'status.TimedOut': 'Час вичерпано',
+  'status.Refunded': 'Повернено',
 };
 
 const en: Dict = {
@@ -178,6 +189,17 @@ const en: Dict = {
   'profile.signOut': 'Sign out',
   'profile.signOut.confirmBody': 'Sign out of this account on this device?',
   'profile.build': 'Build {build} · {commit} · {date}',
+  'profile.history': 'History',
+  'profile.historySub': 'Transactions & receipts',
+  'history.title': 'History',
+  'history.empty': 'No transactions yet.',
+  'history.receiptHint': 'Tap a transaction with a receipt to view the fiscal receipt.',
+  'history.receiptTitle': 'Fiscal receipt',
+  'status.Succeeded': 'Paid',
+  'status.Pending': 'Processing',
+  'status.Declined': 'Declined',
+  'status.TimedOut': 'Timed out',
+  'status.Refunded': 'Refunded',
 };
 
 export const DICTS: Record<Lang, Dict> = { uk, en };

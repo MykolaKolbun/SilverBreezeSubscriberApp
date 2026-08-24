@@ -22,6 +22,7 @@ import { PassScreen } from './src/screens/PassScreen';
 import { PlansScreen } from './src/screens/PlansScreen';
 import { PaymentScreen } from './src/screens/PaymentScreen';
 import { ProfileScreen } from './src/screens/ProfileScreen';
+import { HistoryScreen } from './src/screens/HistoryScreen';
 import { AuthScreen } from './src/screens/AuthScreen';
 
 function Root() {
@@ -58,6 +59,7 @@ function Root() {
       {screen === 'profile' && <ProfileScreen />}
       {screen === 'plans' && <PlansScreen />}
       {screen === 'payment' && <PaymentScreen />}
+      {screen === 'history' && <HistoryScreen />}
       <BottomNav />
       <StatusBar style={theme.name === 'dark' ? 'light' : 'dark'} />
     </View>

@@ -37,5 +37,8 @@ public class Payment : Entity
     /// <summary>Receipt id returned by the fiscal provider after success (ТЗ §6).</summary>
     public string? FiscalReceiptId { get; set; }
 
+    /// <summary>Public tax receipt URL (Checkbox tax_url), if fiscalized.</summary>
+    public string? FiscalReceiptUrl { get; set; }
+
     public string? FailureReason { get; set; }
 }

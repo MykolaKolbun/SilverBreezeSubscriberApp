@@ -22,6 +22,21 @@ public sealed class PaymentsController(
     public async Task<ActionResult<PaymentDto>> Get(Guid id, CancellationToken ct) =>
         Ok(await payments.GetAsync(id, ct));
 
+    /// <summary>Rendered fiscal receipt image (PNG) for one of the caller's payments.</summary>
+    [HttpGet("{id:guid}/receipt")]
+    [Authorize]
+    public async Task<IActionResult> Receipt(Guid id, CancellationToken ct)
+    {
+        var uidClaim = User.FindFirst("uid")?.Value;
+        if (!Guid.TryParse(uidClaim, out var userId))
+            return Forbid();
+
+        var image = await payments.GetReceiptImageAsync(id, userId, ct);
+        if (image is null)
+            return NotFound();
+        return File(image.Content, image.ContentType);
+    }
+
     [HttpPost("{id:guid}/refund")]
     [Authorize]
     public async Task<ActionResult<PaymentDto>> Refund(Guid id, CancellationToken ct) =>

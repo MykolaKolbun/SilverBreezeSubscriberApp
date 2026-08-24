@@ -18,6 +18,7 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options)
     public DbSet<SubscriptionPlan> SubscriptionPlans => Set<SubscriptionPlan>();
     public DbSet<Payment> Payments => Set<Payment>();
     public DbSet<PaymentGatewayConfig> PaymentGatewayConfigs => Set<PaymentGatewayConfig>();
+    public DbSet<FiscalGatewayConfig> FiscalGatewayConfigs => Set<FiscalGatewayConfig>();
 
     protected override void OnModelCreating(ModelBuilder b)
     {
@@ -85,6 +86,12 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options)
         {
             e.Property(x => x.Id).ValueGeneratedNever(); // singleton row (id = 1)
             e.Property(x => x.MerchantId).HasMaxLength(128);
+            e.Property(x => x.BaseUrl).HasMaxLength(256);
+        });
+
+        b.Entity<FiscalGatewayConfig>(e =>
+        {
+            e.Property(x => x.Id).ValueGeneratedNever(); // singleton row (id = 1)
             e.Property(x => x.BaseUrl).HasMaxLength(256);
         });
 

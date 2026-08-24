@@ -2,13 +2,14 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using ParkingSubscription.Application.Common;
 using ParkingSubscription.Application.Facade;
+using ParkingSubscription.Application.Payments;
 
 namespace ParkingSubscription.Api.Controllers;
 
 [ApiController]
 [Route("users")]
 [Authorize]
-public sealed class UsersController(IUserService users) : ControllerBase
+public sealed class UsersController(IUserService users, IPaymentService payments) : ControllerBase
 {
     [HttpPost]
     public async Task<ActionResult<UserDto>> Create(CreateUserRequest req, CancellationToken ct)
@@ -85,4 +86,9 @@ public sealed class UsersController(IUserService users) : ControllerBase
     [HttpGet("{id:guid}/value-cards")]
     public async Task<ActionResult<PagedResult<ValueCardDto>>> ValueCards(Guid id, [FromQuery] string? pagingToken, CancellationToken ct) =>
         Ok(await users.GetValueCardsAsync(id, pagingToken, ct));
+
+    /// <summary>The user's payment history (most recent first), for the profile "History" screen.</summary>
+    [HttpGet("{id:guid}/payments")]
+    public async Task<ActionResult<IReadOnlyList<PaymentDto>>> Payments(Guid id, CancellationToken ct) =>
+        Ok(await payments.GetHistoryAsync(id, ct));
 }

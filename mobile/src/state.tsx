@@ -12,9 +12,9 @@ import * as WebBrowser from 'expo-web-browser';
 import { Theme, ThemeName, themes } from './theme';
 import { nextStartISO, todayISO } from './plans';
 import { Lang, TFunc, translate } from './i18n';
-import { ApiCard, ApiError, ApiPlan, api } from './api/client';
+import { ApiCard, ApiError, ApiPayment, ApiPlan, api } from './api/client';
 
-export type Screen = 'pass' | 'profile' | 'plans' | 'payment';
+export type Screen = 'pass' | 'profile' | 'plans' | 'payment' | 'history';
 export type PayState = 'idle' | 'processing' | 'success';
 
 // Deep link the backend's /payments/resolve bounces the browser to; must match
@@ -75,6 +75,12 @@ interface AppState {
   cardsLoading: boolean;
   refreshCards: () => Promise<void>;
 
+  // Payment history (from API)
+  history: ApiPayment[];
+  historyLoading: boolean;
+  loadHistory: () => Promise<void>;
+  openHistory: () => void;
+
   // Payment (iPay hosted page + server-side confirmation)
   payState: PayState;
   confirmPayment: () => void;
@@ -112,6 +118,9 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
 
   const [cards, setCards] = useState<ApiCard[]>([]);
   const [cardsLoading, setCardsLoading] = useState(false);
+
+  const [history, setHistory] = useState<ApiPayment[]>([]);
+  const [historyLoading, setHistoryLoading] = useState(false);
 
   const [payState, setPayState] = useState<PayState>('idle');
 
@@ -234,6 +243,25 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
+  const loadHistory = async () => {
+    const s = sessionRef.current;
+    if (!s) return;
+    setHistoryLoading(true);
+    try {
+      const list = await authed((tok) => api.getPaymentsHistory(s.userId, tok));
+      setHistory(list);
+    } catch {
+      /* keep previous */
+    } finally {
+      setHistoryLoading(false);
+    }
+  };
+
+  const openHistory = () => {
+    setScreen('history');
+    loadHistory();
+  };
+
   // ---- auth actions ----
   const finishSignIn = async (
     r: { accessToken: string; refreshToken: string; userId: string },
@@ -297,6 +325,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     await persistSession(null);
     setPlans([]);
     setCards([]);
+    setHistory([]);
     setPlanId(null);
     setVehicles([]);
     setDrafts([]);
@@ -435,6 +464,11 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     cards,
     cardsLoading,
     refreshCards,
+
+    history,
+    historyLoading,
+    loadHistory,
+    openHistory,
 
     payState,
     confirmPayment,

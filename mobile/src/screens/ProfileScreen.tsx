@@ -552,6 +552,38 @@ export function ProfileScreen() {
           <ChevronRight size={18} color={t.fg1} />
         </Pressable>
 
+        {/* History */}
+        <Pressable
+          onPress={app.openHistory}
+          style={{
+            backgroundColor: t.bgElevated,
+            borderWidth: 1,
+            borderColor: t.border,
+            borderRadius: 16,
+            paddingVertical: 14,
+            paddingHorizontal: 16,
+            flexDirection: 'row',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+          }}
+        >
+          <View>
+            <Overline theme={t}>{tr('profile.history')}</Overline>
+            <Text
+              style={{
+                marginTop: 2,
+                fontFamily: fonts.inter600,
+                fontSize: 15,
+                lineHeight: 22,
+                color: t.fg1,
+              }}
+            >
+              {tr('profile.historySub')}
+            </Text>
+          </View>
+          <ChevronRight size={18} color={t.fg1} />
+        </Pressable>
+
         {/* Settings */}
         <View style={{ marginTop: 6 }}>
           <Overline theme={t}>{tr('profile.settings')}</Overline>

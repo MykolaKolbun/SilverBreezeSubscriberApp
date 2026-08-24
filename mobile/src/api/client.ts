@@ -101,6 +101,7 @@ export interface ApiPayment {
   currency: string;
   status: string; // Pending | Succeeded | Declined | TimedOut | Refunded
   fiscalReceiptId?: string | null;
+  fiscalReceiptUrl?: string | null;
   failureReason?: string | null;
   updatedAt: string;
 }
@@ -132,7 +133,14 @@ export const api = {
   // Poll the authoritative payment status (set server-side after the iPay redirect).
   getPayment: (paymentId: string, token: string) =>
     req<ApiPayment>(`/payments/${paymentId}`, { token }),
+
+  // Payment history (most recent first) for the profile History screen.
+  getPaymentsHistory: (userId: string, token: string) =>
+    req<ApiPayment[]>(`/users/${userId}/payments`, { token }),
 };
 
 // QR image URL (fetched with an Authorization header by <Image>).
 export const qrUrl = (cardId: string) => `${API_BASE_URL}/parking-cards/${cardId}/qr`;
+
+// Rendered fiscal receipt image URL (fetched with an Authorization header by <Image>).
+export const receiptUrl = (paymentId: string) => `${API_BASE_URL}/payments/${paymentId}/receipt`;

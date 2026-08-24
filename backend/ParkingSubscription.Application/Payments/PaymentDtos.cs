@@ -11,4 +11,4 @@ public sealed record PaymentWebhookRequest(string ProviderPaymentId, string Stat
 public sealed record PaymentDto(
     Guid Id, Guid UserId, Guid SubscriptionPlanId, Guid? ParkingCardId,
     long AmountMinor, string Currency, string Status,
-    string? FiscalReceiptId, string? FailureReason, DateTimeOffset UpdatedAt);
+    string? FiscalReceiptId, string? FiscalReceiptUrl, string? FailureReason, DateTimeOffset UpdatedAt);
