@@ -3,6 +3,7 @@
     "name": "SilverBreeze",
     "slug": "mobile",
     "version": "1.0.0",
+    "scheme": "silverbreeze",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
@@ -23,7 +24,8 @@
     },
     "plugins": [
       "@react-native-community/datetimepicker",
-      "expo-font"
+      "expo-font",
+      "expo-web-browser"
     ]
   }
 }

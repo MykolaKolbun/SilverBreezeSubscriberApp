@@ -6,9 +6,9 @@ namespace ParkingSubscription.Api.Controllers;
 
 [ApiController]
 [Route("payments")]
-public sealed class PaymentsController(IPaymentService payments) : ControllerBase
+public sealed class PaymentsController(IPaymentService payments, PaymentUrlOptions urls) : ControllerBase
 {
-    /// <summary>Initiate a payment for a subscription plan (ТЗ §6).</summary>
+    /// <summary>Initiate a payment for a subscription plan (ТЗ §6). Returns the hosted-page URL.</summary>
     [HttpPost]
     [Authorize]
     public async Task<ActionResult<InitiatePaymentResult>> Initiate(InitiatePaymentRequest req, CancellationToken ct) =>
@@ -25,9 +25,34 @@ public sealed class PaymentsController(IPaymentService payments) : ControllerBas
         Ok(await payments.RefundAsync(id, ct));
 
     /// <summary>
-    /// Provider webhook for async payment status (succeeded/declined/timeout).
-    /// On success the parking card is activated and the receipt fiscalized (ТЗ §6).
-    /// Anonymous: authenticated in production via provider signature verification.
+    /// Provider return URL (iPay good/bad). Confirms the payment server-side (the provider —
+    /// not this redirect — is the source of truth), activates the card on success, then bounces
+    /// the browser to the app deep link so the mobile WebBrowser session closes and the app polls
+    /// the final status. Anonymous — the unguessable paymentId is the capability.
+    /// </summary>
+    [HttpGet("resolve")]
+    [AllowAnonymous]
+    public async Task<IActionResult> Resolve([FromQuery] Guid paymentId, [FromQuery] string? outcome, CancellationToken ct)
+    {
+        var good = string.Equals(outcome, "good", StringComparison.OrdinalIgnoreCase);
+        string status;
+        try
+        {
+            var dto = await payments.ResolveAsync(paymentId, good, ct);
+            status = dto.Status;
+        }
+        catch (Exception)
+        {
+            status = "Error";
+        }
+
+        var sep = urls.AppReturnUrl.Contains('?') ? '&' : '?';
+        return Redirect($"{urls.AppReturnUrl}{sep}paymentId={paymentId}&status={status}");
+    }
+
+    /// <summary>
+    /// Dev/stub webhook for async payment status (succeeded/declined/timeout), used by the
+    /// Razor dev UI. The real iPay flow confirms server-side via <c>/payments/resolve</c>.
     /// </summary>
     [HttpPost("webhook")]
     [AllowAnonymous]

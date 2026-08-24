@@ -1,8 +1,8 @@
-// Payment — pay for the selected plan. Card details are entered fresh on
-// every checkout and never stored.
+// Payment — confirm the plan, then pay on the iPay hosted page. Card details are
+// entered on iPay's secure page, never in the app.
 import React from 'react';
-import { Pressable, ScrollView, Text, TextInput, View } from 'react-native';
-import { ON_VOLT, Theme, fonts } from '../theme';
+import { Pressable, ScrollView, Text, View } from 'react-native';
+import { ON_VOLT, fonts } from '../theme';
 import {
   fmtDate,
   fmtUAH,
@@ -12,37 +12,12 @@ import {
 } from '../plans';
 import { planFullLabel } from '../i18n';
 import { useApp } from '../state';
-import { Overline, Radio, selectableCardStyle } from '../components/ui';
-import { AppleIcon, CardIcon, ChevronLeft, LockIcon } from '../components/icons';
-
-function CardInput({
-  theme: t,
-  flex,
-  ...props
-}: React.ComponentProps<typeof TextInput> & { theme: Theme; flex?: boolean }) {
-  return (
-    <TextInput
-      placeholderTextColor={t.fg3}
-      {...props}
-      style={{
-        flex: flex ? 1 : undefined,
-        height: 48,
-        paddingHorizontal: 14,
-        backgroundColor: t.surface2,
-        borderWidth: 1.5,
-        borderColor: t.border,
-        borderRadius: 12,
-        color: t.fg1,
-        fontFamily: fonts.mono500,
-        fontSize: 15,
-      }}
-    />
-  );
-}
+import { Overline } from '../components/ui';
+import { ChevronLeft, LockIcon } from '../components/icons';
 
 export function PaymentScreen() {
   const app = useApp();
-  const { theme: t, planId, payMethod, payState } = app;
+  const { theme: t, planId, payState } = app;
   const tr = app.t;
   const plan = app.plans.find((p) => p.id === planId);
   const amount = plan ? fmtUAH(uahFromMinor(plan.priceMinor)) : '';
@@ -51,10 +26,7 @@ export function PaymentScreen() {
     : '';
 
   return (
-    <ScrollView
-      style={{ flex: 1 }}
-      contentContainerStyle={{ paddingBottom: 100 }}
-    >
+    <ScrollView style={{ flex: 1 }} contentContainerStyle={{ paddingBottom: 100 }}>
       {/* Header */}
       <View
         style={{
@@ -151,133 +123,40 @@ export function PaymentScreen() {
         </View>
       </View>
 
-      {/* Methods */}
-      <View style={{ paddingHorizontal: 20, gap: 10 }}>
-        <Overline theme={t}>{tr('pay.selectMethod')}</Overline>
-
-        <Pressable
-          onPress={() => app.setPayMethod('applepay')}
-          style={[
-            selectableCardStyle(t, payMethod === 'applepay'),
-            { flexDirection: 'row', alignItems: 'center', gap: 14 },
-          ]}
+      {/* Method note */}
+      <View style={{ paddingHorizontal: 20 }}>
+        <View
+          style={{
+            padding: 16,
+            backgroundColor: t.surface2,
+            borderWidth: 1,
+            borderColor: t.border,
+            borderRadius: 16,
+            flexDirection: 'row',
+            alignItems: 'center',
+            gap: 12,
+          }}
         >
-          <View
+          <LockIcon size={18} color={t.fg2} />
+          <Text
             style={{
-              width: 44,
-              height: 30,
-              borderRadius: 6,
-              backgroundColor: '#000',
-              alignItems: 'center',
-              justifyContent: 'center',
+              flex: 1,
+              fontFamily: fonts.inter500,
+              fontSize: 13,
+              lineHeight: 18,
+              color: t.fg2,
             }}
           >
-            <AppleIcon size={16} color="#fff" />
-          </View>
-          <View style={{ flex: 1 }}>
-            <Text
-              style={{
-                fontFamily: fonts.inter600,
-                fontSize: 15,
-                lineHeight: 22,
-                color: t.fg1,
-              }}
-            >
-              Apple Pay
-            </Text>
-            <Text
-              style={{
-                fontFamily: fonts.mono500,
-                fontSize: 11,
-                lineHeight: 14,
-                color: t.fg3,
-              }}
-            >
-              {tr('pay.appleReady')}
-            </Text>
-          </View>
-          <Radio theme={t} active={payMethod === 'applepay'} />
-        </Pressable>
-
-        <Pressable
-          onPress={() => app.setPayMethod('card')}
-          style={selectableCardStyle(t, payMethod === 'card')}
-        >
-          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 14 }}>
-            <View
-              style={{
-                width: 44,
-                height: 30,
-                borderRadius: 6,
-                backgroundColor: t.surface2,
-                alignItems: 'center',
-                justifyContent: 'center',
-              }}
-            >
-              <CardIcon size={18} color={t.fg2} />
-            </View>
-            <View style={{ flex: 1 }}>
-              <Text
-                style={{
-                  fontFamily: fonts.inter600,
-                  fontSize: 15,
-                  lineHeight: 22,
-                  color: t.fg1,
-                }}
-              >
-                {tr('pay.card')}
-              </Text>
-              <Text
-                style={{
-                  fontFamily: fonts.mono500,
-                  fontSize: 11,
-                  lineHeight: 14,
-                  color: t.fg3,
-                }}
-              >
-                {tr('pay.cardNotSaved')}
-              </Text>
-            </View>
-            <Radio theme={t} active={payMethod === 'card'} />
-          </View>
-
-          {payMethod === 'card' && (
-            <View style={{ marginTop: 14, gap: 10 }}>
-              <CardInput
-                theme={t}
-                placeholder={tr('pay.cardNumber')}
-                keyboardType="number-pad"
-                value={app.cardNumber}
-                onChangeText={app.setCardNumber}
-              />
-              <View style={{ flexDirection: 'row', gap: 10 }}>
-                <CardInput
-                  theme={t}
-                  flex
-                  placeholder="MM/YY"
-                  keyboardType="number-pad"
-                  value={app.cardExpiry}
-                  onChangeText={app.setCardExpiry}
-                />
-                <CardInput
-                  theme={t}
-                  flex
-                  placeholder="CVC"
-                  keyboardType="number-pad"
-                  secureTextEntry
-                  value={app.cardCvc}
-                  onChangeText={app.setCardCvc}
-                />
-              </View>
-            </View>
-          )}
-        </Pressable>
+            {tr('pay.ipayNote')}
+          </Text>
+        </View>
       </View>
 
       {/* Confirm */}
-      <View style={{ paddingHorizontal: 20, paddingTop: 14, paddingBottom: 28 }}>
+      <View style={{ paddingHorizontal: 20, paddingTop: 18, paddingBottom: 28 }}>
         <Pressable
           onPress={app.confirmPayment}
+          disabled={payState !== 'idle'}
           style={{
             height: 56,
             borderRadius: 24,
@@ -296,7 +175,7 @@ export function PaymentScreen() {
               color: ON_VOLT,
             }}
           >
-            {payState === 'idle' && `${tr('pay.confirm')} · ${amount}`}
+            {payState === 'idle' && `${tr('pay.payWithIpay')} · ${amount}`}
             {payState === 'processing' && tr('pay.processing')}
             {payState === 'success' && tr('pay.confirmed')}
           </Text>

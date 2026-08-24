@@ -88,9 +88,21 @@ export interface PagedCards {
 export interface InitiatePaymentResult {
   paymentId: string;
   providerPaymentId: string;
-  clientSecret: string;
+  redirectUrl: string; // hosted iPay page to open in a browser
   amountMinor: number;
   currency: string;
+}
+export interface ApiPayment {
+  id: string;
+  userId: string;
+  subscriptionPlanId: string;
+  parkingCardId?: string | null;
+  amountMinor: number;
+  currency: string;
+  status: string; // Pending | Succeeded | Declined | TimedOut | Refunded
+  fiscalReceiptId?: string | null;
+  failureReason?: string | null;
+  updatedAt: string;
 }
 
 // ---- Endpoints ----
@@ -117,13 +129,9 @@ export const api = {
     token: string
   ) => req<InitiatePaymentResult>('/payments', { method: 'POST', body: b, token }),
 
-  // Dev/stub: simulate the payment provider's "succeeded" webhook so the card
-  // activates. Replace with a real provider flow later. (Endpoint is anonymous.)
-  completePaymentDev: (providerPaymentId: string) =>
-    req<unknown>('/payments/webhook', {
-      method: 'POST',
-      body: { providerPaymentId, status: 'succeeded' },
-    }),
+  // Poll the authoritative payment status (set server-side after the iPay redirect).
+  getPayment: (paymentId: string, token: string) =>
+    req<ApiPayment>(`/payments/${paymentId}`, { token }),
 };
 
 // QR image URL (fetched with an Authorization header by <Image>).

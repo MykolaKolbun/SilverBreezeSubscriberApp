@@ -43,9 +43,19 @@ services:
       # token in the response and the app auto-confirms. Set to "false" once a
       # real email provider is wired in.
       Auth__ExposeDevTokens: "true"
+      # iPay gateway. Provider=iPay and the sandbox BaseUrl come from
+      # appsettings.Production.json; the merchant id + secret SignKey are injected
+      # here from .env (never committed). SignKey is encrypted at rest on first boot.
+      Payment__iPay__MchId: ${IPAY_MCH_ID}
+      Payment__iPay__SignKey: ${IPAY_SIGN_KEY}
+      Payment__iPay__BaseUrl: ${IPAY_BASE_URL:-https://sandbox-checkout.ipay.ua/api302}
     depends_on:
       postgres:
         condition: service_healthy
+    volumes:
+      # Data Protection keys that encrypt the iPay SignKey — persisted so restarts
+      # can still decrypt what is stored in the database.
+      - dataprotection_keys:/keys
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
       interval: 30s
@@ -67,3 +77,4 @@ services:
 
 volumes:
   postgres_data:
+  dataprotection_keys:

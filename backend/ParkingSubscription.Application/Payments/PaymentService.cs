@@ -11,6 +11,11 @@ namespace ParkingSubscription.Application.Payments;
 public interface IPaymentService
 {
     Task<InitiatePaymentResult> InitiateAsync(InitiatePaymentRequest req, CancellationToken ct = default);
+    /// <summary>
+    /// Provider return-URL handler: confirms the payment server-side via the provider's
+    /// authoritative status, then (on success) activates the card. Idempotent.
+    /// </summary>
+    Task<PaymentDto> ResolveAsync(Guid paymentId, bool good, CancellationToken ct = default);
     Task<PaymentDto> HandleWebhookAsync(PaymentWebhookRequest req, CancellationToken ct = default);
     Task<PaymentDto> GetAsync(Guid id, CancellationToken ct = default);
     Task<PaymentDto> RefundAsync(Guid id, CancellationToken ct = default);
@@ -29,6 +34,7 @@ public sealed class PaymentService(
     IParkingCardService parkingCards,
     IPushSender push,
     IClock clock,
+    PaymentUrlOptions urls,
     ILogger<PaymentService> logger) : IPaymentService
 {
     public async Task<InitiatePaymentResult> InitiateAsync(InitiatePaymentRequest req, CancellationToken ct = default)
@@ -50,12 +56,71 @@ public sealed class PaymentService(
         db.Payments.Add(payment);
         await db.SaveChangesAsync(ct);
 
-        var intent = await provider.CreatePaymentAsync(plan.PriceMinor, plan.Currency, payment.Id.ToString(), ct);
+        // The provider redirects the browser back to our resolve endpoint (good/bad),
+        // which confirms the payment server-side and then bounces to the app deep link.
+        var baseUrl = urls.PublicBaseUrl.TrimEnd('/');
+        var successUrl = $"{baseUrl}/payments/resolve?paymentId={payment.Id}&outcome=good";
+        var failureUrl = $"{baseUrl}/payments/resolve?paymentId={payment.Id}&outcome=bad";
+
+        var intent = await provider.CreatePaymentAsync(
+            new PaymentInitiation(
+                plan.PriceMinor, plan.Currency, payment.Id.ToString(),
+                $"Паркування · {plan.Name}", successUrl, failureUrl),
+            ct);
+
         payment.ProviderPaymentId = intent.ProviderPaymentId;
         payment.Touch();
         await db.SaveChangesAsync(ct);
 
-        return new InitiatePaymentResult(payment.Id, intent.ProviderPaymentId, intent.ClientSecret, plan.PriceMinor, plan.Currency);
+        return new InitiatePaymentResult(payment.Id, intent.ProviderPaymentId, intent.RedirectUrl, plan.PriceMinor, plan.Currency);
+    }
+
+    public async Task<PaymentDto> ResolveAsync(Guid paymentId, bool good, CancellationToken ct = default)
+    {
+        var payment = await db.Payments.FirstOrDefaultAsync(p => p.Id == paymentId, ct)
+            ?? throw new NotFoundException($"Payment {paymentId} not found.");
+
+        // Idempotency: a payment already in a terminal state is returned unchanged.
+        if (payment.Status is not PaymentStatus.Pending)
+            return ToDto(payment);
+
+        if (string.IsNullOrEmpty(payment.ProviderPaymentId))
+        {
+            logger.LogWarning("Resolve for payment {PaymentId} has no provider id — leaving Pending", payment.Id);
+            return ToDto(payment);
+        }
+
+        // The provider — not the browser redirect — is the source of truth.
+        var status = await provider.GetStatusAsync(payment.ProviderPaymentId, ct);
+        switch (status.Status)
+        {
+            case ProviderPaymentStatus.Succeeded:
+                await OnSucceededAsync(payment, ct);
+                break;
+            case ProviderPaymentStatus.Failed:
+                payment.Status = PaymentStatus.Declined;
+                payment.FailureReason = "Declined by provider.";
+                break;
+            case ProviderPaymentStatus.Cancelled:
+                payment.Status = PaymentStatus.Declined;
+                payment.FailureReason = "Payment cancelled.";
+                break;
+            default:
+                // Still pending/unknown at the provider — leave Pending so the app can
+                // poll again (the user may not have finished, or iPay is slow to settle).
+                logger.LogInformation("Resolve payment {PaymentId}: provider status {Status} (good={Good}) — still pending",
+                    payment.Id, status.Status, good);
+                return ToDto(payment);
+        }
+
+        payment.Touch();
+        await db.SaveChangesAsync(ct);
+
+        if (payment.Status != PaymentStatus.Succeeded)
+            await push.SendAsync(payment.UserId, "Оплата не пройшла",
+                $"Платіж {payment.Id} не було завершено.", ct);
+
+        return ToDto(payment);
     }
 
     public async Task<PaymentDto> HandleWebhookAsync(PaymentWebhookRequest req, CancellationToken ct = default)

@@ -46,9 +46,28 @@ public static class DependencyInjection
         services.AddSingleton<IPasswordHasher, BcryptPasswordHasher>();
         services.AddSingleton<IJwtTokenService, JwtTokenService>();
 
+        // Payment URLs (redirect flow) + at-rest secret protection.
+        var paymentUrls = new Application.Payments.PaymentUrlOptions();
+        config.GetSection(Application.Payments.PaymentUrlOptions.SectionName).Bind(paymentUrls);
+        services.AddSingleton(paymentUrls);
+        services.AddScoped<ICredentialProtector, Security.CredentialProtector>();
+
+        // Payment provider: "iPay" hits the real gateway (credentials from PaymentGatewayConfig);
+        // anything else uses the stub (tests/dev). Never runs the stub in Production.
+        var paymentProvider = config["Payment:Provider"] ?? "Stub";
+        if (paymentProvider.Equals("iPay", StringComparison.OrdinalIgnoreCase))
+        {
+            services.AddHttpClient(Payments.IPayPaymentProvider.HttpClientName,
+                c => c.Timeout = TimeSpan.FromSeconds(30));
+            services.AddScoped<IPaymentProvider, Payments.IPayPaymentProvider>();
+        }
+        else
+        {
+            services.AddScoped<IPaymentProvider, PaymentProviderStub>();
+        }
+
         // External-integration stubs (ТЗ §4, §6, §7, §9)
         services.AddScoped<IParkingLogicClient, ParkingLogicClientStub>();
-        services.AddScoped<IPaymentProvider, PaymentProviderStub>();
         services.AddScoped<IFiscalProvider, FiscalProviderStub>();
         services.AddScoped<IWalletPassService, WalletPassServiceStub>();
         services.AddSingleton<IQrCodeGenerator, QrCodeGenerator>();

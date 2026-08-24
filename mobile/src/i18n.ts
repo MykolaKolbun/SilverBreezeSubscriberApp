@@ -60,8 +60,11 @@ const uk: Dict = {
   'pay.confirmed': 'Оплачено!',
   'pay.secured': 'Захищено 256-бітним SSL-шифруванням',
   'pay.starts': 'Початок {date}',
+  'pay.payWithIpay': 'Оплатити через iPay',
+  'pay.ipayNote': 'Оплата на захищеній сторінці iPay. Дані картки вводяться там і не зберігаються в застосунку.',
   'pay.err.title': 'Оплата не пройшла',
   'pay.err.body': 'Спробуйте ще раз.',
+  'pay.err.notCompleted': 'Платіж не було завершено. Спробуйте ще раз.',
 
   'profile.title': 'Профіль',
   'profile.vehicles': 'Автомобілі',
@@ -143,6 +146,9 @@ const en: Dict = {
   'pay.confirmed': 'Payment confirmed!',
   'pay.secured': 'Secured by 256-bit SSL encryption',
   'pay.starts': 'Starts {date}',
+  'pay.payWithIpay': 'Pay with iPay',
+  'pay.ipayNote': 'Payment happens on iPay’s secure page. Card details are entered there and never stored in the app.',
+  'pay.err.notCompleted': 'The payment was not completed. Please try again.',
   'pay.err.title': 'Payment failed',
   'pay.err.body': 'Please try again.',
 

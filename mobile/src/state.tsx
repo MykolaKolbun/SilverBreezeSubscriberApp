@@ -8,14 +8,18 @@ import React, {
 } from 'react';
 import { Alert } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import * as WebBrowser from 'expo-web-browser';
 import { Theme, ThemeName, themes } from './theme';
 import { todayISO } from './plans';
 import { Lang, TFunc, translate } from './i18n';
 import { ApiCard, ApiError, ApiPlan, api } from './api/client';
 
 export type Screen = 'pass' | 'profile' | 'plans' | 'payment';
-export type PayMethod = 'applepay' | 'card';
 export type PayState = 'idle' | 'processing' | 'success';
+
+// Deep link the backend's /payments/resolve bounces the browser to; must match
+// app.json "scheme" and the backend Payment:AppReturnUrl.
+const PAYMENT_RETURN_URL = 'silverbreeze://payment';
 export type AuthStatus = 'loading' | 'out' | 'in';
 
 interface Session {
@@ -71,15 +75,7 @@ interface AppState {
   cardsLoading: boolean;
   refreshCards: () => Promise<void>;
 
-  // Payment
-  payMethod: PayMethod;
-  setPayMethod: (m: PayMethod) => void;
-  cardNumber: string;
-  setCardNumber: (v: string) => void;
-  cardExpiry: string;
-  setCardExpiry: (v: string) => void;
-  cardCvc: string;
-  setCardCvc: (v: string) => void;
+  // Payment (iPay hosted page + server-side confirmation)
   payState: PayState;
   confirmPayment: () => void;
 
@@ -117,10 +113,6 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   const [cards, setCards] = useState<ApiCard[]>([]);
   const [cardsLoading, setCardsLoading] = useState(false);
 
-  const [payMethod, setPayMethod] = useState<PayMethod>('card');
-  const [cardNumber, setCardNumber] = useState('');
-  const [cardExpiry, setCardExpiry] = useState('');
-  const [cardCvc, setCardCvc] = useState('');
   const [payState, setPayState] = useState<PayState>('idle');
 
   const [vehicles, setVehicles] = useState<Vehicle[]>([]);
@@ -302,9 +294,6 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     setPlanId(null);
     setVehicles([]);
     setDrafts([]);
-    setCardNumber('');
-    setCardExpiry('');
-    setCardCvc('');
     setPayState('idle');
     setStartDate(todayISO());
     setScreen('pass');
@@ -316,6 +305,21 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     setStartDate(todayISO());
     setPlanId((cur) => cur ?? plans[0]?.id ?? null);
     setScreen('plans');
+  };
+
+  // Poll the payment until it leaves Pending (the resolve endpoint sets the final
+  // state server-side). Returns the terminal status, or 'Pending' if it never settled.
+  const pollPaymentStatus = async (paymentId: string): Promise<string> => {
+    for (let i = 0; i < 10; i++) {
+      try {
+        const p = await authed((tok) => api.getPayment(paymentId, tok));
+        if (p.status !== 'Pending') return p.status;
+      } catch {
+        /* transient — retry */
+      }
+      await new Promise((r) => setTimeout(r, 1500));
+    }
+    return 'Pending';
   };
 
   const confirmPayment = () => {
@@ -330,12 +334,35 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
             tok
           )
         );
-        await api.completePaymentDev(init.providerPaymentId);
+
+        // Open the iPay hosted page; resolves when the backend bounces the
+        // browser back to our deep link (silverbreeze://payment?...).
+        const result = await WebBrowser.openAuthSessionAsync(
+          init.redirectUrl,
+          PAYMENT_RETURN_URL
+        );
+
+        if (result.type !== 'success') {
+          // User dismissed the browser — check the status anyway in case they paid.
+          const status = await pollPaymentStatus(init.paymentId);
+          if (status !== 'Succeeded') {
+            setPayState('idle');
+            return;
+          }
+        } else {
+          const status = await pollPaymentStatus(init.paymentId);
+          if (status !== 'Succeeded') {
+            setPayState('idle');
+            Alert.alert(
+              translate(langRef.current, 'pay.err.title'),
+              translate(langRef.current, 'pay.err.notCompleted')
+            );
+            return;
+          }
+        }
+
         setPayState('success');
         await refreshCards();
-        setCardNumber('');
-        setCardExpiry('');
-        setCardCvc('');
         setTimeout(() => {
           setPayState('idle');
           setScreen('pass');
@@ -403,14 +430,6 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     cardsLoading,
     refreshCards,
 
-    payMethod,
-    setPayMethod,
-    cardNumber,
-    setCardNumber,
-    cardExpiry,
-    setCardExpiry,
-    cardCvc,
-    setCardCvc,
     payState,
     confirmPayment,
 

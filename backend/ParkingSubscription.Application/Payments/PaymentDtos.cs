@@ -3,7 +3,7 @@ namespace ParkingSubscription.Application.Payments;
 public sealed record InitiatePaymentRequest(Guid UserId, Guid SubscriptionPlanId, DateOnly? StartDate);
 
 public sealed record InitiatePaymentResult(
-    Guid PaymentId, string ProviderPaymentId, string ClientSecret, long AmountMinor, string Currency);
+    Guid PaymentId, string ProviderPaymentId, string RedirectUrl, long AmountMinor, string Currency);
 
 /// <summary>Async status update from the payment provider (ТЗ §6 webhook).</summary>
 public sealed record PaymentWebhookRequest(string ProviderPaymentId, string Status);

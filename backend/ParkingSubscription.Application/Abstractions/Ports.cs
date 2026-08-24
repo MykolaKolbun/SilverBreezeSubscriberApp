@@ -37,13 +37,47 @@ public interface IParkingLogicClient
     Task<string> PropagateAsync(EntityKind kind, Guid entityId, PropagationOperation op, string? payloadJson, CancellationToken ct = default);
 }
 
-public sealed record PaymentIntent(string ProviderPaymentId, string ClientSecret);
+/// <summary>Input for creating a hosted-page payment at the provider (iPay).</summary>
+public sealed record PaymentInitiation(
+    /// <summary>Amount in minor units (kopiykas).</summary>
+    long AmountMinor,
+    /// <summary>ISO 4217 currency (e.g. "UAH").</summary>
+    string Currency,
+    /// <summary>Our internal reference (the Payment id) echoed back by the provider.</summary>
+    string Reference,
+    /// <summary>Human-readable description shown on the payment page.</summary>
+    string Description,
+    /// <summary>Provider redirects the browser here after success.</summary>
+    string SuccessUrl,
+    /// <summary>Provider redirects the browser here after failure/cancel.</summary>
+    string FailureUrl);
 
-/// <summary>Payment provider abstraction (Stripe/LiqPay/Fondy — ТЗ §6, §10.3).</summary>
+/// <summary>Result of creating a payment: the provider id and the hosted page URL.</summary>
+public sealed record PaymentIntent(string ProviderPaymentId, string RedirectUrl);
+
+/// <summary>Normalised provider payment status. The provider is the source of truth.</summary>
+public enum ProviderPaymentStatus { Pending, Succeeded, Failed, Cancelled, Unknown }
+
+/// <summary>Authoritative status fetched server-side from the provider by payment id.</summary>
+public sealed record ProviderPaymentStatusResult(ProviderPaymentStatus Status, long AmountMinor);
+
+/// <summary>Payment provider abstraction (iPay in production, stub in tests/dev — ТЗ §6, §10.3).</summary>
 public interface IPaymentProvider
 {
-    Task<PaymentIntent> CreatePaymentAsync(long amountMinor, string currency, string reference, CancellationToken ct = default);
+    /// <summary>Creates a hosted-page payment and returns the URL to open in a browser.</summary>
+    Task<PaymentIntent> CreatePaymentAsync(PaymentInitiation initiation, CancellationToken ct = default);
+
+    /// <summary>Fetches the authoritative payment status from the provider (never trust the client).</summary>
+    Task<ProviderPaymentStatusResult> GetStatusAsync(string providerPaymentId, CancellationToken ct = default);
+
     Task RefundAsync(string providerPaymentId, CancellationToken ct = default);
+}
+
+/// <summary>Encrypts/decrypts secrets at rest (e.g. the payment SignKey).</summary>
+public interface ICredentialProtector
+{
+    string Protect(string plaintext);
+    string Unprotect(string ciphertext);
 }
 
 public sealed record FiscalReceipt(string ReceiptId, string Url);

@@ -51,6 +51,9 @@ jobs:
         env:
           DB_PASSWORD:     ${{ secrets.DB_PASSWORD }}
           JWT_SIGNING_KEY: ${{ secrets.JWT_SIGNING_KEY }}
+          IPAY_MCH_ID:     ${{ secrets.IPAY_MCH_ID }}
+          IPAY_SIGN_KEY:   ${{ secrets.IPAY_SIGN_KEY }}
+          IPAY_BASE_URL:   ${{ secrets.IPAY_BASE_URL }}
         run: |
           mkdir -p ~/.ssh
           echo "${{ secrets.PI_SSH_PRIVATE_KEY }}" | base64 -d > ~/.ssh/id_ed25519
@@ -73,7 +76,14 @@ jobs:
 
           # Upsert only the required secrets into .env on the Pi; other vars preserved.
           # Secrets flow: GitHub Secrets -> env: block -> printf (local) -> stdin -> Pi (never in argv).
-          printf "DB_PASSWORD=%s\nJWT_SIGNING_KEY=%s\n" "$DB_PASSWORD" "$JWT_SIGNING_KEY" | \
+          # iPay vars are written only when set, so an unset secret never clobbers the .env.
+          {
+            printf 'DB_PASSWORD=%s\n' "$DB_PASSWORD"
+            printf 'JWT_SIGNING_KEY=%s\n' "$JWT_SIGNING_KEY"
+            [ -n "$IPAY_MCH_ID" ]   && printf 'IPAY_MCH_ID=%s\n' "$IPAY_MCH_ID"
+            [ -n "$IPAY_SIGN_KEY" ] && printf 'IPAY_SIGN_KEY=%s\n' "$IPAY_SIGN_KEY"
+            [ -n "$IPAY_BASE_URL" ] && printf 'IPAY_BASE_URL=%s\n' "$IPAY_BASE_URL"
+          } | \
             ssh "$PI" '
               touch ~/SilverBreezeSubscriberApp/.env
               while IFS= read -r line; do
