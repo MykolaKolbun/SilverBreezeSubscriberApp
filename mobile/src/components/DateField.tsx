@@ -69,10 +69,13 @@ export function DateField({ theme, value, onChange, minimum, lang = 'uk' }: Prop
         <DateTimePicker
           value={new Date(value + 'T00:00:00')}
           mode="date"
-          minimumDate={minimum ? new Date(minimum + 'T00:00:00') : undefined}
           onChange={(_event, date) => {
             setOpen(Platform.OS === 'ios');
-            if (date) onChange(toLocalISO(date));
+            if (!date) return;
+            // Enforce the floor in JS (native minimumDate can lock the Fabric picker).
+            let iso = toLocalISO(date);
+            if (minimum && iso < minimum) iso = minimum;
+            onChange(iso);
           }}
         />
       )}
