@@ -6,7 +6,10 @@ namespace ParkingSubscription.Api.Controllers;
 
 [ApiController]
 [Route("payments")]
-public sealed class PaymentsController(IPaymentService payments, PaymentUrlOptions urls) : ControllerBase
+public sealed class PaymentsController(
+    IPaymentService payments,
+    PaymentUrlOptions urls,
+    ILogger<PaymentsController> logger) : ControllerBase
 {
     /// <summary>Initiate a payment for a subscription plan (ТЗ §6). Returns the hosted-page URL.</summary>
     [HttpPost]
@@ -43,8 +46,9 @@ public sealed class PaymentsController(IPaymentService payments, PaymentUrlOptio
             var dto = await payments.ResolveAsync(paymentId, good, ct);
             status = dto.Status;
         }
-        catch (Exception)
+        catch (Exception ex)
         {
+            logger.LogError(ex, "Payment resolve failed for {PaymentId} (outcome {Outcome})", paymentId, outcome);
             status = "Error";
         }
 

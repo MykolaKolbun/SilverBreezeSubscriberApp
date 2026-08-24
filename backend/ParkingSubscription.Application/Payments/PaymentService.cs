@@ -197,8 +197,18 @@ public sealed class PaymentService(
     {
         var plan = await db.SubscriptionPlans.FirstAsync(p => p.Id == payment.SubscriptionPlanId, ct);
 
-        // Create + activate the parking card (enforces one-active-card-per-period rule).
+        // Renewal-aware start: if the user already holds active cards, the new card
+        // starts the day after the latest one ends (stacking), so a repeat purchase
+        // does not collide with the one-active-card-per-period rule. Otherwise today.
         var start = clock.Today;
+        var latestActiveEnd = await db.ParkingCards
+            .Where(c => c.UserId == payment.UserId && c.Status == CardStatus.Active && !c.IsDeleted)
+            .OrderByDescending(c => c.EndDate)
+            .Select(c => (DateOnly?)c.EndDate)
+            .FirstOrDefaultAsync(ct);
+        if (latestActiveEnd is DateOnly le && le >= start)
+            start = le.AddDays(1);
+
         var end = start.AddDays(Math.Max(1, plan.DurationDays) - 1);
         var card = await parkingCards.CreateAsync(
             new CreateParkingCardRequest(payment.UserId, plan.Id, start, end, null), ct);
