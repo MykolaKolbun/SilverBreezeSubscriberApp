@@ -136,42 +136,47 @@ public sealed class CheckboxOnlineFiscalProvider(
     private async Task EnsureShiftAsync(CheckboxCredentials cfg, string token, CancellationToken ct)
     {
         using var http = httpClientFactory.CreateClient(HttpClientName);
-
-        // Request opening (idempotent: 409 = already opening/open).
-        using (var openReq = new HttpRequestMessage(HttpMethod.Post, $"{cfg.BaseUrl}/api/v1/shifts"))
-        {
-            ApplyHeaders(openReq, cfg, token);
-            var openResp = await http.SendAsync(openReq, ct);
-            if (!openResp.IsSuccessStatusCode && (int)openResp.StatusCode != 409)
-            {
-                var body = await openResp.Content.ReadAsStringAsync(ct);
-                throw new InvalidOperationException($"Checkbox open-shift failed: HTTP {(int)openResp.StatusCode} {body}");
-            }
-        }
-
-        // Opening a shift is ASYNC — poll the current shift until it is OPENED before selling,
-        // otherwise /receipts/sell returns 400 shift.not_opened.
         const int maxAttempts = 20;
+        var requestedOpen = false;
+
+        // Read the shift status first; open only when there is no active shift. Opening is
+        // async (shift goes OPENING → OPENED), and a duplicate open returns either 409 or a
+        // 400 "Касир вже працює з даною касою" — both are tolerated.
         for (var attempt = 1; attempt <= maxAttempts; attempt++)
         {
-            using var req = new HttpRequestMessage(HttpMethod.Get, $"{cfg.BaseUrl}/api/v1/cashier/shift");
-            ApplyHeaders(req, cfg, token);
-            var resp = await http.SendAsync(req, ct);
-            if (resp.IsSuccessStatusCode)
+            var status = await ReadShiftStatusAsync(http, cfg, token, ct);
+            if (status == "OPENED") return;
+
+            if (!requestedOpen && status is null or "CLOSED")
             {
-                var body = await resp.Content.ReadAsStringAsync(ct);
-                if (!string.IsNullOrWhiteSpace(body))
+                requestedOpen = true;
+                using var openReq = new HttpRequestMessage(HttpMethod.Post, $"{cfg.BaseUrl}/api/v1/shifts");
+                ApplyHeaders(openReq, cfg, token);
+                var openResp = await http.SendAsync(openReq, ct);
+                if (!openResp.IsSuccessStatusCode && (int)openResp.StatusCode is not (409 or 400))
                 {
-                    using var doc = JsonDocument.Parse(body);
-                    var status = doc.RootElement.TryGetProperty("status", out var s) ? s.GetString() : null;
-                    if (status == "OPENED") return;
-                    if (status == "CLOSED")
-                        throw new InvalidOperationException("Checkbox shift is CLOSED after an open attempt.");
+                    var body = await openResp.Content.ReadAsStringAsync(ct);
+                    throw new InvalidOperationException($"Checkbox open-shift failed: HTTP {(int)openResp.StatusCode} {body}");
                 }
+                if (!openResp.IsSuccessStatusCode)
+                    logger.LogInformation("[Checkbox] open-shift returned {Status} (treated as already opening)", (int)openResp.StatusCode);
             }
+
             await Task.Delay(500, ct);
         }
         throw new InvalidOperationException($"Checkbox shift did not reach OPENED after {maxAttempts} attempts.");
+    }
+
+    private async Task<string?> ReadShiftStatusAsync(HttpClient http, CheckboxCredentials cfg, string token, CancellationToken ct)
+    {
+        using var req = new HttpRequestMessage(HttpMethod.Get, $"{cfg.BaseUrl}/api/v1/cashier/shift");
+        ApplyHeaders(req, cfg, token);
+        var resp = await http.SendAsync(req, ct);
+        if (!resp.IsSuccessStatusCode) return null; // 404 = no active shift
+        var body = await resp.Content.ReadAsStringAsync(ct);
+        if (string.IsNullOrWhiteSpace(body)) return null;
+        using var doc = JsonDocument.Parse(body);
+        return doc.RootElement.TryGetProperty("status", out var s) ? s.GetString() : null;
     }
 
     private async Task<string?> PollUntilDoneAsync(CheckboxCredentials cfg, string token, string receiptId, CancellationToken ct)
