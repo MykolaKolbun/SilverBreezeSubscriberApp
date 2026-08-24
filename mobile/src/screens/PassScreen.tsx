@@ -2,12 +2,12 @@
 import React from 'react';
 import {
   ActivityIndicator,
-  Image,
   Pressable,
   ScrollView,
   Text,
   View,
 } from 'react-native';
+import QRCode from 'react-native-qrcode-svg';
 import { ON_VOLT, fonts } from '../theme';
 import {
   fmtDate,
@@ -23,11 +23,10 @@ import { Overline, PulseDot } from '../components/ui';
 import { SbLogo } from '../components/SbLogo';
 import { AddressLink } from '../components/AddressLink';
 import { VENUE } from '../venue';
-import { qrUrl } from '../api/client';
 
 export function PassScreen() {
   const app = useApp();
-  const { theme: t, cards, plans, cardsLoading, token } = app;
+  const { theme: t, cards, plans, cardsLoading } = app;
   const tr = app.t;
 
   const today = todayISO();
@@ -78,14 +77,7 @@ export function PassScreen() {
                     gap: 8,
                   }}
                 >
-                  <Image
-                    source={{
-                      uri: qrUrl(active.id),
-                      headers: { Authorization: `Bearer ${token}` },
-                    }}
-                    style={{ width: 148, height: 148 }}
-                    resizeMode="contain"
-                  />
+                  <QRCode value={active.qrPayload || active.id} size={148} />
                   <Overline theme={t} color="#6A7187">
                     {tr('pass.entryCode')}
                   </Overline>

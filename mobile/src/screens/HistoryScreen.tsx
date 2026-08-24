@@ -3,7 +3,6 @@
 import React, { useState } from 'react';
 import {
   ActivityIndicator,
-  Image,
   Modal,
   Pressable,
   ScrollView,
@@ -22,12 +21,13 @@ import {
 import { planFullLabel } from '../i18n';
 import { useApp } from '../state';
 import { Overline } from '../components/ui';
+import { AuthImage } from '../components/AuthImage';
 import { ChevronLeft, ChevronRight } from '../components/icons';
 import { receiptUrl } from '../api/client';
 
 export function HistoryScreen() {
   const app = useApp();
-  const { theme: t, history, historyLoading, plans, token } = app;
+  const { theme: t, history, historyLoading, plans } = app;
   const tr = app.t;
   const { width } = useWindowDimensions();
   const [receiptId, setReceiptId] = useState<string | null>(null);
@@ -223,13 +223,10 @@ export function HistoryScreen() {
             </View>
             <ScrollView contentContainerStyle={{ padding: 12 }}>
               {receiptId && (
-                <Image
-                  source={{
-                    uri: receiptUrl(receiptId),
-                    headers: { Authorization: `Bearer ${token}` },
-                  }}
+                <AuthImage
+                  url={receiptUrl(receiptId)}
                   style={{ width: width - 64, height: (width - 64) * 1.9 }}
-                  resizeMode="contain"
+                  emptyLabel={tr('history.receiptUnavailable')}
                 />
               )}
             </ScrollView>

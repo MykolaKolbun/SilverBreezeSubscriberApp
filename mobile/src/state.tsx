@@ -39,6 +39,7 @@ export interface Vehicle {
 const THEME_KEY = 'silverbreeze.theme';
 const LANG_KEY = 'silverbreeze.lang';
 const SESSION_KEY = 'silverbreeze.session';
+const CARDS_KEY = 'silverbreeze.cards';
 const MAX_VEHICLES = 3;
 
 interface AppState {
@@ -80,6 +81,10 @@ interface AppState {
   historyLoading: boolean;
   loadHistory: () => Promise<void>;
   openHistory: () => void;
+
+  // Fetch an authenticated image (QR / receipt) as a data URI, refreshing the
+  // token on 401. Returns null if unavailable.
+  fetchImage: (url: string) => Promise<string | null>;
 
   // Payment (iPay hosted page + server-side confirmation)
   payState: PayState;
@@ -149,6 +154,16 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
           sessionRef.current = s;
           setSession(s);
           setAuthStatus('in');
+          // Show cached cards immediately (offline-friendly — the QR works without
+          // network), then refresh from the API when reachable.
+          const cachedCards = await AsyncStorage.getItem(CARDS_KEY);
+          if (cachedCards) {
+            try {
+              setCards(JSON.parse(cachedCards));
+            } catch {
+              /* ignore corrupt cache */
+            }
+          }
           loadData();
           return;
         } catch {
@@ -236,8 +251,10 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         .filter((c) => !c.isDeleted)
         .sort((a, b) => (a.startDate < b.startDate ? -1 : 1));
       setCards(sorted);
+      // Cache for offline access (QR is rendered on-device from qrPayload).
+      AsyncStorage.setItem(CARDS_KEY, JSON.stringify(sorted)).catch(() => {});
     } catch {
-      /* keep previous cards */
+      /* keep previous cards (possibly the cached set) */
     } finally {
       setCardsLoading(false);
     }
@@ -261,6 +278,22 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     setScreen('history');
     loadHistory();
   };
+
+  const blobToDataUri = (blob: Blob): Promise<string> =>
+    new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onerror = () => reject(reader.error);
+      reader.onloadend = () => resolve(reader.result as string);
+      reader.readAsDataURL(blob);
+    });
+
+  const fetchImage = async (url: string): Promise<string | null> =>
+    authed(async (tok) => {
+      const res = await fetch(url, { headers: { Authorization: `Bearer ${tok}` } });
+      if (res.status === 401) throw new ApiError(401, 'unauthorized');
+      if (!res.ok) return null;
+      return await blobToDataUri(await res.blob());
+    });
 
   // ---- auth actions ----
   const finishSignIn = async (
@@ -326,6 +359,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     setPlans([]);
     setCards([]);
     setHistory([]);
+    AsyncStorage.removeItem(CARDS_KEY).catch(() => {});
     setPlanId(null);
     setVehicles([]);
     setDrafts([]);
@@ -469,6 +503,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     historyLoading,
     loadHistory,
     openHistory,
+    fetchImage,
 
     payState,
     confirmPayment,
