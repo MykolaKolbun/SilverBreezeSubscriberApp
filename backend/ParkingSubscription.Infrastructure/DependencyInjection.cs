@@ -50,6 +50,10 @@ public static class DependencyInjection
         var paymentUrls = new Application.Payments.PaymentUrlOptions();
         config.GetSection(Application.Payments.PaymentUrlOptions.SectionName).Bind(paymentUrls);
         services.AddSingleton(paymentUrls);
+
+        var subscriptionOptions = new Application.Payments.SubscriptionOptions();
+        config.GetSection(Application.Payments.SubscriptionOptions.SectionName).Bind(subscriptionOptions);
+        services.AddSingleton(subscriptionOptions);
         services.AddScoped<ICredentialProtector, Security.CredentialProtector>();
 
         // Payment provider: "iPay" hits the real gateway (credentials from PaymentGatewayConfig);

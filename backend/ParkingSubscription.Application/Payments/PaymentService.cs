@@ -41,6 +41,7 @@ public sealed class PaymentService(
     IPushSender push,
     IClock clock,
     PaymentUrlOptions urls,
+    SubscriptionOptions subscription,
     ILogger<PaymentService> logger) : IPaymentService
 {
     /// <summary>Max concurrent parking cards (current + upcoming) a user may hold.</summary>
@@ -54,9 +55,15 @@ public sealed class PaymentService(
         var plan = await db.SubscriptionPlans.FirstOrDefaultAsync(p => p.Id == req.SubscriptionPlanId && p.IsActive, ct)
             ?? throw new NotFoundException($"Subscription plan {req.SubscriptionPlanId} not found.");
 
-        // Cards stack (each new one starts after the last active card ends), but the
-        // number a user may hold at once is capped. Enforced BEFORE payment so money is
-        // never taken when the limit is already reached.
+        // Venue-wide capacity: reject up front when the parking is full (all concurrent
+        // subscriptions taken), so money is never taken when there is no spot.
+        var globalActive = await db.ParkingCards.CountAsync(
+            c => c.Status == CardStatus.Active && !c.IsDeleted && c.EndDate >= clock.Today, ct);
+        if (globalActive >= subscription.MaxActiveSubscriptions)
+            throw new ConflictException("Наразі всі місця зайняті. Спробуйте пізніше.");
+
+        // Per-user cap: cards stack (each new one starts after the last active card ends),
+        // but the number a single user may hold at once is capped. Also enforced BEFORE payment.
         var activeCards = await db.ParkingCards.CountAsync(
             c => c.UserId == user.Id && c.Status == CardStatus.Active && !c.IsDeleted && c.EndDate >= clock.Today, ct);
         if (activeCards >= MaxActiveCards)

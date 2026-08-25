@@ -55,6 +55,8 @@ services:
       Fiscal__Checkbox__LicenseKey: ${CHECKBOX_LICENSE_KEY}
       Fiscal__Checkbox__BaseUrl: ${CHECKBOX_BASE_URL:-https://api.checkbox.ua}
       Fiscal__Checkbox__TaxCode: ${CHECKBOX_TAX_CODE}
+      # Venue-wide cap on concurrently active subscriptions (parking capacity).
+      Subscription__MaxActiveSubscriptions: ${MAX_ACTIVE_SUBSCRIPTIONS:-50}
     depends_on:
       postgres:
         condition: service_healthy
