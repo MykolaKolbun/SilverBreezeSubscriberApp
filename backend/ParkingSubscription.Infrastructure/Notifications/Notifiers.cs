@@ -22,3 +22,13 @@ public sealed class LoggingPushSender(ILogger<LoggingPushSender> logger) : IPush
         return Task.CompletedTask;
     }
 }
+
+/// <summary>Stub SMS sender that logs the message (ТЗ §3). Swap for TurboSMS/eSputnik/Twilio.</summary>
+public sealed class LoggingSmsSender(ILogger<LoggingSmsSender> logger) : ISmsSender
+{
+    public Task SendAsync(string phoneE164, string message, CancellationToken ct = default)
+    {
+        logger.LogInformation("SMS -> {Phone} | {Body}", phoneE164, message);
+        return Task.CompletedTask;
+    }
+}

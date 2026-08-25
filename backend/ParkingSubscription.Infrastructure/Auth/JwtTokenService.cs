@@ -27,8 +27,11 @@ public sealed class JwtTokenService(IOptions<JwtOptions> options, IClock clock) 
             new(JwtRegisteredClaimNames.Sub, account.Id.ToString()),
             new(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()),
             new("uid", account.UserId.ToString()),
-            new(JwtRegisteredClaimNames.Email, account.Email)
         };
+        if (!string.IsNullOrEmpty(account.Email))
+            claims.Add(new Claim(JwtRegisteredClaimNames.Email, account.Email));
+        if (!string.IsNullOrEmpty(account.Phone))
+            claims.Add(new Claim("phone", account.Phone));
 
         var token = new JwtSecurityToken(
             issuer: _options.Issuer,

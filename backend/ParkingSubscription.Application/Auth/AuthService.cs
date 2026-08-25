@@ -28,6 +28,10 @@ public interface IAuthService
     Task<AuthResult> RefreshAsync(RefreshRequest req, CancellationToken ct = default);
     Task<string?> ForgotPasswordAsync(ForgotPasswordRequest req, CancellationToken ct = default);
     Task ResetPasswordAsync(ResetPasswordRequest req, CancellationToken ct = default);
+    /// <summary>Sends an SMS OTP for passwordless phone login (ТЗ §3).</summary>
+    Task<PhoneCodeResult> RequestPhoneCodeAsync(RequestPhoneCodeRequest req, CancellationToken ct = default);
+    /// <summary>Verifies the OTP, provisioning a Customer+User+account on first login, and issues JWTs.</summary>
+    Task<AuthResult> VerifyPhoneCodeAsync(VerifyPhoneCodeRequest req, CancellationToken ct = default);
 }
 
 /// <summary>
@@ -39,10 +43,15 @@ public sealed class AuthService(
     IPasswordHasher hasher,
     IJwtTokenService tokens,
     IEmailSender email,
+    ISmsSender sms,
     IClock clock,
     AuthOptions options,
     ILogger<AuthService> logger) : IAuthService
 {
+    private const int CodeExpiryMinutes = 5;
+    private const int ResendCooldownSeconds = 60;
+    private const int MaxOtpAttempts = 5;
+
     public async Task<RegisterResult> RegisterAsync(RegisterRequest req, CancellationToken ct = default)
     {
         var normalizedEmail = Normalize(req.Email);
@@ -172,6 +181,93 @@ public sealed class AuthService(
         account.Touch();
         await db.SaveChangesAsync(ct);
     }
+
+    public async Task<PhoneCodeResult> RequestPhoneCodeAsync(RequestPhoneCodeRequest req, CancellationToken ct = default)
+    {
+        var phone = NormalizePhone(req.Phone);
+        var now = clock.UtcNow;
+
+        var otp = await db.PhoneOtps.FirstOrDefaultAsync(o => o.Phone == phone, ct);
+        if (otp is not null && now - otp.LastSentAt < TimeSpan.FromSeconds(ResendCooldownSeconds))
+            throw new ValidationException("Зачекайте перед повторним надсиланням коду.");
+
+        var code = GenerateCode();
+        if (otp is null)
+        {
+            otp = new PhoneOtp { Phone = phone };
+            db.PhoneOtps.Add(otp);
+        }
+        otp.CodeHash = hasher.Hash(code);
+        otp.ExpiresAt = now.AddMinutes(CodeExpiryMinutes);
+        otp.Attempts = 0;
+        otp.LastSentAt = now;
+        await db.SaveChangesAsync(ct);
+
+        await sms.SendAsync(phone, $"SilverBreeze: ваш код підтвердження {code}", ct);
+        logger.LogInformation("Phone OTP requested for {Phone}", phone);
+
+        return new PhoneCodeResult(phone, options.ExposeDevTokens ? code : null);
+    }
+
+    public async Task<AuthResult> VerifyPhoneCodeAsync(VerifyPhoneCodeRequest req, CancellationToken ct = default)
+    {
+        var phone = NormalizePhone(req.Phone);
+        var now = clock.UtcNow;
+
+        var otp = await db.PhoneOtps.FirstOrDefaultAsync(o => o.Phone == phone, ct)
+            ?? throw new AuthException("Код не знайдено. Запросіть новий.");
+        if (otp.ExpiresAt < now)
+            throw new AuthException("Код прострочено. Запросіть новий.");
+        if (otp.Attempts >= MaxOtpAttempts)
+            throw new AuthException("Забагато спроб. Запросіть новий код.");
+        if (!hasher.Verify(req.Code, otp.CodeHash))
+        {
+            otp.Attempts++;
+            await db.SaveChangesAsync(ct);
+            throw new AuthException("Невірний код.");
+        }
+
+        // Code is valid — consume it and find/provision the account for this phone.
+        db.PhoneOtps.Remove(otp);
+
+        var account = await db.AppAccounts.Include(a => a.User)
+            .FirstOrDefaultAsync(a => a.Phone == phone, ct);
+        if (account is null)
+        {
+            var customer = new Customer();
+            var user = new User { Customer = customer };
+            account = new AppAccount { Phone = phone, PhoneConfirmed = true, User = user };
+            db.Customers.Add(customer);
+            db.Users.Add(user);
+            db.AppAccounts.Add(account);
+            logger.LogInformation("Provisioned phone account {Phone}; Customer/User created 1:1", phone);
+        }
+        else
+        {
+            account.PhoneConfirmed = true;
+        }
+        await db.SaveChangesAsync(ct);
+
+        return await IssueAsync(account, ct);
+    }
+
+    /// <summary>Normalizes a Ukrainian phone number to E.164 (+380XXXXXXXXX).</summary>
+    private static string NormalizePhone(string input)
+    {
+        var digits = new string((input ?? string.Empty).Where(char.IsDigit).ToArray());
+        var e164 = digits switch
+        {
+            { Length: 12 } when digits.StartsWith("380") => "+" + digits,
+            { Length: 11 } when digits.StartsWith("80") => "+3" + digits,
+            { Length: 10 } when digits.StartsWith("0") => "+38" + digits,
+            { Length: 9 } => "+380" + digits,
+            _ => null,
+        };
+        return e164 ?? throw new ValidationException("Невірний номер телефону.");
+    }
+
+    private static string GenerateCode() =>
+        System.Security.Cryptography.RandomNumberGenerator.GetInt32(0, 1_000_000).ToString("D6");
 
     private async Task<AuthResult> IssueAsync(AppAccount account, CancellationToken ct)
     {

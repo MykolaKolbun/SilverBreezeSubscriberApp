@@ -8,10 +8,15 @@ namespace ParkingSubscription.Domain.Entities;
 /// </summary>
 public class AppAccount : Entity
 {
-    public string Email { get; set; } = string.Empty;
+    /// <summary>Email login identity (email/password flow). Null for phone-only accounts.</summary>
+    public string? Email { get; set; }
     public string PasswordHash { get; set; } = string.Empty;
 
     public bool EmailConfirmed { get; set; }
+
+    /// <summary>Phone login identity in E.164 (passwordless OTP flow). Null for email-only accounts.</summary>
+    public string? Phone { get; set; }
+    public bool PhoneConfirmed { get; set; }
 
     /// <summary>Token e-mailed to the user to confirm their address (ТЗ §3).</summary>
     public string? EmailConfirmationToken { get; set; }

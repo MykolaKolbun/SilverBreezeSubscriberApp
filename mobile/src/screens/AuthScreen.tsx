@@ -1,4 +1,4 @@
-// Auth — sign in / register gate. Shown until there is a session.
+// Auth — passwordless phone login. Step 1: enter phone → SMS code. Step 2: enter code.
 import React, { useState } from 'react';
 import {
   ActivityIndicator,
@@ -16,15 +16,15 @@ import { SbLogo } from '../components/SbLogo';
 
 function field(t: Theme) {
   return {
-    height: 50,
+    height: 52,
     paddingHorizontal: 14,
     backgroundColor: t.surface2,
     borderWidth: 1.5,
     borderColor: t.border,
     borderRadius: 12,
     color: t.fg1,
-    fontFamily: fonts.inter500,
-    fontSize: 15,
+    fontFamily: fonts.mono500,
+    fontSize: 17,
   } as const;
 }
 
@@ -32,18 +32,25 @@ export function AuthScreen() {
   const app = useApp();
   const t = app.theme;
   const tr = app.t;
-  const [mode, setMode] = useState<'login' | 'register'>('login');
-  const [name, setName] = useState('');
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
+  const [step, setStep] = useState<'phone' | 'code'>('phone');
+  const [phone, setPhone] = useState('+380');
+  const [code, setCode] = useState('');
 
-  const canSubmit =
-    email.trim().length > 3 && password.length >= 8 && !app.authBusy;
+  const phoneOk = phone.replace(/\D/g, '').length >= 11; // +380 + 9 digits
+  const codeOk = code.replace(/\D/g, '').length === 6;
 
-  const submit = () => {
-    if (!canSubmit) return;
-    if (mode === 'login') app.login(email, password);
-    else app.register(email, password, name.trim() || undefined);
+  const sendCode = async () => {
+    if (!phoneOk || app.authBusy) return;
+    const res = await app.requestPhoneCode(phone);
+    if (res.ok) {
+      setStep('code');
+      if (res.devCode) setCode(res.devCode); // dev autofill while SMS is stubbed
+    }
+  };
+
+  const verify = () => {
+    if (!codeOk || app.authBusy) return;
+    app.verifyPhoneCode(phone, code);
   };
 
   return (
@@ -74,59 +81,48 @@ export function AuthScreen() {
             textAlign: 'center',
           }}
         >
-          {mode === 'login' ? tr('auth.title.login') : tr('auth.title.register')}
+          {step === 'phone' ? tr('auth.phone.title') : tr('auth.code.title')}
         </Text>
 
-        {mode === 'register' && (
-          <TextInput
-            value={name}
-            onChangeText={setName}
-            placeholder={tr('auth.name')}
-            placeholderTextColor={t.fg3}
-            style={field(t)}
-          />
+        {step === 'phone' ? (
+          <>
+            <Text style={hint(t)}>{tr('auth.phone.subtitle')}</Text>
+            <TextInput
+              value={phone}
+              onChangeText={setPhone}
+              placeholder="+380XXXXXXXXX"
+              placeholderTextColor={t.fg3}
+              keyboardType="phone-pad"
+              autoComplete="tel"
+              style={field(t)}
+            />
+          </>
+        ) : (
+          <>
+            <Text style={hint(t)}>{tr('auth.code.sentTo', { phone })}</Text>
+            <TextInput
+              value={code}
+              onChangeText={(v) => setCode(v.replace(/\D/g, '').slice(0, 6))}
+              placeholder="______"
+              placeholderTextColor={t.fg3}
+              keyboardType="number-pad"
+              autoComplete="sms-otp"
+              maxLength={6}
+              style={[field(t), { textAlign: 'center', letterSpacing: 8, fontSize: 22 }]}
+            />
+          </>
         )}
-        <TextInput
-          value={email}
-          onChangeText={setEmail}
-          placeholder={tr('auth.email')}
-          placeholderTextColor={t.fg3}
-          autoCapitalize="none"
-          keyboardType="email-address"
-          autoComplete="email"
-          style={field(t)}
-        />
-        <TextInput
-          value={password}
-          onChangeText={setPassword}
-          placeholder={tr('auth.password')}
-          placeholderTextColor={t.fg3}
-          secureTextEntry
-          style={field(t)}
-        />
 
-        {!!app.authError && (
-          <Text
-            style={{
-              fontFamily: fonts.inter500,
-              fontSize: 13,
-              lineHeight: 18,
-              color: t.danger,
-              textAlign: 'center',
-            }}
-          >
-            {app.authError}
-          </Text>
-        )}
+        {!!app.authError && <Text style={errorStyle(t)}>{app.authError}</Text>}
 
         <Pressable
-          onPress={submit}
-          disabled={!canSubmit}
+          onPress={step === 'phone' ? sendCode : verify}
+          disabled={(step === 'phone' ? !phoneOk : !codeOk) || app.authBusy}
           style={{
             height: 54,
             borderRadius: 16,
             backgroundColor: t.volt,
-            opacity: canSubmit ? 1 : 0.5,
+            opacity: (step === 'phone' ? phoneOk : codeOk) && !app.authBusy ? 1 : 0.5,
             alignItems: 'center',
             justifyContent: 'center',
           }}
@@ -134,37 +130,44 @@ export function AuthScreen() {
           {app.authBusy ? (
             <ActivityIndicator color={ON_VOLT} />
           ) : (
-            <Text
-              style={{
-                fontFamily: fonts.inter700,
-                fontSize: 16,
-                lineHeight: 22,
-                color: ON_VOLT,
-              }}
-            >
-              {mode === 'login' ? tr('auth.submit.login') : tr('auth.submit.register')}
+            <Text style={{ fontFamily: fonts.inter700, fontSize: 16, color: ON_VOLT }}>
+              {step === 'phone' ? tr('auth.phone.send') : tr('auth.code.verify')}
             </Text>
           )}
         </Pressable>
 
-        <Pressable
-          onPress={() => setMode(mode === 'login' ? 'register' : 'login')}
-          style={{ alignItems: 'center', paddingVertical: 6 }}
-        >
-          <Text
-            style={{
-              fontFamily: fonts.inter500,
-              fontSize: 14,
-              lineHeight: 20,
-              color: t.fg2,
-            }}
-          >
-            {mode === 'login'
-              ? tr('auth.switch.toRegister')
-              : tr('auth.switch.toLogin')}
-          </Text>
-        </Pressable>
+        {step === 'code' && (
+          <View style={{ flexDirection: 'row', justifyContent: 'center', gap: 20 }}>
+            <Pressable onPress={() => setStep('phone')} disabled={app.authBusy}>
+              <Text style={link(t)}>{tr('auth.code.changeNumber')}</Text>
+            </Pressable>
+            <Pressable onPress={sendCode} disabled={app.authBusy}>
+              <Text style={link(t)}>{tr('auth.code.resend')}</Text>
+            </Pressable>
+          </View>
+        )}
       </ScrollView>
     </KeyboardAvoidingView>
   );
 }
+
+const hint = (t: Theme) =>
+  ({
+    fontFamily: fonts.inter400,
+    fontSize: 14,
+    lineHeight: 20,
+    color: t.fg2,
+    textAlign: 'center',
+  }) as const;
+
+const errorStyle = (t: Theme) =>
+  ({
+    fontFamily: fonts.inter500,
+    fontSize: 13,
+    lineHeight: 18,
+    color: t.danger,
+    textAlign: 'center',
+  }) as const;
+
+const link = (t: Theme) =>
+  ({ fontFamily: fonts.inter600, fontSize: 14, lineHeight: 20, color: t.fg2 }) as const;

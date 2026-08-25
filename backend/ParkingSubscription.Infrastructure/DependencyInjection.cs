@@ -86,6 +86,7 @@ public static class DependencyInjection
         services.AddSingleton<IQrCodeGenerator, QrCodeGenerator>();
         services.AddScoped<IEmailSender, LoggingEmailSender>();
         services.AddScoped<IPushSender, LoggingPushSender>();
+        services.AddScoped<ISmsSender, LoggingSmsSender>();
 
         // Background workers (ТЗ §5)
         services.AddHostedService<OutboxPropagationService>();

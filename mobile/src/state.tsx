@@ -28,7 +28,7 @@ interface Session {
   token: string;
   refreshToken: string;
   userId: string;
-  email: string;
+  phone: string;
 }
 
 export interface Vehicle {
@@ -56,14 +56,15 @@ interface AppState {
   setScreen: (s: Screen) => void;
   openPlans: () => void;
 
-  // Auth
+  // Auth (passwordless phone + OTP)
   authStatus: AuthStatus;
-  email: string | null;
+  phone: string | null;
   token: string | null;
   authBusy: boolean;
   authError: string | null;
-  register: (email: string, password: string, firstName?: string) => Promise<void>;
-  login: (email: string, password: string) => Promise<void>;
+  // Request an SMS code; ok=false on failure. devCode is set while SMS is stubbed (dev autofill).
+  requestPhoneCode: (phone: string) => Promise<{ ok: boolean; devCode: string | null }>;
+  verifyPhoneCode: (phone: string, code: string) => Promise<void>;
   logout: () => Promise<void>;
 
   // Plans (from API)
@@ -219,7 +220,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
             token: r.accessToken,
             refreshToken: r.refreshToken,
             userId: r.userId,
-            email: s.email,
+            phone: s.phone,
           };
           await persistSession(ns);
           return await fn(ns.token);
@@ -300,7 +301,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
           token: r.accessToken,
           refreshToken: r.refreshToken,
           userId: r.userId,
-          email: s.email,
+          phone: s.phone,
         };
         await persistSession(ns);
         res = await run(ns.token);
@@ -329,13 +330,13 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   // ---- auth actions ----
   const finishSignIn = async (
     r: { accessToken: string; refreshToken: string; userId: string },
-    email: string
+    phone: string
   ) => {
     await persistSession({
       token: r.accessToken,
       refreshToken: r.refreshToken,
       userId: r.userId,
-      email,
+      phone,
     });
     setAuthStatus('in');
     setScreen('pass');
@@ -349,37 +350,30 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         ? e.message
         : translate(langRef.current, fallbackKey);
 
-  const login = async (email: string, password: string) => {
+  const requestPhoneCode = async (
+    phone: string
+  ): Promise<{ ok: boolean; devCode: string | null }> => {
     setAuthBusy(true);
     setAuthError(null);
     try {
-      const em = email.trim().toLowerCase();
-      const r = await api.login({ email: em, password });
-      await finishSignIn(r, em);
+      const r = await api.requestPhoneCode(phone);
+      return { ok: true, devCode: r.devCode ?? null };
     } catch (e) {
-      setAuthError(authMsg(e, 'auth.err.login'));
+      setAuthError(authMsg(e, 'auth.err.phone'));
+      return { ok: false, devCode: null };
     } finally {
       setAuthBusy(false);
     }
   };
 
-  const register = async (email: string, password: string, firstName?: string) => {
+  const verifyPhoneCode = async (phone: string, code: string) => {
     setAuthBusy(true);
     setAuthError(null);
     try {
-      const em = email.trim().toLowerCase();
-      const reg = await api.register({ email: em, password, firstName });
-      // Email is stubbed on the backend; in the test phase the confirmation
-      // token is returned so we can confirm immediately.
-      if (reg.devConfirmationToken) {
-        await api.confirmEmail({ email: em, token: reg.devConfirmationToken });
-        const r = await api.login({ email: em, password });
-        await finishSignIn(r, em);
-      } else {
-        setAuthError(translate(langRef.current, 'auth.err.confirmManual'));
-      }
+      const r = await api.verifyPhoneCode(phone, code);
+      await finishSignIn(r, phone);
     } catch (e) {
-      setAuthError(authMsg(e, 'auth.err.register'));
+      setAuthError(authMsg(e, 'auth.err.code'));
     } finally {
       setAuthBusy(false);
     }
@@ -512,12 +506,12 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     openPlans,
 
     authStatus,
-    email: session?.email ?? null,
+    phone: session?.phone ?? null,
     token: session?.token ?? null,
     authBusy,
     authError,
-    register,
-    login,
+    requestPhoneCode,
+    verifyPhoneCode,
     logout,
 
     plans,

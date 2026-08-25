@@ -129,3 +129,9 @@ public interface IPushSender
 {
     Task SendAsync(Guid userId, string title, string body, CancellationToken ct = default);
 }
+
+/// <summary>SMS delivery for phone OTP (ТЗ §3). Stub in dev; real provider in prod.</summary>
+public interface ISmsSender
+{
+    Task SendAsync(string phoneE164, string message, CancellationToken ct = default);
+}

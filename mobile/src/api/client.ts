@@ -62,6 +62,10 @@ export interface AuthResult {
   userId: string;
   customerId: string;
 }
+export interface PhoneCodeResult {
+  phone: string; // normalized E.164
+  devCode?: string | null; // present only while SMS is stubbed (dev)
+}
 export interface ApiPlan {
   id: string;
   code: string;
@@ -116,6 +120,13 @@ export const api = {
 
   login: (b: { email: string; password: string }) =>
     req<AuthResult>('/auth/login', { method: 'POST', body: b }),
+
+  // Passwordless phone login.
+  requestPhoneCode: (phone: string) =>
+    req<PhoneCodeResult>('/auth/phone/request-code', { method: 'POST', body: { phone } }),
+
+  verifyPhoneCode: (phone: string, code: string) =>
+    req<AuthResult>('/auth/phone/verify', { method: 'POST', body: { phone, code } }),
 
   refresh: (refreshToken: string) =>
     req<AuthResult>('/auth/refresh', { method: 'POST', body: { refreshToken } }),

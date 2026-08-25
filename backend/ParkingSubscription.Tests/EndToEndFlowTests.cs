@@ -66,6 +66,33 @@ public sealed class EndToEndFlowTests(TestWebAppFactory factory) : IClassFixture
     }
 
     [Fact]
+    public async Task Phone_otp_provisions_account_and_logs_in()
+    {
+        var phone = "067" + Random.Shared.Next(1_000_000, 9_999_999);
+
+        // 1. Request a code — dev code is returned because Auth:ExposeDevTokens is on in tests.
+        var req = await PostAsync<PhoneCodeResp>("/auth/phone/request-code", new { phone });
+        Assert.False(string.IsNullOrEmpty(req.DevCode));
+        Assert.Equal("+380" + phone[1..], req.Phone); // normalized to E.164
+
+        // 2. Verify → provisions Customer+User on first login and issues JWTs.
+        var auth = await PostAsync<AuthResult>("/auth/phone/verify", new { phone, code = req.DevCode });
+        Assert.NotEqual(Guid.Empty, auth.UserId);
+        Assert.NotEqual(Guid.Empty, auth.CustomerId);
+
+        // 3. The access token works on a protected endpoint.
+        _client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", auth.AccessToken);
+        var plans = await GetAsync<List<PlanDto>>("/plans");
+        Assert.NotEmpty(plans);
+
+        // 4. A wrong code is rejected.
+        var bad = await _client.PostAsJsonAsync("/auth/phone/verify", new { phone, code = "000000" });
+        Assert.Equal(HttpStatusCode.Unauthorized, bad.StatusCode);
+    }
+
+    private sealed record PhoneCodeResp(string Phone, string? DevCode);
+
+    [Fact]
     public async Task Second_active_card_in_same_period_is_rejected()
     {
         var (userId, _) = await RegisterAndLoginAsync();

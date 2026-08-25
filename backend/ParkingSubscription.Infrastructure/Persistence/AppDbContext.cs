@@ -13,6 +13,7 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options)
     public DbSet<ParkingCard> ParkingCards => Set<ParkingCard>();
     public DbSet<ValueCard> ValueCards => Set<ValueCard>();
     public DbSet<AppAccount> AppAccounts => Set<AppAccount>();
+    public DbSet<PhoneOtp> PhoneOtps => Set<PhoneOtp>();
     public DbSet<OutboxMessage> OutboxMessages => Set<OutboxMessage>();
     public DbSet<AuditLogEntry> AuditLog => Set<AuditLogEntry>();
     public DbSet<SubscriptionPlan> SubscriptionPlans => Set<SubscriptionPlan>();
@@ -56,10 +57,22 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options)
 
         b.Entity<AppAccount>(e =>
         {
-            e.HasIndex(x => x.Email).IsUnique();
+            // Email and Phone are alternate login identities; each is unique only when present
+            // (a phone-only account has no email and vice versa). "…" IS NOT NULL works on both
+            // PostgreSQL and SQLite.
+            e.HasIndex(x => x.Email).IsUnique().HasFilter("\"Email\" IS NOT NULL");
+            e.HasIndex(x => x.Phone).IsUnique().HasFilter("\"Phone\" IS NOT NULL");
             e.HasIndex(x => x.RefreshTokenHash);
-            e.Property(x => x.Email).HasMaxLength(320).IsRequired();
+            e.Property(x => x.Email).HasMaxLength(320);
+            e.Property(x => x.Phone).HasMaxLength(20);
             e.HasOne(x => x.User).WithMany().HasForeignKey(x => x.UserId);
+        });
+
+        b.Entity<PhoneOtp>(e =>
+        {
+            e.HasKey(x => x.Phone);
+            e.Property(x => x.Phone).HasMaxLength(20).ValueGeneratedNever();
+            e.Property(x => x.CodeHash).HasMaxLength(200);
         });
 
         b.Entity<OutboxMessage>(e =>
