@@ -1,13 +1,14 @@
 namespace ParkingSubscription.Domain.Entities;
 
 /// <summary>
-/// One-time SMS code for passwordless phone login (ТЗ §3). One row per phone number
-/// (replaced on each request). The code is stored HASHED; only its hash is kept.
+/// One-time passwordless login code (ТЗ §3). Keyed by the login identifier
+/// (normalized email), one active code per identifier (replaced on each request).
+/// The code is stored HASHED; only its hash is kept.
 /// </summary>
-public class PhoneOtp
+public class LoginOtp
 {
-    /// <summary>Phone in E.164 (primary key — one active OTP per number).</summary>
-    public string Phone { get; set; } = string.Empty;
+    /// <summary>Login identifier — normalized email (primary key).</summary>
+    public string Identifier { get; set; } = string.Empty;
 
     public string CodeHash { get; set; } = string.Empty;
 

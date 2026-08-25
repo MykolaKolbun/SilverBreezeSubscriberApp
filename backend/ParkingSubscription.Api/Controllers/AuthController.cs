@@ -25,19 +25,19 @@ public sealed class AuthController(IAuthService auth) : ControllerBase
     public async Task<ActionResult<AuthResult>> Login(LoginRequest req, CancellationToken ct) =>
         Ok(await auth.LoginAsync(req, ct));
 
-    /// <summary>Request an SMS OTP for passwordless phone login (ТЗ §3).</summary>
-    [HttpPost("phone/request-code")]
-    public async Task<IActionResult> RequestPhoneCode(RequestPhoneCodeRequest req, CancellationToken ct)
+    /// <summary>Request an email OTP for passwordless login (ТЗ §3).</summary>
+    [HttpPost("email/request-code")]
+    public async Task<IActionResult> RequestEmailCode(RequestEmailCodeRequest req, CancellationToken ct)
     {
-        var result = await auth.RequestPhoneCodeAsync(req, ct);
-        // devCode is populated only when Auth:ExposeDevTokens is on (SMS is stubbed).
-        return Ok(new { result.Phone, devCode = result.DevCode });
+        var result = await auth.RequestEmailCodeAsync(req, ct);
+        // devCode is populated only when Auth:ExposeDevTokens is on (email is stubbed).
+        return Ok(new { result.Email, devCode = result.DevCode });
     }
 
     /// <summary>Verify the OTP; provisions the account on first login and returns JWTs.</summary>
-    [HttpPost("phone/verify")]
-    public async Task<ActionResult<AuthResult>> VerifyPhoneCode(VerifyPhoneCodeRequest req, CancellationToken ct) =>
-        Ok(await auth.VerifyPhoneCodeAsync(req, ct));
+    [HttpPost("email/verify")]
+    public async Task<ActionResult<AuthResult>> VerifyEmailCode(VerifyEmailCodeRequest req, CancellationToken ct) =>
+        Ok(await auth.VerifyEmailCodeAsync(req, ct));
 
     [HttpPost("refresh")]
     public async Task<ActionResult<AuthResult>> Refresh(RefreshRequest req, CancellationToken ct) =>

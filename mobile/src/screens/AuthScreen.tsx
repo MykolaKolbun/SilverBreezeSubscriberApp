@@ -32,25 +32,25 @@ export function AuthScreen() {
   const app = useApp();
   const t = app.theme;
   const tr = app.t;
-  const [step, setStep] = useState<'phone' | 'code'>('phone');
-  const [phone, setPhone] = useState('+380');
+  const [step, setStep] = useState<'email' | 'code'>('email');
+  const [email, setEmail] = useState('');
   const [code, setCode] = useState('');
 
-  const phoneOk = phone.replace(/\D/g, '').length >= 11; // +380 + 9 digits
+  const emailOk = /^\S+@\S+\.\S+$/.test(email.trim());
   const codeOk = code.replace(/\D/g, '').length === 6;
 
   const sendCode = async () => {
-    if (!phoneOk || app.authBusy) return;
-    const res = await app.requestPhoneCode(phone);
+    if (!emailOk || app.authBusy) return;
+    const res = await app.requestEmailCode(email);
     if (res.ok) {
       setStep('code');
-      if (res.devCode) setCode(res.devCode); // dev autofill while SMS is stubbed
+      if (res.devCode) setCode(res.devCode); // dev autofill while email is stubbed
     }
   };
 
   const verify = () => {
     if (!codeOk || app.authBusy) return;
-    app.verifyPhoneCode(phone, code);
+    app.verifyEmailCode(email, code);
   };
 
   return (
@@ -81,25 +81,26 @@ export function AuthScreen() {
             textAlign: 'center',
           }}
         >
-          {step === 'phone' ? tr('auth.phone.title') : tr('auth.code.title')}
+          {step === 'email' ? tr('auth.email.title') : tr('auth.code.title')}
         </Text>
 
-        {step === 'phone' ? (
+        {step === 'email' ? (
           <>
-            <Text style={hint(t)}>{tr('auth.phone.subtitle')}</Text>
+            <Text style={hint(t)}>{tr('auth.email.subtitle')}</Text>
             <TextInput
-              value={phone}
-              onChangeText={setPhone}
-              placeholder="+380XXXXXXXXX"
+              value={email}
+              onChangeText={setEmail}
+              placeholder="you@example.com"
               placeholderTextColor={t.fg3}
-              keyboardType="phone-pad"
-              autoComplete="tel"
-              style={field(t)}
+              keyboardType="email-address"
+              autoCapitalize="none"
+              autoComplete="email"
+              style={[field(t), { fontFamily: fonts.inter500, fontSize: 15 }]}
             />
           </>
         ) : (
           <>
-            <Text style={hint(t)}>{tr('auth.code.sentTo', { phone })}</Text>
+            <Text style={hint(t)}>{tr('auth.code.sentTo', { target: email })}</Text>
             <TextInput
               value={code}
               onChangeText={(v) => setCode(v.replace(/\D/g, '').slice(0, 6))}
@@ -116,13 +117,13 @@ export function AuthScreen() {
         {!!app.authError && <Text style={errorStyle(t)}>{app.authError}</Text>}
 
         <Pressable
-          onPress={step === 'phone' ? sendCode : verify}
-          disabled={(step === 'phone' ? !phoneOk : !codeOk) || app.authBusy}
+          onPress={step === 'email' ? sendCode : verify}
+          disabled={(step === 'email' ? !emailOk : !codeOk) || app.authBusy}
           style={{
             height: 54,
             borderRadius: 16,
             backgroundColor: t.volt,
-            opacity: (step === 'phone' ? phoneOk : codeOk) && !app.authBusy ? 1 : 0.5,
+            opacity: (step === 'email' ? emailOk : codeOk) && !app.authBusy ? 1 : 0.5,
             alignItems: 'center',
             justifyContent: 'center',
           }}
@@ -131,15 +132,15 @@ export function AuthScreen() {
             <ActivityIndicator color={ON_VOLT} />
           ) : (
             <Text style={{ fontFamily: fonts.inter700, fontSize: 16, color: ON_VOLT }}>
-              {step === 'phone' ? tr('auth.phone.send') : tr('auth.code.verify')}
+              {step === 'email' ? tr('auth.email.send') : tr('auth.code.verify')}
             </Text>
           )}
         </Pressable>
 
         {step === 'code' && (
           <View style={{ flexDirection: 'row', justifyContent: 'center', gap: 20 }}>
-            <Pressable onPress={() => setStep('phone')} disabled={app.authBusy}>
-              <Text style={link(t)}>{tr('auth.code.changeNumber')}</Text>
+            <Pressable onPress={() => setStep('email')} disabled={app.authBusy}>
+              <Text style={link(t)}>{tr('auth.code.changeTarget')}</Text>
             </Pressable>
             <Pressable onPress={sendCode} disabled={app.authBusy}>
               <Text style={link(t)}>{tr('auth.code.resend')}</Text>

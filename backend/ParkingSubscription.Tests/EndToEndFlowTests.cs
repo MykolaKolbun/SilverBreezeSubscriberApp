@@ -66,17 +66,17 @@ public sealed class EndToEndFlowTests(TestWebAppFactory factory) : IClassFixture
     }
 
     [Fact]
-    public async Task Phone_otp_provisions_account_and_logs_in()
+    public async Task Email_otp_provisions_account_and_logs_in()
     {
-        var phone = "067" + Random.Shared.Next(1_000_000, 9_999_999);
+        var email = $"otp-{Guid.NewGuid():N}@example.com";
 
         // 1. Request a code — dev code is returned because Auth:ExposeDevTokens is on in tests.
-        var req = await PostAsync<PhoneCodeResp>("/auth/phone/request-code", new { phone });
+        var req = await PostAsync<EmailCodeResp>("/auth/email/request-code", new { email });
         Assert.False(string.IsNullOrEmpty(req.DevCode));
-        Assert.Equal("+380" + phone[1..], req.Phone); // normalized to E.164
+        Assert.Equal(email, req.Email);
 
         // 2. Verify → provisions Customer+User on first login and issues JWTs.
-        var auth = await PostAsync<AuthResult>("/auth/phone/verify", new { phone, code = req.DevCode });
+        var auth = await PostAsync<AuthResult>("/auth/email/verify", new { email, code = req.DevCode });
         Assert.NotEqual(Guid.Empty, auth.UserId);
         Assert.NotEqual(Guid.Empty, auth.CustomerId);
 
@@ -85,12 +85,12 @@ public sealed class EndToEndFlowTests(TestWebAppFactory factory) : IClassFixture
         var plans = await GetAsync<List<PlanDto>>("/plans");
         Assert.NotEmpty(plans);
 
-        // 4. A wrong code is rejected.
-        var bad = await _client.PostAsJsonAsync("/auth/phone/verify", new { phone, code = "000000" });
+        // 4. A wrong/expired code is rejected.
+        var bad = await _client.PostAsJsonAsync("/auth/email/verify", new { email, code = "000000" });
         Assert.Equal(HttpStatusCode.Unauthorized, bad.StatusCode);
     }
 
-    private sealed record PhoneCodeResp(string Phone, string? DevCode);
+    private sealed record EmailCodeResp(string Email, string? DevCode);
 
     [Fact]
     public async Task Second_active_card_in_same_period_is_rejected()

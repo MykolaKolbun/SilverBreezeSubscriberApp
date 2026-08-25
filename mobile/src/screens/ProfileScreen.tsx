@@ -301,7 +301,7 @@ function ContactRow({
 
 export function ProfileScreen() {
   const app = useApp();
-  const { theme: t, vehicles, drafts, cards, plans, phone } = app;
+  const { theme: t, vehicles, drafts, cards, plans, email } = app;
   const tr = app.t;
   const activeCard = cards.find((c) => c.status === 'Active') ?? cards[0];
   const activePlan = activeCard
@@ -314,7 +314,7 @@ export function ProfileScreen() {
         tr
       )
     : null;
-  const initials = (phone ?? '').replace(/\D/g, '').slice(-2) || 'SB';
+  const initials = (email ?? 'SB').replace(/[^a-zA-Zа-яА-ЯіїєґІЇЄҐ]/g, '').slice(0, 2).toUpperCase() || 'SB';
   const { width: screenWidth } = useWindowDimensions();
   const cardWidth = Math.min(screenWidth, 500) - H_PADDING * 2 - 20;
 
@@ -388,7 +388,7 @@ export function ProfileScreen() {
                 color: t.fg1,
               }}
             >
-              {phone ?? tr('profile.account')}
+              {email ?? tr('profile.account')}
             </Text>
             <Text
               style={{
@@ -503,15 +503,15 @@ export function ProfileScreen() {
         >
           <ContactRow
             theme={t}
-            icon={<PhoneIcon size={18} color={t.fg2} />}
-            label={tr('profile.phone')}
-            value={phone ?? tr('profile.notSet')}
+            icon={<MailIcon size={18} color={t.fg2} />}
+            label={tr('profile.email')}
+            value={email ?? tr('profile.notSet')}
           />
           {divider}
           <ContactRow
             theme={t}
-            icon={<MailIcon size={18} color={t.fg2} />}
-            label={tr('profile.email')}
+            icon={<PhoneIcon size={18} color={t.fg2} />}
+            label={tr('profile.phone')}
             value={tr('profile.notSet')}
           />
         </View>

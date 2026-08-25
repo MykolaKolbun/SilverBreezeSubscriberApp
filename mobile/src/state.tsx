@@ -28,7 +28,7 @@ interface Session {
   token: string;
   refreshToken: string;
   userId: string;
-  phone: string;
+  email: string;
 }
 
 export interface Vehicle {
@@ -56,15 +56,15 @@ interface AppState {
   setScreen: (s: Screen) => void;
   openPlans: () => void;
 
-  // Auth (passwordless phone + OTP)
+  // Auth (passwordless email + OTP)
   authStatus: AuthStatus;
-  phone: string | null;
+  email: string | null;
   token: string | null;
   authBusy: boolean;
   authError: string | null;
-  // Request an SMS code; ok=false on failure. devCode is set while SMS is stubbed (dev autofill).
-  requestPhoneCode: (phone: string) => Promise<{ ok: boolean; devCode: string | null }>;
-  verifyPhoneCode: (phone: string, code: string) => Promise<void>;
+  // Request an email code; ok=false on failure. devCode is set while email is stubbed (dev autofill).
+  requestEmailCode: (email: string) => Promise<{ ok: boolean; devCode: string | null }>;
+  verifyEmailCode: (email: string, code: string) => Promise<void>;
   logout: () => Promise<void>;
 
   // Plans (from API)
@@ -220,7 +220,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
             token: r.accessToken,
             refreshToken: r.refreshToken,
             userId: r.userId,
-            phone: s.phone,
+            email: s.email,
           };
           await persistSession(ns);
           return await fn(ns.token);
@@ -301,7 +301,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
           token: r.accessToken,
           refreshToken: r.refreshToken,
           userId: r.userId,
-          phone: s.phone,
+          email: s.email,
         };
         await persistSession(ns);
         res = await run(ns.token);
@@ -330,13 +330,13 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   // ---- auth actions ----
   const finishSignIn = async (
     r: { accessToken: string; refreshToken: string; userId: string },
-    phone: string
+    email: string
   ) => {
     await persistSession({
       token: r.accessToken,
       refreshToken: r.refreshToken,
       userId: r.userId,
-      phone,
+      email,
     });
     setAuthStatus('in');
     setScreen('pass');
@@ -350,28 +350,29 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         ? e.message
         : translate(langRef.current, fallbackKey);
 
-  const requestPhoneCode = async (
-    phone: string
+  const requestEmailCode = async (
+    email: string
   ): Promise<{ ok: boolean; devCode: string | null }> => {
     setAuthBusy(true);
     setAuthError(null);
     try {
-      const r = await api.requestPhoneCode(phone);
+      const r = await api.requestEmailCode(email.trim().toLowerCase());
       return { ok: true, devCode: r.devCode ?? null };
     } catch (e) {
-      setAuthError(authMsg(e, 'auth.err.phone'));
+      setAuthError(authMsg(e, 'auth.err.email'));
       return { ok: false, devCode: null };
     } finally {
       setAuthBusy(false);
     }
   };
 
-  const verifyPhoneCode = async (phone: string, code: string) => {
+  const verifyEmailCode = async (email: string, code: string) => {
     setAuthBusy(true);
     setAuthError(null);
     try {
-      const r = await api.verifyPhoneCode(phone, code);
-      await finishSignIn(r, phone);
+      const em = email.trim().toLowerCase();
+      const r = await api.verifyEmailCode(em, code);
+      await finishSignIn(r, em);
     } catch (e) {
       setAuthError(authMsg(e, 'auth.err.code'));
     } finally {
@@ -506,12 +507,12 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     openPlans,
 
     authStatus,
-    phone: session?.phone ?? null,
+    email: session?.email ?? null,
     token: session?.token ?? null,
     authBusy,
     authError,
-    requestPhoneCode,
-    verifyPhoneCode,
+    requestEmailCode,
+    verifyEmailCode,
     logout,
 
     plans,

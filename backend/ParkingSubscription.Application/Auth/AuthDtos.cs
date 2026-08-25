@@ -7,10 +7,10 @@ public sealed record RefreshRequest(string RefreshToken);
 public sealed record ForgotPasswordRequest(string Email);
 public sealed record ResetPasswordRequest(string Email, string Token, string NewPassword);
 
-// Passwordless phone login (OTP).
-public sealed record RequestPhoneCodeRequest(string Phone);
-public sealed record PhoneCodeResult(string Phone, string? DevCode);
-public sealed record VerifyPhoneCodeRequest(string Phone, string Code);
+// Passwordless email login (OTP).
+public sealed record RequestEmailCodeRequest(string Email);
+public sealed record EmailCodeResult(string Email, string? DevCode);
+public sealed record VerifyEmailCodeRequest(string Email, string Code);
 
 public sealed record AuthResult(
     string AccessToken,

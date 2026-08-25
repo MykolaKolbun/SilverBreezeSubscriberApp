@@ -28,10 +28,10 @@ public interface IAuthService
     Task<AuthResult> RefreshAsync(RefreshRequest req, CancellationToken ct = default);
     Task<string?> ForgotPasswordAsync(ForgotPasswordRequest req, CancellationToken ct = default);
     Task ResetPasswordAsync(ResetPasswordRequest req, CancellationToken ct = default);
-    /// <summary>Sends an SMS OTP for passwordless phone login (ТЗ §3).</summary>
-    Task<PhoneCodeResult> RequestPhoneCodeAsync(RequestPhoneCodeRequest req, CancellationToken ct = default);
+    /// <summary>Sends an email OTP for passwordless login (ТЗ §3).</summary>
+    Task<EmailCodeResult> RequestEmailCodeAsync(RequestEmailCodeRequest req, CancellationToken ct = default);
     /// <summary>Verifies the OTP, provisioning a Customer+User+account on first login, and issues JWTs.</summary>
-    Task<AuthResult> VerifyPhoneCodeAsync(VerifyPhoneCodeRequest req, CancellationToken ct = default);
+    Task<AuthResult> VerifyEmailCodeAsync(VerifyEmailCodeRequest req, CancellationToken ct = default);
 }
 
 /// <summary>
@@ -43,7 +43,6 @@ public sealed class AuthService(
     IPasswordHasher hasher,
     IJwtTokenService tokens,
     IEmailSender email,
-    ISmsSender sms,
     IClock clock,
     AuthOptions options,
     ILogger<AuthService> logger) : IAuthService
@@ -182,20 +181,22 @@ public sealed class AuthService(
         await db.SaveChangesAsync(ct);
     }
 
-    public async Task<PhoneCodeResult> RequestPhoneCodeAsync(RequestPhoneCodeRequest req, CancellationToken ct = default)
+    public async Task<EmailCodeResult> RequestEmailCodeAsync(RequestEmailCodeRequest req, CancellationToken ct = default)
     {
-        var phone = NormalizePhone(req.Phone);
+        var addr = Normalize(req.Email);
+        if (string.IsNullOrWhiteSpace(addr) || !addr.Contains('@'))
+            throw new ValidationException("A valid email is required.");
         var now = clock.UtcNow;
 
-        var otp = await db.PhoneOtps.FirstOrDefaultAsync(o => o.Phone == phone, ct);
+        var otp = await db.LoginOtps.FirstOrDefaultAsync(o => o.Identifier == addr, ct);
         if (otp is not null && now - otp.LastSentAt < TimeSpan.FromSeconds(ResendCooldownSeconds))
             throw new ValidationException("Зачекайте перед повторним надсиланням коду.");
 
         var code = GenerateCode();
         if (otp is null)
         {
-            otp = new PhoneOtp { Phone = phone };
-            db.PhoneOtps.Add(otp);
+            otp = new LoginOtp { Identifier = addr };
+            db.LoginOtps.Add(otp);
         }
         otp.CodeHash = hasher.Hash(code);
         otp.ExpiresAt = now.AddMinutes(CodeExpiryMinutes);
@@ -203,18 +204,19 @@ public sealed class AuthService(
         otp.LastSentAt = now;
         await db.SaveChangesAsync(ct);
 
-        await sms.SendAsync(phone, $"SilverBreeze: ваш код підтвердження {code}", ct);
-        logger.LogInformation("Phone OTP requested for {Phone}", phone);
+        await email.SendAsync(addr, "SilverBreeze — код для входу",
+            $"Ваш код для входу: {code}\n\nКод дійсний {CodeExpiryMinutes} хв.", ct);
+        logger.LogInformation("Email OTP requested for {Email}", addr);
 
-        return new PhoneCodeResult(phone, options.ExposeDevTokens ? code : null);
+        return new EmailCodeResult(addr, options.ExposeDevTokens ? code : null);
     }
 
-    public async Task<AuthResult> VerifyPhoneCodeAsync(VerifyPhoneCodeRequest req, CancellationToken ct = default)
+    public async Task<AuthResult> VerifyEmailCodeAsync(VerifyEmailCodeRequest req, CancellationToken ct = default)
     {
-        var phone = NormalizePhone(req.Phone);
+        var addr = Normalize(req.Email);
         var now = clock.UtcNow;
 
-        var otp = await db.PhoneOtps.FirstOrDefaultAsync(o => o.Phone == phone, ct)
+        var otp = await db.LoginOtps.FirstOrDefaultAsync(o => o.Identifier == addr, ct)
             ?? throw new AuthException("Код не знайдено. Запросіть новий.");
         if (otp.ExpiresAt < now)
             throw new AuthException("Код прострочено. Запросіть новий.");
@@ -227,43 +229,28 @@ public sealed class AuthService(
             throw new AuthException("Невірний код.");
         }
 
-        // Code is valid — consume it and find/provision the account for this phone.
-        db.PhoneOtps.Remove(otp);
+        // Code is valid — consume it and find/provision the account for this email.
+        db.LoginOtps.Remove(otp);
 
         var account = await db.AppAccounts.Include(a => a.User)
-            .FirstOrDefaultAsync(a => a.Phone == phone, ct);
+            .FirstOrDefaultAsync(a => a.Email == addr, ct);
         if (account is null)
         {
-            var customer = new Customer();
-            var user = new User { Customer = customer };
-            account = new AppAccount { Phone = phone, PhoneConfirmed = true, User = user };
+            var customer = new Customer { Email = addr };
+            var user = new User { Customer = customer, Email = addr };
+            account = new AppAccount { Email = addr, EmailConfirmed = true, User = user };
             db.Customers.Add(customer);
             db.Users.Add(user);
             db.AppAccounts.Add(account);
-            logger.LogInformation("Provisioned phone account {Phone}; Customer/User created 1:1", phone);
+            logger.LogInformation("Provisioned email account {Email}; Customer/User created 1:1", addr);
         }
         else
         {
-            account.PhoneConfirmed = true;
+            account.EmailConfirmed = true;
         }
         await db.SaveChangesAsync(ct);
 
         return await IssueAsync(account, ct);
-    }
-
-    /// <summary>Normalizes a Ukrainian phone number to E.164 (+380XXXXXXXXX).</summary>
-    private static string NormalizePhone(string input)
-    {
-        var digits = new string((input ?? string.Empty).Where(char.IsDigit).ToArray());
-        var e164 = digits switch
-        {
-            { Length: 12 } when digits.StartsWith("380") => "+" + digits,
-            { Length: 11 } when digits.StartsWith("80") => "+3" + digits,
-            { Length: 10 } when digits.StartsWith("0") => "+38" + digits,
-            { Length: 9 } => "+380" + digits,
-            _ => null,
-        };
-        return e164 ?? throw new ValidationException("Невірний номер телефону.");
     }
 
     private static string GenerateCode() =>

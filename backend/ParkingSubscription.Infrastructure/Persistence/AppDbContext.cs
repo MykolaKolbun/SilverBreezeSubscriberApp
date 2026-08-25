@@ -13,7 +13,7 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options)
     public DbSet<ParkingCard> ParkingCards => Set<ParkingCard>();
     public DbSet<ValueCard> ValueCards => Set<ValueCard>();
     public DbSet<AppAccount> AppAccounts => Set<AppAccount>();
-    public DbSet<PhoneOtp> PhoneOtps => Set<PhoneOtp>();
+    public DbSet<LoginOtp> LoginOtps => Set<LoginOtp>();
     public DbSet<OutboxMessage> OutboxMessages => Set<OutboxMessage>();
     public DbSet<AuditLogEntry> AuditLog => Set<AuditLogEntry>();
     public DbSet<SubscriptionPlan> SubscriptionPlans => Set<SubscriptionPlan>();
@@ -68,10 +68,10 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options)
             e.HasOne(x => x.User).WithMany().HasForeignKey(x => x.UserId);
         });
 
-        b.Entity<PhoneOtp>(e =>
+        b.Entity<LoginOtp>(e =>
         {
-            e.HasKey(x => x.Phone);
-            e.Property(x => x.Phone).HasMaxLength(20).ValueGeneratedNever();
+            e.HasKey(x => x.Identifier);
+            e.Property(x => x.Identifier).HasMaxLength(320).ValueGeneratedNever();
             e.Property(x => x.CodeHash).HasMaxLength(200);
         });
 
