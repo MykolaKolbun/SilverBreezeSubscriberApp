@@ -1,0 +1,36 @@
+@{
+    var current = (ViewContext.RouteData.Values["page"] as string) ?? "";
+    string Active(string page) => current.Equals(page, StringComparison.OrdinalIgnoreCase) ? "active" : "";
+}
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>SilverBreeze — Панель керування</title>
+    <link rel="stylesheet" href="~/css/site.css" />
+</head>
+<body>
+    <div class="app">
+        <aside class="sidebar">
+            <div class="brand">SilverBreeze</div>
+            <nav>
+                <a asp-page="/Clients" class="@Active("/Clients")">Клієнти</a>
+                <a asp-page="/Settings" class="@Active("/Settings")">Налаштування</a>
+                <a asp-page="/Reports" class="@Active("/Reports")">Звіти</a>
+            </nav>
+            <form method="post" asp-page="/Logout" class="logout">
+                <button type="submit">Вийти</button>
+            </form>
+        </aside>
+        <main>
+            <header class="topbar">
+                <h1>Панель керування</h1>
+            </header>
+            <section class="content">
+                @RenderBody()
+            </section>
+        </main>
+    </div>
+</body>
+</html>

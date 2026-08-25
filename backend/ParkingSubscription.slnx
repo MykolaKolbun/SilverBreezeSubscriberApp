@@ -1,4 +1,5 @@
 <Solution>
+  <Project Path="ParkingSubscription.AdminPanel/ParkingSubscription.AdminPanel.csproj" />
   <Project Path="ParkingSubscription.Api/ParkingSubscription.Api.csproj" />
   <Project Path="ParkingSubscription.Application/ParkingSubscription.Application.csproj" />
   <Project Path="ParkingSubscription.Domain/ParkingSubscription.Domain.csproj" />

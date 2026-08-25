@@ -1,0 +1,53 @@
+@page
+@model ParkingSubscription.AdminPanel.Pages.ClientsModel
+@{
+    ViewData["Title"] = "Клієнти";
+}
+
+<div class="page-head">
+    <h2>Клієнти</h2>
+    <span class="muted">Усього: @Model.Clients.Count</span>
+</div>
+
+<div class="card">
+    <table class="grid">
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>Ім'я</th>
+                <th>Email</th>
+                <th>Телефон</th>
+                <th>Активний абонемент</th>
+            </tr>
+        </thead>
+        <tbody>
+        @if (Model.LoadError != null)
+        {
+            <tr><td colspan="5" class="muted center">@Model.LoadError</td></tr>
+        }
+        else if (Model.Clients.Count == 0)
+        {
+            <tr><td colspan="5" class="muted center">Клієнтів ще немає.</td></tr>
+        }
+        @foreach (var c in Model.Clients)
+        {
+            <tr>
+                <td class="mono">@c.Id.ToString()[..8]</td>
+                <td>@(string.IsNullOrWhiteSpace(c.Name) ? "—" : c.Name)</td>
+                <td>@(c.Email ?? "—")</td>
+                <td>@(string.IsNullOrWhiteSpace(c.Phone) ? "—" : c.Phone)</td>
+                <td>
+                    @if (c.HasActiveSubscription)
+                    {
+                        <span class="badge ok">Так</span>
+                    }
+                    else
+                    {
+                        <span class="badge">Ні</span>
+                    }
+                </td>
+            </tr>
+        }
+        </tbody>
+    </table>
+</div>

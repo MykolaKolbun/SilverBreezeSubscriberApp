@@ -30,7 +30,7 @@ jobs:
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
-      - name: Build and push ARM64 image
+      - name: Build and push ARM64 API image
         uses: docker/build-push-action@v6
         with:
           context: ./backend
@@ -38,6 +38,17 @@ jobs:
           platforms: linux/arm64
           push: true
           tags: ghcr.io/mykolakolbun/parkingsubscription-api:latest
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Build and push ARM64 Admin Panel image
+        uses: docker/build-push-action@v6
+        with:
+          context: ./backend
+          file: ./backend/ParkingSubscription.AdminPanel/Dockerfile
+          platforms: linux/arm64
+          push: true
+          tags: ghcr.io/mykolakolbun/parkingsubscription-admin:latest
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
@@ -58,6 +69,7 @@ jobs:
           CHECKBOX_LICENSE_KEY: ${{ secrets.CHECKBOX_LICENSE_KEY }}
           CHECKBOX_BASE_URL:    ${{ secrets.CHECKBOX_BASE_URL }}
           CHECKBOX_TAX_CODE:    ${{ secrets.CHECKBOX_TAX_CODE }}
+          ADMIN_PASSWORD:       ${{ secrets.ADMIN_PASSWORD }}
         run: |
           mkdir -p ~/.ssh
           echo "${{ secrets.PI_SSH_PRIVATE_KEY }}" | base64 -d > ~/.ssh/id_ed25519
@@ -91,6 +103,7 @@ jobs:
             [ -n "$CHECKBOX_LICENSE_KEY" ] && printf 'CHECKBOX_LICENSE_KEY=%s\n' "$CHECKBOX_LICENSE_KEY"
             [ -n "$CHECKBOX_BASE_URL" ]    && printf 'CHECKBOX_BASE_URL=%s\n' "$CHECKBOX_BASE_URL"
             [ -n "$CHECKBOX_TAX_CODE" ]    && printf 'CHECKBOX_TAX_CODE=%s\n' "$CHECKBOX_TAX_CODE"
+            [ -n "$ADMIN_PASSWORD" ]       && printf 'ADMIN_PASSWORD=%s\n' "$ADMIN_PASSWORD"
           } | \
             ssh "$PI" '
               touch ~/SilverBreezeSubscriberApp/.env

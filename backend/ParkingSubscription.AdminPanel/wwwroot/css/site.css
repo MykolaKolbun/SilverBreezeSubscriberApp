@@ -1,0 +1,157 @@
+:root {
+    --bg: #0f1216;
+    --panel: #171b22;
+    --panel-2: #1e232c;
+    --border: #2a303b;
+    --fg: #e7ebf0;
+    --fg-2: #9aa4b2;
+    --accent: #009BDD;
+    --ok: #22e07a;
+}
+
+* { box-sizing: border-box; }
+
+body {
+    margin: 0;
+    font-family: -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
+    background: var(--bg);
+    color: var(--fg);
+}
+
+/* ---- App shell ---- */
+.app { display: flex; min-height: 100vh; }
+
+.sidebar {
+    width: 220px;
+    background: var(--panel);
+    border-right: 1px solid var(--border);
+    display: flex;
+    flex-direction: column;
+    padding: 20px 0;
+}
+
+.brand {
+    font-weight: 700;
+    font-size: 20px;
+    letter-spacing: -0.3px;
+    padding: 0 20px 18px;
+    color: var(--fg);
+}
+
+.sidebar nav { display: flex; flex-direction: column; gap: 2px; }
+
+.sidebar nav a {
+    display: block;
+    padding: 11px 20px;
+    color: var(--fg-2);
+    text-decoration: none;
+    font-size: 15px;
+    border-left: 3px solid transparent;
+}
+
+.sidebar nav a:hover { color: var(--fg); background: var(--panel-2); }
+
+.sidebar nav a.active {
+    color: var(--fg);
+    background: var(--panel-2);
+    border-left-color: var(--accent);
+}
+
+.sidebar .logout { margin-top: auto; padding: 0 20px; }
+.sidebar .logout button {
+    width: 100%;
+    background: transparent;
+    border: 1px solid var(--border);
+    color: var(--fg-2);
+    padding: 9px;
+    border-radius: 8px;
+    cursor: pointer;
+}
+.sidebar .logout button:hover { color: var(--fg); border-color: var(--fg-2); }
+
+main { flex: 1; display: flex; flex-direction: column; min-width: 0; }
+
+.topbar {
+    height: 60px;
+    display: flex;
+    align-items: center;
+    padding: 0 28px;
+    border-bottom: 1px solid var(--border);
+    background: var(--panel);
+}
+.topbar h1 { font-size: 17px; font-weight: 600; margin: 0; color: var(--fg); }
+
+.content { padding: 28px; }
+
+/* ---- Bits ---- */
+.page-head { display: flex; align-items: baseline; gap: 12px; margin-bottom: 16px; }
+.page-head h2 { margin: 0; font-size: 22px; }
+.muted { color: var(--fg-2); font-size: 13px; }
+.center { text-align: center; }
+.mono { font-family: "JetBrains Mono", ui-monospace, monospace; color: var(--fg-2); }
+
+.card {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    overflow: hidden;
+}
+
+.grid { width: 100%; border-collapse: collapse; font-size: 14px; }
+.grid th, .grid td { text-align: left; padding: 12px 16px; border-bottom: 1px solid var(--border); }
+.grid th {
+    color: var(--fg-2);
+    font-weight: 600;
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: 0.4px;
+    background: var(--panel-2);
+}
+.grid tbody tr:last-child td { border-bottom: none; }
+.grid tbody tr:hover td { background: var(--panel-2); }
+
+.badge {
+    display: inline-block;
+    padding: 3px 10px;
+    border-radius: 999px;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--fg-2);
+    background: var(--panel-2);
+    border: 1px solid var(--border);
+}
+.badge.ok { color: var(--ok); border-color: rgba(34, 224, 122, 0.4); background: rgba(34, 224, 122, 0.1); }
+
+/* ---- Login ---- */
+.login-body { display: flex; align-items: center; justify-content: center; min-height: 100vh; }
+.login-card {
+    width: 320px;
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 28px;
+    display: flex;
+    flex-direction: column;
+}
+.login-card label { font-size: 13px; color: var(--fg-2); margin-bottom: 6px; }
+.login-card input {
+    height: 44px;
+    padding: 0 12px;
+    background: var(--panel-2);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    color: var(--fg);
+    font-size: 15px;
+    margin-bottom: 14px;
+}
+.login-card button {
+    height: 46px;
+    background: var(--accent);
+    border: none;
+    border-radius: 10px;
+    color: #fff;
+    font-size: 15px;
+    font-weight: 600;
+    cursor: pointer;
+}
+.error { color: #ff6b6b; font-size: 13px; margin-bottom: 12px; }

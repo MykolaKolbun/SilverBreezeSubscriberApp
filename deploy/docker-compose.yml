@@ -71,6 +71,21 @@ services:
       retries: 3
       start_period: 40s
 
+  # Admin panel (read-only views over the same Postgres). 8087 — 8081-8086 are taken.
+  admin:
+    image: ${ADMIN_IMAGE:-ghcr.io/mykolakolbun/parkingsubscription-admin:latest}
+    restart: unless-stopped
+    ports:
+      - "8087:8080"
+    environment:
+      ASPNETCORE_ENVIRONMENT: Production
+      Database__Provider: Postgres
+      ConnectionStrings__Default: "Host=postgres;Port=5432;Database=${DB_NAME:-SWeb_DB};Username=${DB_USER:-parking};Password=${DB_PASSWORD}"
+      Admin__Password: ${ADMIN_PASSWORD:-change-me-admin}
+    depends_on:
+      postgres:
+        condition: service_healthy
+
   # Static file server for sharing the mobile APK (and any other static downloads).
   # Drop app-release.apk into ./apk on the Pi → downloadable at http://<pi>:8086/app-release.apk
   # 8086 — EVCharging already uses 8084 for its own APK download service.
