@@ -73,27 +73,33 @@ public sealed class CheckboxOnlineFiscalProvider(
         return new FiscalReceipt(receiptId, taxUrl ?? string.Empty);
     }
 
-    public async Task<FiscalReceiptImage?> GetReceiptImageAsync(string receiptId, CancellationToken ct = default)
+    public Task<FiscalReceiptImage?> GetReceiptImageAsync(string receiptId, CancellationToken ct = default) =>
+        FetchReceiptFileAsync(receiptId, "png", "image/png", ct);
+
+    public Task<FiscalReceiptImage?> GetReceiptPdfAsync(string receiptId, CancellationToken ct = default) =>
+        FetchReceiptFileAsync(receiptId, "pdf", "application/pdf", ct);
+
+    private async Task<FiscalReceiptImage?> FetchReceiptFileAsync(string receiptId, string format, string accept, CancellationToken ct)
     {
         var cfg = await LoadAsync(ct);
         var token = await AuthorizeAsync(cfg, ct);
 
         using var http = httpClientFactory.CreateClient(HttpClientName);
-        using var req = new HttpRequestMessage(HttpMethod.Get, $"{cfg.BaseUrl}/api/v1/receipts/{receiptId}/png");
+        using var req = new HttpRequestMessage(HttpMethod.Get, $"{cfg.BaseUrl}/api/v1/receipts/{receiptId}/{format}");
         ApplyHeaders(req, cfg, token);
         req.Headers.Accept.Clear();
-        req.Headers.Accept.Add(new MediaTypeWithQualityHeaderValue("image/png"));
+        req.Headers.Accept.Add(new MediaTypeWithQualityHeaderValue(accept));
 
         var resp = await http.SendAsync(req, ct);
         if (!resp.IsSuccessStatusCode)
         {
             var err = await resp.Content.ReadAsStringAsync(ct);
-            logger.LogWarning("[Checkbox] Receipt image {ReceiptId}: HTTP {Status} {Body}", receiptId, (int)resp.StatusCode, err);
+            logger.LogWarning("[Checkbox] Receipt {Format} {ReceiptId}: HTTP {Status} {Body}", format, receiptId, (int)resp.StatusCode, err);
             return null;
         }
         var bytes = await resp.Content.ReadAsByteArrayAsync(ct);
-        var contentType = resp.Content.Headers.ContentType?.MediaType ?? "image/png";
-        logger.LogInformation("[Checkbox] Receipt image {ReceiptId}: {Bytes} bytes, {ContentType}", receiptId, bytes.Length, contentType);
+        var contentType = resp.Content.Headers.ContentType?.MediaType ?? accept;
+        logger.LogInformation("[Checkbox] Receipt {Format} {ReceiptId}: {Bytes} bytes, {ContentType}", format, receiptId, bytes.Length, contentType);
         return new FiscalReceiptImage(bytes, contentType);
     }
 

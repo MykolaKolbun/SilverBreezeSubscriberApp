@@ -9,6 +9,8 @@ import React, {
 import { Alert } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as WebBrowser from 'expo-web-browser';
+import * as FileSystem from 'expo-file-system/legacy';
+import * as Sharing from 'expo-sharing';
 import { Theme, ThemeName, themes } from './theme';
 import { nextStartISO, todayISO } from './plans';
 import { Lang, TFunc, translate } from './i18n';
@@ -82,9 +84,11 @@ interface AppState {
   loadHistory: () => Promise<void>;
   openHistory: () => void;
 
-  // Fetch an authenticated image (QR / receipt) as a data URI, refreshing the
-  // token on 401. Returns null if unavailable.
-  fetchImage: (url: string) => Promise<string | null>;
+  // Download an authenticated file (receipt PNG/PDF) to a local uri, refreshing
+  // the token on 401. Returns null if unavailable.
+  downloadFile: (url: string, ext: string) => Promise<string | null>;
+  // Download the receipt PDF and open the system share/open sheet.
+  openReceiptPdf: (url: string) => Promise<void>;
 
   // Payment (iPay hosted page + server-side confirmation)
   payState: PayState;
@@ -279,29 +283,48 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     loadHistory();
   };
 
-  const blobToDataUri = (blob: Blob): Promise<string> =>
-    new Promise((resolve, reject) => {
-      const reader = new FileReader();
-      reader.onerror = () => reject(reader.error);
-      reader.onloadend = () => {
-        let r = reader.result as string;
-        // RN often produces a missing/generic MIME (data:;base64 or
-        // application/octet-stream); force image/png so <Image> renders it.
-        const comma = r.indexOf(',');
-        if (comma > 0 && !/^data:image\//i.test(r))
-          r = 'data:image/png;base64' + r.slice(comma);
-        resolve(r);
-      };
-      reader.readAsDataURL(blob);
-    });
+  // Native download of an authenticated file to the cache dir (reliable for binary
+  // in release builds, unlike fetch→blob). Refreshes the token once on 401.
+  const downloadFile = async (url: string, ext: string): Promise<string | null> => {
+    const s = sessionRef.current;
+    if (!s) return null;
+    const name = url.replace(/[^a-z0-9]/gi, '_').slice(-48) + '.' + ext;
+    const target = (FileSystem.cacheDirectory ?? '') + name;
+    const run = (tok: string) =>
+      FileSystem.downloadAsync(url, target, { headers: { Authorization: `Bearer ${tok}` } });
+    try {
+      let res = await run(s.token);
+      if (res.status === 401) {
+        const r = await api.refresh(s.refreshToken);
+        const ns: Session = {
+          token: r.accessToken,
+          refreshToken: r.refreshToken,
+          userId: r.userId,
+          email: s.email,
+        };
+        await persistSession(ns);
+        res = await run(ns.token);
+      }
+      return res.status === 200 ? res.uri : null;
+    } catch {
+      return null;
+    }
+  };
 
-  const fetchImage = async (url: string): Promise<string | null> =>
-    authed(async (tok) => {
-      const res = await fetch(url, { headers: { Authorization: `Bearer ${tok}` } });
-      if (res.status === 401) throw new ApiError(401, 'unauthorized');
-      if (!res.ok) return null;
-      return await blobToDataUri(await res.blob());
-    });
+  const openReceiptPdf = async (url: string) => {
+    const uri = await downloadFile(url, 'pdf');
+    if (!uri) {
+      Alert.alert(translate(langRef.current, 'history.receiptTitle'),
+        translate(langRef.current, 'history.receiptUnavailable'));
+      return;
+    }
+    try {
+      if (await Sharing.isAvailableAsync())
+        await Sharing.shareAsync(uri, { mimeType: 'application/pdf', UTI: 'com.adobe.pdf' });
+    } catch {
+      /* user dismissed / no handler */
+    }
+  };
 
   // ---- auth actions ----
   const finishSignIn = async (
@@ -511,7 +534,8 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     historyLoading,
     loadHistory,
     openHistory,
-    fetchImage,
+    downloadFile,
+    openReceiptPdf,
 
     payState,
     confirmPayment,

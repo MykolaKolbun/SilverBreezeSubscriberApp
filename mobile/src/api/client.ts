@@ -142,5 +142,8 @@ export const api = {
 // QR image URL (fetched with an Authorization header by <Image>).
 export const qrUrl = (cardId: string) => `${API_BASE_URL}/parking-cards/${cardId}/qr`;
 
-// Rendered fiscal receipt image URL (fetched with an Authorization header by <Image>).
+// Rendered fiscal receipt image URL (downloaded with an Authorization header).
 export const receiptUrl = (paymentId: string) => `${API_BASE_URL}/payments/${paymentId}/receipt`;
+
+// Fiscal receipt PDF URL (downloaded with an Authorization header, opened via share sheet).
+export const receiptPdfUrl = (paymentId: string) => `${API_BASE_URL}/payments/${paymentId}/receipt.pdf`;

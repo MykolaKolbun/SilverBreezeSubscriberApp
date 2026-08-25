@@ -37,6 +37,21 @@ public sealed class PaymentsController(
         return File(image.Content, image.ContentType);
     }
 
+    /// <summary>Fiscal receipt as a PDF for one of the caller's payments.</summary>
+    [HttpGet("{id:guid}/receipt.pdf")]
+    [Authorize]
+    public async Task<IActionResult> ReceiptPdf(Guid id, CancellationToken ct)
+    {
+        var uidClaim = User.FindFirst("uid")?.Value;
+        if (!Guid.TryParse(uidClaim, out var userId))
+            return Forbid();
+
+        var pdf = await payments.GetReceiptPdfAsync(id, userId, ct);
+        if (pdf is null)
+            return NotFound();
+        return File(pdf.Content, pdf.ContentType, $"receipt-{id}.pdf");
+    }
+
     [HttpPost("{id:guid}/refund")]
     [Authorize]
     public async Task<ActionResult<PaymentDto>> Refund(Guid id, CancellationToken ct) =>

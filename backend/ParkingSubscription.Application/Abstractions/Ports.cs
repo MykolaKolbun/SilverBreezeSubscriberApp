@@ -94,8 +94,11 @@ public interface IFiscalProvider
     /// <summary>Fiscalizes a paid payment and returns the receipt id + tax URL.</summary>
     Task<FiscalReceipt> FiscalizeAsync(Payment payment, CancellationToken ct = default);
 
-    /// <summary>Fetches the rendered receipt image by receipt id; null if unavailable.</summary>
+    /// <summary>Fetches the rendered receipt image (PNG) by receipt id; null if unavailable.</summary>
     Task<FiscalReceiptImage?> GetReceiptImageAsync(string receiptId, CancellationToken ct = default);
+
+    /// <summary>Fetches the receipt as a PDF by receipt id; null if unavailable.</summary>
+    Task<FiscalReceiptImage?> GetReceiptPdfAsync(string receiptId, CancellationToken ct = default);
 }
 
 public sealed record WalletPass(byte[] Content, string ContentType, string FileName);

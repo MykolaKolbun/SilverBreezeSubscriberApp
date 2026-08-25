@@ -26,9 +26,9 @@ export function AuthImage({
     setFailed(false);
     (async () => {
       try {
-        const data = await app.fetchImage(url);
+        const local = await app.downloadFile(url, 'png');
         if (!cancelled) {
-          if (data) setUri(data);
+          if (local) setUri(local);
           else setFailed(true);
         }
       } catch {

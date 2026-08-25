@@ -21,8 +21,10 @@ public interface IPaymentService
     Task<PaymentDto> RefundAsync(Guid id, CancellationToken ct = default);
     /// <summary>The user's payment history (most recent first).</summary>
     Task<IReadOnlyList<PaymentDto>> GetHistoryAsync(Guid userId, CancellationToken ct = default);
-    /// <summary>The rendered fiscal receipt image for one of the user's payments; null if none.</summary>
+    /// <summary>The rendered fiscal receipt image (PNG) for one of the user's payments; null if none.</summary>
     Task<FiscalReceiptImage?> GetReceiptImageAsync(Guid paymentId, Guid userId, CancellationToken ct = default);
+    /// <summary>The fiscal receipt as a PDF for one of the user's payments; null if none.</summary>
+    Task<FiscalReceiptImage?> GetReceiptPdfAsync(Guid paymentId, Guid userId, CancellationToken ct = default);
 }
 
 /// <summary>
@@ -225,6 +227,18 @@ public sealed class PaymentService(
         });
         await db.SaveChangesAsync(ct);
         return image;
+    }
+
+    public async Task<FiscalReceiptImage?> GetReceiptPdfAsync(Guid paymentId, Guid userId, CancellationToken ct = default)
+    {
+        var payment = await db.Payments.AsNoTracking()
+            .FirstOrDefaultAsync(p => p.Id == paymentId && p.UserId == userId, ct)
+            ?? throw new NotFoundException($"Payment {paymentId} not found.");
+
+        // PDF is fetched on demand (opened rarely — not cached like the inline PNG).
+        return string.IsNullOrEmpty(payment.FiscalReceiptId)
+            ? null
+            : await fiscal.GetReceiptPdfAsync(payment.FiscalReceiptId, ct);
     }
 
     public async Task<PaymentDto> RefundAsync(Guid id, CancellationToken ct = default)

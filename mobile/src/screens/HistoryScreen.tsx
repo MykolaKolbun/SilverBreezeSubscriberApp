@@ -23,7 +23,7 @@ import { useApp } from '../state';
 import { Overline } from '../components/ui';
 import { AuthImage } from '../components/AuthImage';
 import { ChevronLeft, ChevronRight } from '../components/icons';
-import { receiptUrl } from '../api/client';
+import { receiptPdfUrl, receiptUrl } from '../api/client';
 
 export function HistoryScreen() {
   const app = useApp();
@@ -215,11 +215,21 @@ export function HistoryScreen() {
               <Overline theme={t} color="#6A7187">
                 {tr('history.receiptTitle')}
               </Overline>
-              <Pressable onPress={() => setReceiptId(null)} hitSlop={10}>
-                <Text style={{ fontFamily: fonts.inter700, fontSize: 18, color: '#6A7187' }}>
-                  ×
-                </Text>
-              </Pressable>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 14 }}>
+                <Pressable
+                  onPress={() => receiptId && app.openReceiptPdf(receiptPdfUrl(receiptId))}
+                  hitSlop={10}
+                >
+                  <Text style={{ fontFamily: fonts.inter700, fontSize: 13, color: '#009BDD' }}>
+                    PDF
+                  </Text>
+                </Pressable>
+                <Pressable onPress={() => setReceiptId(null)} hitSlop={10}>
+                  <Text style={{ fontFamily: fonts.inter700, fontSize: 18, color: '#6A7187' }}>
+                    ×
+                  </Text>
+                </Pressable>
+              </View>
             </View>
             <ScrollView contentContainerStyle={{ padding: 12 }}>
               {receiptId && (

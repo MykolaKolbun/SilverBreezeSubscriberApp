@@ -15,7 +15,10 @@ public sealed class FiscalProviderStub(ILogger<FiscalProviderStub> logger) : IFi
         return Task.FromResult(new FiscalReceipt(receiptId, $"https://fiscal.example/receipts/{receiptId}"));
     }
 
-    // The stub has no rendered receipt image.
+    // The stub has no rendered receipt document.
     public Task<FiscalReceiptImage?> GetReceiptImageAsync(string receiptId, CancellationToken ct = default) =>
+        Task.FromResult<FiscalReceiptImage?>(null);
+
+    public Task<FiscalReceiptImage?> GetReceiptPdfAsync(string receiptId, CancellationToken ct = default) =>
         Task.FromResult<FiscalReceiptImage?>(null);
 }
