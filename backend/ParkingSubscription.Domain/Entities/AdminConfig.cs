@@ -12,5 +12,11 @@ public class AdminConfig
 
     public string PasswordHash { get; set; } = string.Empty;
 
+    /// <summary>
+    /// Venue-wide cap on concurrently active subscriptions, editable from the panel.
+    /// Null → fall back to the Subscription:MaxActiveSubscriptions config value.
+    /// </summary>
+    public int? MaxActiveSubscriptions { get; set; }
+
     public DateTimeOffset UpdatedAt { get; set; }
 }

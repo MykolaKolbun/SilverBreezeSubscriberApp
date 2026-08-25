@@ -56,10 +56,14 @@ public sealed class PaymentService(
             ?? throw new NotFoundException($"Subscription plan {req.SubscriptionPlanId} not found.");
 
         // Venue-wide capacity: reject up front when the parking is full (all concurrent
-        // subscriptions taken), so money is never taken when there is no spot.
+        // subscriptions taken), so money is never taken when there is no spot. The cap is
+        // editable in the admin panel (AdminConfig); otherwise the configured default.
+        var cap = await db.AdminConfigs.AsNoTracking()
+            .Select(a => a.MaxActiveSubscriptions)
+            .FirstOrDefaultAsync(ct) ?? subscription.MaxActiveSubscriptions;
         var globalActive = await db.ParkingCards.CountAsync(
             c => c.Status == CardStatus.Active && !c.IsDeleted && c.EndDate >= clock.Today, ct);
-        if (globalActive >= subscription.MaxActiveSubscriptions)
+        if (globalActive >= cap)
             throw new ConflictException("Наразі всі місця зайняті. Спробуйте пізніше.");
 
         // Per-user cap: cards stack (each new one starts after the last active card ends),

@@ -9,11 +9,14 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>SilverBreeze — Вхід</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Roboto+Condensed:wght@700&family=Roboto:wght@400;500;700&display=swap" rel="stylesheet" />
     <link rel="stylesheet" href="~/css/site.css" />
 </head>
 <body class="login-body">
     <form method="post" class="login-card">
-        <div class="brand center">SilverBreeze</div>
+        <div class="brand center">Silver<span class="brand-blue">Breeze</span></div>
         <div class="muted center" style="margin-bottom:18px;">Панель керування</div>
         <label>Пароль адміністратора</label>
         <input type="password" asp-for="Password" autofocus autocomplete="current-password" />

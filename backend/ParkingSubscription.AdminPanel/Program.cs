@@ -1,9 +1,11 @@
 using Microsoft.AspNetCore.Authentication.Cookies;
+using Microsoft.AspNetCore.DataProtection;
 using Microsoft.EntityFrameworkCore;
 using ParkingSubscription.AdminPanel;
 using ParkingSubscription.Application.Abstractions;
 using ParkingSubscription.Infrastructure.Auth;
 using ParkingSubscription.Infrastructure.Persistence;
+using ParkingSubscription.Infrastructure.Security;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -20,6 +22,17 @@ builder.Services.AddDbContext<AppDbContext>(options =>
 builder.Services.AddScoped<IAppDbContext>(sp => sp.GetRequiredService<AppDbContext>());
 builder.Services.AddSingleton<IPasswordHasher, BcryptPasswordHasher>();
 builder.Services.AddScoped<AdminPasswordStore>();
+
+// Share the API's Data Protection keys so secrets we encrypt here (iPay SignKey,
+// Checkbox PIN/License) can be decrypted by the API — same keys + application name.
+var dp = builder.Services.AddDataProtection().SetApplicationName("SilverBreeze");
+var keysPath = builder.Configuration["DataProtection:KeysPath"];
+if (!string.IsNullOrWhiteSpace(keysPath))
+{
+    Directory.CreateDirectory(keysPath);
+    dp.PersistKeysToFileSystem(new DirectoryInfo(keysPath));
+}
+builder.Services.AddScoped<ICredentialProtector, CredentialProtector>();
 
 // Cookie auth gated by a single admin password (Admin:Password / Admin__Password).
 builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)

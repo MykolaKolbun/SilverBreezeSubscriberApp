@@ -2,27 +2,54 @@
 @model ParkingSubscription.AdminPanel.Pages.SettingsModel
 @{
     ViewData["Title"] = "Налаштування";
+    string Kept(bool has) => has ? "Встановлено. Залиште порожнім, щоб не міняти." : "Не задано.";
 }
 <div class="page-head"><h2>Налаштування</h2></div>
 
-<div class="card" style="padding:22px; max-width:420px;">
-    <h3 style="margin:0 0 14px; font-size:16px;">Зміна пароля адміністратора</h3>
-    <form method="post" class="form">
-        <label>Поточний пароль</label>
-        <input type="password" asp-for="Current" autocomplete="current-password" />
-        <label>Новий пароль</label>
-        <input type="password" asp-for="NewPassword" autocomplete="new-password" />
-        <label>Повторіть новий пароль</label>
-        <input type="password" asp-for="Confirm" autocomplete="new-password" />
+<div class="settings-grid">
 
-        @if (Model.Error != null)
-        {
-            <div class="error">@Model.Error</div>
-        }
-        @if (Model.Message != null)
-        {
-            <div class="ok-msg">@Model.Message</div>
-        }
-        <button type="submit">Зберегти</button>
-    </form>
+    <div class="card sect">
+        <h3>Паркінг</h3>
+        <form method="post" asp-page-handler="Parking" class="form">
+            <label>Кількість вільних місць для продажу</label>
+            <input type="number" min="0" asp-for="ParkingCapacity" placeholder="50" />
+            <div class="muted" style="margin:-8px 0 12px;">Максимум одночасно активних абонементів. Порожньо — значення за замовчуванням.</div>
+            @if (Model.Saved == "parking") { <div class="ok-msg">Збережено.</div> }
+            <button type="submit">Зберегти</button>
+        </form>
+    </div>
+
+    <div class="card sect">
+        <h3>Фіскальний провайдер (Checkbox Online)</h3>
+        <form method="post" asp-page-handler="Fiscal" class="form">
+            <label>Base URL</label>
+            <input type="text" asp-for="FiscalBaseUrl" placeholder="https://api.checkbox.ua" />
+            <label>Код податку (TaxCode)</label>
+            <input type="number" asp-for="FiscalTaxCode" placeholder="напр. 1" />
+            <label>PIN касира</label>
+            <input type="password" asp-for="FiscalPin" autocomplete="off" placeholder="••••••" />
+            <div class="muted hint">@Kept(Model.FiscalHasPin)</div>
+            <label>Ліцензійний ключ</label>
+            <input type="password" asp-for="FiscalLicense" autocomplete="off" placeholder="••••••" />
+            <div class="muted hint">@Kept(Model.FiscalHasLicense)</div>
+            @if (Model.Saved == "fiscal") { <div class="ok-msg">Збережено.</div> }
+            <button type="submit">Зберегти</button>
+        </form>
+    </div>
+
+    <div class="card sect">
+        <h3>Оплата (iPay)</h3>
+        <form method="post" asp-page-handler="Ipay" class="form">
+            <label>Merchant ID</label>
+            <input type="text" asp-for="IpayMerchantId" placeholder="mch_id" />
+            <label>Base URL</label>
+            <input type="text" asp-for="IpayBaseUrl" placeholder="https://checkout.ipay.ua/api302" />
+            <label>Sign Key</label>
+            <input type="password" asp-for="IpaySignKey" autocomplete="off" placeholder="••••••" />
+            <div class="muted hint">@Kept(Model.IpayHasSignKey)</div>
+            @if (Model.Saved == "ipay") { <div class="ok-msg">Збережено.</div> }
+            <button type="submit">Зберегти</button>
+        </form>
+    </div>
+
 </div>

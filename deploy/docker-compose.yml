@@ -82,9 +82,14 @@ services:
       Database__Provider: Postgres
       ConnectionStrings__Default: "Host=postgres;Port=5432;Database=${DB_NAME:-SWeb_DB};Username=${DB_USER:-parking};Password=${DB_PASSWORD}"
       Admin__Password: ${ADMIN_PASSWORD:-Passw0rd}
+      # Share the API's Data Protection keys so secrets edited here (iPay/Checkbox)
+      # are encrypted with the same key the API uses to decrypt them.
+      DataProtection__KeysPath: /keys
     depends_on:
       postgres:
         condition: service_healthy
+    volumes:
+      - dataprotection_keys:/keys
 
   # Static file server for sharing the mobile APK (and any other static downloads).
   # Drop app-release.apk into ./apk on the Pi → downloadable at http://<pi>:8086/app-release.apk
