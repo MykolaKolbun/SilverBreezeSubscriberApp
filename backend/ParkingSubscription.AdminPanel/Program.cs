@@ -1,6 +1,8 @@
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.EntityFrameworkCore;
+using ParkingSubscription.AdminPanel;
 using ParkingSubscription.Application.Abstractions;
+using ParkingSubscription.Infrastructure.Auth;
 using ParkingSubscription.Infrastructure.Persistence;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -16,6 +18,8 @@ builder.Services.AddDbContext<AppDbContext>(options =>
         options.UseSqlite(connectionString);
 });
 builder.Services.AddScoped<IAppDbContext>(sp => sp.GetRequiredService<AppDbContext>());
+builder.Services.AddSingleton<IPasswordHasher, BcryptPasswordHasher>();
+builder.Services.AddScoped<AdminPasswordStore>();
 
 // Cookie auth gated by a single admin password (Admin:Password / Admin__Password).
 builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)

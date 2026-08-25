@@ -21,6 +21,7 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options)
     public DbSet<PaymentGatewayConfig> PaymentGatewayConfigs => Set<PaymentGatewayConfig>();
     public DbSet<FiscalGatewayConfig> FiscalGatewayConfigs => Set<FiscalGatewayConfig>();
     public DbSet<FiscalReceiptBlob> FiscalReceiptBlobs => Set<FiscalReceiptBlob>();
+    public DbSet<AdminConfig> AdminConfigs => Set<AdminConfig>();
 
     protected override void OnModelCreating(ModelBuilder b)
     {
@@ -114,6 +115,12 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options)
             e.HasKey(x => x.PaymentId);
             e.Property(x => x.PaymentId).ValueGeneratedNever();
             e.Property(x => x.ContentType).HasMaxLength(64);
+        });
+
+        b.Entity<AdminConfig>(e =>
+        {
+            e.Property(x => x.Id).ValueGeneratedNever(); // singleton row (id = 1)
+            e.Property(x => x.PasswordHash).HasMaxLength(200);
         });
 
         // SQLite cannot ORDER BY / compare DateTimeOffset. Store all DateTimeOffset

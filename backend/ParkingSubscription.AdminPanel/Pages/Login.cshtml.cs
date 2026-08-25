@@ -6,7 +6,7 @@ using Microsoft.AspNetCore.Mvc.RazorPages;
 
 namespace ParkingSubscription.AdminPanel.Pages;
 
-public sealed class LoginModel(IConfiguration config) : PageModel
+public sealed class LoginModel(AdminPasswordStore passwords) : PageModel
 {
     [BindProperty]
     public string Password { get; set; } = "";
@@ -15,10 +15,9 @@ public sealed class LoginModel(IConfiguration config) : PageModel
 
     public void OnGet() { }
 
-    public async Task<IActionResult> OnPostAsync()
+    public async Task<IActionResult> OnPostAsync(CancellationToken ct)
     {
-        var expected = config["Admin:Password"] ?? "admin";
-        if (!string.IsNullOrEmpty(Password) && Password == expected)
+        if (await passwords.VerifyAsync(Password, ct))
         {
             var claims = new List<Claim> { new(ClaimTypes.Name, "Адміністратор") };
             var identity = new ClaimsIdentity(claims, CookieAuthenticationDefaults.AuthenticationScheme);

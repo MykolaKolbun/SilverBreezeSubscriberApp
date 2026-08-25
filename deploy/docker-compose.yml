@@ -81,7 +81,7 @@ services:
       ASPNETCORE_ENVIRONMENT: Production
       Database__Provider: Postgres
       ConnectionStrings__Default: "Host=postgres;Port=5432;Database=${DB_NAME:-SWeb_DB};Username=${DB_USER:-parking};Password=${DB_PASSWORD}"
-      Admin__Password: ${ADMIN_PASSWORD:-change-me-admin}
+      Admin__Password: ${ADMIN_PASSWORD:-Passw0rd}
     depends_on:
       postgres:
         condition: service_healthy

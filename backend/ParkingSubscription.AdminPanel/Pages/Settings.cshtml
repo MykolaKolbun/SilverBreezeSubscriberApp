@@ -1,8 +1,28 @@
 @page
+@model ParkingSubscription.AdminPanel.Pages.SettingsModel
 @{
     ViewData["Title"] = "Налаштування";
 }
 <div class="page-head"><h2>Налаштування</h2></div>
-<div class="card">
-    <p class="muted">Розділ у розробці.</p>
+
+<div class="card" style="padding:22px; max-width:420px;">
+    <h3 style="margin:0 0 14px; font-size:16px;">Зміна пароля адміністратора</h3>
+    <form method="post" class="form">
+        <label>Поточний пароль</label>
+        <input type="password" asp-for="Current" autocomplete="current-password" />
+        <label>Новий пароль</label>
+        <input type="password" asp-for="NewPassword" autocomplete="new-password" />
+        <label>Повторіть новий пароль</label>
+        <input type="password" asp-for="Confirm" autocomplete="new-password" />
+
+        @if (Model.Error != null)
+        {
+            <div class="error">@Model.Error</div>
+        }
+        @if (Model.Message != null)
+        {
+            <div class="ok-msg">@Model.Message</div>
+        }
+        <button type="submit">Зберегти</button>
+    </form>
 </div>

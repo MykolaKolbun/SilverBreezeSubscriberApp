@@ -21,6 +21,7 @@ public interface IAppDbContext
     DbSet<SubscriptionPlan> SubscriptionPlans { get; }
     DbSet<Payment> Payments { get; }
     DbSet<FiscalReceiptBlob> FiscalReceiptBlobs { get; }
+    DbSet<AdminConfig> AdminConfigs { get; }
 
     Task<int> SaveChangesAsync(CancellationToken cancellationToken = default);
 }
