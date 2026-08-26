@@ -208,12 +208,25 @@ public sealed class SkidataParkingLogicClient(
             Surname = NonEmpty(user.Surname ?? user.Name, "Parker"),
             Firstname = user.FirstName,
             Email = user.Email,
+            Mobile = user.Mobile,
             ExternalContactId = user.ExternalContactId ?? user.Id.ToString("N")
         };
         if (string.Equals(_cfg.CustomerLinkField, "group", StringComparison.OrdinalIgnoreCase))
             dto.GroupCustomerId = customerRemoteId;
         else
             dto.B2bCustomerId = customerRemoteId;
+
+        // Vehicles -> sweb licensePlates[] (country + plate + make/model description).
+        var vehicles = await db.Vehicles.AsNoTracking()
+            .Where(v => v.UserId == user.Id && !v.IsDeleted).ToListAsync(ct);
+        if (vehicles.Count > 0)
+            dto.LicensePlates = vehicles.Select(v => new LicensePlate
+            {
+                Country = NonEmpty(v.Country, "UA"),
+                Value = v.PlateNumber,
+                Vehicle = NullIfEmpty($"{v.Make} {v.Model}")
+            }).ToList();
+
         return dto;
     }
 
@@ -406,6 +419,9 @@ public sealed class SkidataParkingLogicClient(
 
     private static string NonEmpty(string? value, string fallback) =>
         string.IsNullOrWhiteSpace(value) ? fallback : value.Trim();
+
+    private static string? NullIfEmpty(string? value) =>
+        string.IsNullOrWhiteSpace(value) ? null : value.Trim();
 
     private static string RemoteRef(EntityKind kind, Guid? remoteId) =>
         remoteId is Guid g ? $"skidata:{kind}:{g:N}" : $"skidata:{kind}:pending";
