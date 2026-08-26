@@ -32,7 +32,9 @@ interface Session {
 }
 
 export interface Vehicle {
-  id: number;
+  id: number; // stable local key (for React + drafts)
+  serverId?: string; // backend Guid once synced; absent for offline-created rows
+  dirty?: boolean; // has unsynced local changes to push
   make: string;
   model: string;
   plate: string;
@@ -42,6 +44,7 @@ const THEME_KEY = 'silverbreeze.theme';
 const LANG_KEY = 'silverbreeze.lang';
 const SESSION_KEY = 'silverbreeze.session';
 const CARDS_KEY = 'silverbreeze.cards';
+const VEHICLES_KEY = 'silverbreeze.vehicles';
 const MAX_VEHICLES = 3;
 
 interface AppState {
@@ -136,6 +139,9 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
 
   const [vehicles, setVehicles] = useState<Vehicle[]>([]);
   const [drafts, setDrafts] = useState<Vehicle[]>([]);
+  const vehiclesRef = useRef<Vehicle[]>([]);
+  const deletedRef = useRef<string[]>([]); // serverIds removed offline, pending delete
+  const syncingRef = useRef(false);
   const [notifications, setNotifications] = useState(true);
 
   const nextId = useRef(1);
@@ -165,6 +171,21 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
           if (cachedCards) {
             try {
               setCards(JSON.parse(cachedCards));
+            } catch {
+              /* ignore corrupt cache */
+            }
+          }
+          // Load cached vehicles (offline-friendly), then sync bidirectionally.
+          const rawVeh = await AsyncStorage.getItem(VEHICLES_KEY);
+          if (rawVeh) {
+            try {
+              const parsed = JSON.parse(rawVeh);
+              const vs: Vehicle[] = parsed.vehicles ?? [];
+              deletedRef.current = parsed.deleted ?? [];
+              vehiclesRef.current = vs;
+              setVehicles(vs);
+              setDrafts(vs.map((v) => ({ ...v })));
+              nextId.current = vs.reduce((m, v) => Math.max(m, v.id), 0) + 1;
             } catch {
               /* ignore corrupt cache */
             }
@@ -234,6 +255,8 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
 
   const loadData = async () => {
     await Promise.all([loadPlans(), refreshCards()]);
+    // Bidirectional vehicle sync: push local changes first, then pull server state.
+    await syncVehicles(true);
   };
 
   const loadPlans = async () => {
@@ -386,7 +409,10 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     setCards([]);
     setHistory([]);
     AsyncStorage.removeItem(CARDS_KEY).catch(() => {});
+    AsyncStorage.removeItem(VEHICLES_KEY).catch(() => {});
     setPlanId(null);
+    vehiclesRef.current = [];
+    deletedRef.current = [];
     setVehicles([]);
     setDrafts([]);
     setPayState('idle');
@@ -472,17 +498,38 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     })();
   };
 
-  // ---- vehicles (local) ----
+  // ---- vehicles (offline-first, bidirectional sync) ----
+  const persistVehicles = () =>
+    AsyncStorage.setItem(
+      VEHICLES_KEY,
+      JSON.stringify({ vehicles: vehiclesRef.current, deleted: deletedRef.current })
+    ).catch(() => {});
+
+  // Update the saved-vehicle list + ref + local cache in one place.
+  const commitVehicles = (next: Vehicle[]) => {
+    vehiclesRef.current = next;
+    setVehicles(next);
+    persistVehicles();
+  };
+
   const addVehicle = () => {
-    if (vehicles.length >= MAX_VEHICLES) return;
+    if (vehiclesRef.current.length >= MAX_VEHICLES) return;
     const blank: Vehicle = { id: nextId.current++, make: '', model: '', plate: '' };
-    setVehicles((v) => [...v, blank]);
+    commitVehicles([...vehiclesRef.current, blank]);
     setDrafts((d) => [...d, { ...blank }]);
   };
+
   const removeVehicle = (id: number) => {
-    setVehicles((v) => v.filter((x) => x.id !== id));
+    const target = vehiclesRef.current.find((x) => x.id === id);
+    if (target?.serverId) {
+      // Queue the remote delete; it's replayed on the next sync (works offline).
+      deletedRef.current = [...deletedRef.current, target.serverId];
+    }
+    commitVehicles(vehiclesRef.current.filter((x) => x.id !== id));
     setDrafts((d) => d.filter((x) => x.id !== id));
+    void syncVehicles(false);
   };
+
   const updateDraft = (
     id: number,
     key: 'make' | 'model' | 'plate',
@@ -490,10 +537,99 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   ) => {
     setDrafts((d) => d.map((x) => (x.id === id ? { ...x, [key]: value } : x)));
   };
+
   const saveVehicle = (id: number) => {
     const draft = drafts.find((x) => x.id === id);
     if (!draft) return;
-    setVehicles((v) => v.map((x) => (x.id === id ? { ...draft } : x)));
+    // Commit the draft and mark it dirty so the sync pushes it to the backend.
+    commitVehicles(
+      vehiclesRef.current.map((x) =>
+        x.id === id ? { ...x, make: draft.make, model: draft.model, plate: draft.plate, dirty: true } : x
+      )
+    );
+    void syncVehicles(false);
+  };
+
+  // Push queued deletes + dirty creates/updates to the backend. Best-effort:
+  // stops on a network error (offline) and retries on the next sync.
+  const pushVehicles = async () => {
+    const s = sessionRef.current;
+    if (!s) return;
+
+    // Deletes first.
+    for (const serverId of [...deletedRef.current]) {
+      try {
+        await authed((tok) => api.deleteVehicle(serverId, tok));
+        deletedRef.current = deletedRef.current.filter((x) => x !== serverId);
+      } catch (e) {
+        if (e instanceof ApiError && e.status === 0) return; // offline — retry later
+        // 404/gone → treat as already deleted.
+        deletedRef.current = deletedRef.current.filter((x) => x !== serverId);
+      }
+    }
+    persistVehicles();
+
+    // Creates / updates for dirty rows that have a plate.
+    for (const v of [...vehiclesRef.current]) {
+      if (!v.dirty || !v.plate.trim()) continue;
+      try {
+        if (v.serverId) {
+          await authed((tok) =>
+            api.updateVehicle(v.serverId!, { plateNumber: v.plate, make: v.make, model: v.model }, tok)
+          );
+          markVehicleSynced(v.id, v.serverId);
+        } else {
+          const dto = await authed((tok) =>
+            api.createVehicle({ userId: s.userId, plateNumber: v.plate, make: v.make, model: v.model }, tok)
+          );
+          markVehicleSynced(v.id, dto.id);
+        }
+      } catch (e) {
+        if (e instanceof ApiError && e.status === 0) return; // offline — retry later
+        /* other errors: leave dirty, retry next sync */
+      }
+    }
+  };
+
+  const markVehicleSynced = (localId: number, serverId: string) =>
+    commitVehicles(
+      vehiclesRef.current.map((x) =>
+        x.id === localId ? { ...x, serverId, dirty: false } : x
+      )
+    );
+
+  // Pull the server list and make it authoritative, keeping any not-yet-pushed
+  // offline creations so nothing is lost.
+  const pullVehicles = async () => {
+    const s = sessionRef.current;
+    if (!s) return;
+    try {
+      const list = await authed((tok) => api.getVehicles(s.userId, tok));
+      const pendingCreates = vehiclesRef.current.filter((v) => v.dirty && !v.serverId);
+      const fromServer: Vehicle[] = list.map((d) => ({
+        id: nextId.current++,
+        serverId: d.id,
+        make: d.make ?? '',
+        model: d.model ?? '',
+        plate: d.plateNumber,
+      }));
+      const merged = [...fromServer, ...pendingCreates].slice(0, MAX_VEHICLES);
+      commitVehicles(merged);
+      setDrafts(merged.map((v) => ({ ...v })));
+    } catch {
+      /* offline — keep the cached list */
+    }
+  };
+
+  const syncVehicles = async (pull: boolean) => {
+    if (!sessionRef.current || syncingRef.current) return;
+    syncingRef.current = true;
+    try {
+      await pushVehicles();
+      if (pull) await pullVehicles();
+    } finally {
+      syncingRef.current = false;
+    }
   };
 
   const value: AppState = {

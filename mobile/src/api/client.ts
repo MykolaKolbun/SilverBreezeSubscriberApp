@@ -89,6 +89,16 @@ export interface PagedCards {
   items: ApiCard[];
   nextPagingToken?: string | null;
 }
+export interface ApiVehicle {
+  id: string;
+  userId: string;
+  plateNumber: string;
+  country: string;
+  make?: string | null;
+  model?: string | null;
+  isDeleted: boolean;
+  updatedAt: string;
+}
 export interface InitiatePaymentResult {
   paymentId: string;
   providerPaymentId: string;
@@ -148,6 +158,21 @@ export const api = {
   // Payment history (most recent first) for the profile History screen.
   getPaymentsHistory: (userId: string, token: string) =>
     req<ApiPayment[]>(`/users/${userId}/payments`, { token }),
+
+  // Vehicles (bidirectional offline sync).
+  getVehicles: (userId: string, token: string) =>
+    req<ApiVehicle[]>(`/users/${userId}/vehicles`, { token }),
+  createVehicle: (
+    b: { userId: string; plateNumber: string; country?: string; make?: string; model?: string },
+    token: string
+  ) => req<ApiVehicle>('/vehicles', { method: 'POST', body: b, token }),
+  updateVehicle: (
+    id: string,
+    b: { plateNumber?: string; country?: string; make?: string; model?: string },
+    token: string
+  ) => req<ApiVehicle>(`/vehicles/${id}`, { method: 'PUT', body: b, token }),
+  deleteVehicle: (id: string, token: string) =>
+    req<void>(`/vehicles/${id}`, { method: 'DELETE', token }),
 };
 
 // QR image URL (fetched with an Authorization header by <Image>).
