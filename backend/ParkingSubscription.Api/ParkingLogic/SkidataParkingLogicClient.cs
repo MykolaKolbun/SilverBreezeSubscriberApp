@@ -251,7 +251,10 @@ public sealed class SkidataParkingLogicClient(
                     {
                         ValidFrom = ToDate(card.StartDate),
                         ValidTo = ToDate(card.EndDate),
-                        PrimaryId = QrIdentification(card)
+                        SingleNeutral = card.SingleNeutral,
+                        PrimaryId = QrIdentification(card),
+                        SecondaryIds = MapSecondaryIds(card),
+                        CarParks = MapCarParks(card)
                     }, ct);
                 else
                     await EnsureParkingCardAsync(facility, card, ct);
@@ -296,8 +299,11 @@ public sealed class SkidataParkingLogicClient(
             UserId = userRemoteId,
             ValidFrom = ToDate(card.StartDate),
             ValidTo = ToDate(card.EndDate),
+            SingleNeutral = card.SingleNeutral,
             ExternalCardId = card.ExternalCardId ?? card.Id.ToString("N"),
-            PrimaryId = QrIdentification(card)
+            PrimaryId = QrIdentification(card),
+            SecondaryIds = MapSecondaryIds(card),
+            CarParks = MapCarParks(card)
         };
         var productId = await ResolveProductIdAsync(card, ct);
         if (productId is Guid pid) body.ProductId = pid;
@@ -334,6 +340,35 @@ public sealed class SkidataParkingLogicClient(
         Type = NonEmpty(_cfg.QrIdentificationType, "EXT"),
         SubType = _cfg.QrIdentificationSubType ?? string.Empty,
         Value = card.QrPayload
+    };
+
+    /// <summary>Secondary card identifications (sweb secondaryIds); null when none.</summary>
+    private static ICollection<Identification>? MapSecondaryIds(ParkingCard card) =>
+        card.SecondaryIds.Count == 0
+            ? null
+            : card.SecondaryIds.Select(s => new Identification
+            {
+                Type = s.Type,
+                SubType = s.SubType,
+                Value = s.Value
+            }).ToList();
+
+    /// <summary>Car parks the card is valid for (sweb carParks); null when none.</summary>
+    private static ICollection<CarPark>? MapCarParks(ParkingCard card) =>
+        card.CarParks.Count == 0
+            ? null
+            : card.CarParks.Select(c => new CarPark
+            {
+                CarParkNumber = c.CarParkNumber,
+                EntryType = ToSwebEntryType(c.EntryType)
+            }).ToList();
+
+    private static EntryType ToSwebEntryType(CarParkEntryType e) => e switch
+    {
+        CarParkEntryType.AccessGrantedWithTimeWindow => EntryType.ACCESS_GRANTED_WITH_TIMEWINDOW,
+        CarParkEntryType.AccessGrantedNoTimeWindow => EntryType.ACCESS_GRANTED_NO_TIMEWINDOW,
+        CarParkEntryType.AccessGrantedWithTimeWindowCarParkFull => EntryType.ACCESS_GRANTED_WITH_TIMEWINDOW_CARPARK_FULL,
+        _ => EntryType.ACCESS_NOT_GRANTED
     };
 
     // ---- Value card --------------------------------------------------------
