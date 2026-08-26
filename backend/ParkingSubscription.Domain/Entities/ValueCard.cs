@@ -14,6 +14,9 @@ public class ValueCard : Entity
 
     public string? ExternalCardId { get; set; }
 
+    /// <summary>UUID assigned by SKIDATA sweb when this value card was created there (null until propagated).</summary>
+    public Guid? SkidataCardId { get; set; }
+
     /// <summary>Stored balance in minor units (e.g. cents) to avoid float rounding.</summary>
     public long BalanceMinor { get; set; }
     public string Currency { get; set; } = "UAH";

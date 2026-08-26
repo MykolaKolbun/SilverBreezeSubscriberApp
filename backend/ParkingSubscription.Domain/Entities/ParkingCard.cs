@@ -14,6 +14,9 @@ public class ParkingCard : Entity
 
     public string? ExternalCardId { get; set; }
 
+    /// <summary>UUID assigned by SKIDATA sweb when this card was created there (null until propagated).</summary>
+    public Guid? SkidataCardId { get; set; }
+
     /// <summary>Reference to the purchased tariff (ТЗ §10.5).</summary>
     public Guid? SubscriptionPlanId { get; set; }
     public SubscriptionPlan? SubscriptionPlan { get; set; }

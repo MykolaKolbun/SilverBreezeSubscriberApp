@@ -1,0 +1,3000 @@
+openapi: 3.0.3
+
+info:
+  title: sweb(R) Interface Subscribe API
+  description: |
+    This API allows integrators to manage customers, users and parking cards.
+  version: 1.0.0
+  contact:
+      name: SKIDATA GmbH
+      url: https://www.skidata.com/
+      email: info@skidata.com
+  license:
+    name: https://www.skidata.com
+    url: https://www.skidata.com
+
+servers:
+  - url: https://car.au.skidata.com/bei/DTASales/SubscribeApi
+    description: Asia Pacific Production server
+  - url: https://webhost.skidata.com/bei/DTASales/SubscribeApi
+    description: EU Production server
+  - url: https://hb.usa.skidata.com/bei/DTASales/SubscribeApi
+    description: US Production server
+  - url: https://sweb.skidata.com/bei/DTASales/SubscribeApi
+    description: Staging server
+  - url: http://localhost:8080/bei/DTASales/SubscribeApi
+    description: Local deployment server
+
+tags:
+    - name: monitoring
+    - name: customer
+    - name: user
+    - name: parking card
+    - name: value card
+
+security:
+  - basicAuth: []
+
+paths:
+  /health:
+    get:
+      description: Health monitoring endpoint
+      tags:
+        - monitoring
+      operationId: health
+      responses:
+        '200':
+          description: Healthy
+          content:
+            application/text:
+              schema:
+                type: string
+                description: status
+                example: UP
+        '500':
+          description: Failure
+          content:
+            application/text:
+              schema:
+                type: string
+                description: error message
+
+  /customer/v1:
+    post:
+      description: Creates a customer
+      tags:
+        - customer
+      operationId: createCustomer
+      parameters:
+        - in: header
+          name: Idempotency-Key
+          schema:
+            type: string
+            format: uuid
+          required: false
+          example: "7da7a728-f910-11e6-942a-68f728c1ba70"
+          description: |
+            The idempotency key is a free identifier created by the client to
+            identify a request. It is used by the service to identify subsequent
+            retries of the same request and ensure idempotent behavior by sending
+            the same response without executing the request a second time.
+
+            Clients should be careful as any subsequent requests with the same key
+            may return the same response without further check. Therefore, it is
+            recommended to use an UUID version 4 (random) or any other random
+            string with enough entropy to avoid collisions.
+
+            Idempotency keys never expire. Clients are responsible to create proper keys,
+            if they require idempotent behavior.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref:  "#/components/schemas/CreateCustomer"
+      responses:
+        '201':
+          description: A customer object
+          content:
+            application/json:
+              schema:
+                $ref:  "#/components/schemas/GetCustomer"
+        '500':
+          description: Failure
+          content:
+            application/text:
+              schema:
+                type: string
+                description: error message
+
+  /customer/v1/search:
+    get:
+      description: Returns a paged list of customers for searches
+      tags:
+        - customer
+      operationId: searchCustomers
+      parameters:
+        - in: query
+          name: externalContactId
+          schema:
+            type: string
+            maxLength: 32
+          required: false
+          description: Optional externalContactId to search for customer
+        - in: query
+          name: searchTerm
+          schema:
+            type: string
+            maxLength: 64
+          required: false
+          description: Search parameter for customer firstname, surname or email
+      responses:
+        '200':
+          description: Customer objects
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GetCustomers"
+        '500':
+          description: Failure
+          content:
+            application/text:
+              schema:
+                type: string
+                description: error message
+
+  /customer/v1/changes:
+    get:
+      description: Returns a paged list of customers for data extraction
+      tags:
+        - customer
+      operationId: fetchChangedCustomers
+      parameters:
+        - in: query
+          name: pagingToken
+          schema:
+            type: string
+          required: false
+          description: Optional pagingToken to fetch next page of changed customers. The previous response contains this token.
+      responses:
+        '200':
+          description: Changed Customer objects
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GetPagedCustomers"
+        '500':
+          description: Failure
+          content:
+            application/text:
+              schema:
+                type: string
+                description: error message
+
+  /customer/v1/{customerId}:
+    get:
+      description: Get a customer
+      tags:
+        - customer
+      operationId: getCustomer
+      parameters:
+        - in: path
+          name: customerId
+          schema:
+            type: string
+            format: uuid
+          required: true
+          description: UUID of the customer to fetch
+          example: "7c93a680-2809-11eb-91d2-0242ac1b000d"
+      responses:
+        '200':
+          description: A customer object
+          content:
+            application/json:
+              schema:
+                $ref:  "#/components/schemas/GetCustomer"
+        '404':
+          description: Customer not found
+          content:
+            application/text:
+              schema:
+                type: string
+                description: Customer could not be found
+        '500':
+          description: Failure
+          content:
+            application/text:
+              schema:
+                type: string
+                description: Error message why customer could not be fetched
+
+    put:
+      description: Update a customer
+      tags:
+        - customer
+      operationId: updateCustomer
+      parameters:
+        - in: path
+          name: customerId
+          schema:
+            type: string
+            format: uuid
+          required: true
+          description: UUID of customer to update
+          example: "7c93a680-2809-11eb-91d2-0242ac1b000d"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref:  "#/components/schemas/UpdateCustomer"
+      responses:
+        '200':
+          description: A customer object
+          content:
+            application/json:
+              schema:
+                $ref:  "#/components/schemas/GetCustomer"
+        '500':
+          description: Failure
+          content:
+            application/text:
+              schema:
+                type: string
+                description: Error message why customer update failed
+
+    delete:
+      description: Delete a customer
+      tags:
+        - customer
+      operationId: deleteCustomer
+      parameters:
+        - in: path
+          name: customerId
+          schema:
+            type: string
+            format: uuid
+          required: true
+          description: UUID of customer to delete
+          example: "7c93a680-2809-11eb-91d2-0242ac1b000d"
+      responses:
+        '204':
+          description: Successfully deleted
+        '500':
+          description: Failure
+          content:
+            application/text:
+              schema:
+                type: string
+                description: Error message why customer deletion failed
+
+  /customer/v1/{customerId}/user:
+    get:
+      description: Returns a paged list of users of a customer
+      tags:
+        - customer
+      operationId: getUsersOfCustomer
+      parameters:
+        - in: path
+          name: customerId
+          schema:
+            type: string
+            format: uuid
+          required: true
+          description: UUID of the customer to fetch a paged list of users
+          example: "7c93a680-2809-11eb-91d2-0242ac1b000d"
+        - in: query
+          name: pagingToken
+          schema:
+            type: string
+          required: false
+          description: |
+            Optional pagingToken to fetch the next page of users
+      responses:
+        '200':
+          description: A paged list of users of a customer
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GetPagedUsers"
+        '404':
+          description: Customer not found
+          content:
+            application/text:
+              schema:
+                type: string
+                description: Customer could not be found
+        '500':
+          description: Failure
+          content:
+            application/text:
+              schema:
+                type: string
+                description: Error message why customer could not be fetched
+
+  /customer/v1/{customerId}/anonymize:
+    post:
+      description: Anonymize a customer. All contact related data is overwritten.
+      tags:
+        - customer
+      operationId: anonymizeCustomer
+      parameters:
+        - in: path
+          name: customerId
+          schema:
+            type: string
+            format: uuid
+          required: true
+          description: UUID of customer
+          example: "7c93a680-2809-11eb-91d2-0242ac1b000d"
+      responses:
+        '200':
+          description: Current data of customer
+          content:
+            application/json:
+              schema:
+                $ref:  "#/components/schemas/GetCustomer"
+        '404':
+          description: Customer not found
+          content:
+            application/text:
+              schema:
+                type: string
+                description: Customer could not be found
+        '500':
+          description: Failure
+          content:
+            application/text:
+              schema:
+                type: string
+                description: Error message why anonymize customer failed
+
+  /customer/v1/{customerId}/block:
+    post:
+      description: Block a customer
+      tags:
+        - customer
+      operationId: blockCustomer
+      parameters:
+        - in: path
+          name: customerId
+          schema:
+            type: string
+            format: uuid
+          required: true
+          description: UUID of customer
+          example: "7c93a680-2809-11eb-91d2-0242ac1b000d"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BlockCustomer'
+      responses:
+        '200':
+          description: A customer object
+          content:
+            application/json:
+              schema:
+                $ref:  "#/components/schemas/GetCustomer"
+        '404':
+          description: Customer not found
+          content:
+            application/text:
+              schema:
+                type: string
+                description: Customer could not be found
+        '500':
+          description: Failure
+          content:
+            application/text:
+              schema:
+                type: string
+                description: Error message why block customer failed
+
+  /customer/v1/{customerId}/unblock:
+    post:
+      description: Unblock a customer
+      tags:
+        - customer
+      operationId: unblockCustomer
+      parameters:
+        - in: path
+          name: customerId
+          schema:
+            type: string
+            format: uuid
+          required: true
+          description: UUID of customer
+          example: "7c93a680-2809-11eb-91d2-0242ac1b000d"
+      responses:
+        '200':
+          description: A customer object
+          content:
+            application/json:
+              schema:
+                $ref:  "#/components/schemas/GetCustomer"
+        '404':
+          description: Customer not found
+          content:
+            application/text:
+              schema:
+                type: string
+                description: Customer could not be found
+        '500':
+          description: Failure
+          content:
+            application/text:
+              schema:
+                type: string
+                description: Error message why unblock customer failed
+
+  /user/v1:
+    post:
+      description: Creates a user
+      tags:
+        - user
+      operationId: createUser
+      parameters:
+        - in: header
+          name: Idempotency-Key
+          schema:
+            type: string
+            format: uuid
+          required: false
+          example: "7da7a728-f910-11e6-942a-68f728c1ba70"
+          description: |
+            The idempotency key is a free identifier created by the client to
+            identify a request. It is used by the service to identify subsequent
+            retries of the same request and ensure idempotent behavior by sending
+            the same response without executing the request a second time.
+
+            Clients should be careful as any subsequent requests with the same key
+            may return the same response without further check. Therefore, it is
+            recommended to use an UUID version 4 (random) or any other random
+            string with enough entropy to avoid collisions.
+
+            Idempotency keys never expire. Clients are responsible to create proper keys,
+            if they require idempotent behavior.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref:  "#/components/schemas/CreateUser"
+      responses:
+        '201':
+          description: A user object
+          content:
+            application/json:
+              schema:
+                $ref:  "#/components/schemas/GetUser"
+        '500':
+          description: Failure
+          content:
+            application/text:
+              schema:
+                type: string
+                description: Error message why user could not be created
+
+  /user/v1/changes:
+    get:
+      description: Returns a paged list of users for data extraction
+      tags:
+        - user
+      operationId: fetchChangedUsers
+      parameters:
+        - in: query
+          name: pagingToken
+          schema:
+            type: string
+          required: false
+          description: Optional pagingToken to fetch next page of changed users. The previous response contains this token.
+      responses:
+        '200':
+          description: Changed Users objects
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GetPagedUsers"
+        '500':
+          description: Failure
+          content:
+            application/text:
+              schema:
+                type: string
+                description: error message
+
+  /user/v1/search:
+    get:
+      description: Returns a paged list of users for searches
+      tags:
+        - user
+      operationId: searchUsers
+      parameters:
+        - in: query
+          name: externalContactId
+          schema:
+            type: string
+            maxLength: 32
+          required: false
+          description: Optional externalContactId to search for user
+        - in: query
+          name: searchTerm
+          schema:
+            type: string
+            maxLength: 64
+          required: false
+          description: Search parameter for user firstname, surname or email
+      responses:
+        '200':
+          description: User objects
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GetUsers"
+        '500':
+          description: Failure
+          content:
+            application/text:
+              schema:
+                type: string
+                description: error message
+
+  /user/v1/{userId}:
+    get:
+      description: Get a user
+      tags:
+        - user
+      operationId: getUser
+      parameters:
+        - in: path
+          name: userId
+          schema:
+            type: string
+            format: uuid
+          required: true
+          description: UUID of user
+          example: "7c93a680-2809-11eb-91d2-0242ac1b000d"
+      responses:
+        '200':
+          description: Current data of user
+          content:
+            application/json:
+              schema:
+                $ref:  "#/components/schemas/GetUser"
+        '404':
+          description: User not found
+          content:
+            application/text:
+              schema:
+                type: string
+                description: User could not be found
+        '500':
+          description: Failure
+          content:
+            application/text:
+              schema:
+                type: string
+                description: Error message why user could not be fetched
+
+    put:
+      description: Update a user
+      tags:
+        - user
+      operationId: updateUser
+      parameters:
+        - in: path
+          name: userId
+          schema:
+            type: string
+            format: uuid
+          required: true
+          description: UUID of user
+          example: "7c93a680-2809-11eb-91d2-0242ac1b000d"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref:  "#/components/schemas/UpdateUser"
+      responses:
+        '200':
+          description: A user object
+          content:
+            application/json:
+              schema:
+                $ref:  "#/components/schemas/GetUser"
+        '500':
+          description: Failure
+          content:
+            application/text:
+              schema:
+                type: string
+                description: error message
+
+    delete:
+      description: Delete a user from a customer
+      tags:
+        - user
+      operationId: deleteUser
+      parameters:
+        - in: path
+          name: userId
+          schema:
+            type: string
+            format: uuid
+          required: true
+          description: UUID of user to be deleted
+          example: "7c93a680-2809-11eb-91d2-0242ac1b000d"
+      responses:
+        '204':
+          description: Successfully deleted
+        '500':
+          description: Failure
+          content:
+            application/text:
+              schema:
+                type: string
+                description: error message
+
+  /user/v1/{userId}/anonymize:
+    post:
+      description: Anonymize a user
+      tags:
+        - user
+      operationId: anonymizeUser
+      parameters:
+        - in: path
+          name: userId
+          schema:
+            type: string
+            format: uuid
+          required: true
+          description: UUID of user
+          example: "7c93a680-2809-11eb-91d2-0242ac1b000d"
+      responses:
+        '200':
+          description: Current data of user
+          content:
+            application/json:
+              schema:
+                $ref:  "#/components/schemas/GetUser"
+        '404':
+          description: User not found
+          content:
+            application/text:
+              schema:
+                type: string
+                description: User could not be found
+        '500':
+          description: Failure
+          content:
+            application/text:
+              schema:
+                type: string
+                description: Error message why user could not be anonymized
+
+  /user/v1/{userId}/block:
+    post:
+      description: Block a user
+      tags:
+        - user
+      operationId: blockUser
+      parameters:
+        - in: path
+          name: userId
+          schema:
+            type: string
+            format: uuid
+          required: true
+          description: UUID of user
+          example: "7c93a680-2809-11eb-91d2-0242ac1b000d"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BlockUser'
+      responses:
+        '200':
+          description: Current data of user
+          content:
+            application/json:
+              schema:
+                $ref:  "#/components/schemas/GetUser"
+        '404':
+          description: User not found
+          content:
+            application/text:
+              schema:
+                type: string
+                description: User could not be found
+        '500':
+          description: Failure
+          content:
+            application/text:
+              schema:
+                type: string
+                description: Error message why user could not be blocked
+
+  /user/v1/{userId}/unblock:
+    post:
+      description: Unblock a user
+      tags:
+        - user
+      operationId: unblockUser
+      parameters:
+        - in: path
+          name: userId
+          schema:
+            type: string
+            format: uuid
+          required: true
+          description: UUID of user
+          example: "7c93a680-2809-11eb-91d2-0242ac1b000d"
+      responses:
+        '200':
+          description: Current data of user
+          content:
+            application/json:
+              schema:
+                $ref:  "#/components/schemas/GetUser"
+        '404':
+          description: User not found
+          content:
+            application/text:
+              schema:
+                type: string
+                description: User could not be found
+        '500':
+          description: Failure
+          content:
+            application/text:
+              schema:
+                type: string
+                description: Error message why user could not be unblocked
+
+  /user/v1/{userId}/suspend:
+    post:
+      description: Suspend a user
+      tags:
+        - user
+      operationId: suspendUser
+      parameters:
+        - in: path
+          name: userId
+          schema:
+            type: string
+            format: uuid
+          required: true
+          description: UUID of user
+          example: "7c93a680-2809-11eb-91d2-0242ac1b000d"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SuspendUser'
+      responses:
+        '200':
+          description: Current data of user
+          content:
+            application/json:
+              schema:
+                $ref:  "#/components/schemas/GetUser"
+        '404':
+          description: User not found
+          content:
+            application/text:
+              schema:
+                type: string
+                description: User could not be found
+        '500':
+          description: Failure
+          content:
+            application/text:
+              schema:
+                type: string
+                description: Error message why user could not be suspend
+
+  /user/v1/{userId}/resume:
+    post:
+      description: Resume a user
+      tags:
+        - user
+      operationId: resumeUser
+      parameters:
+        - in: path
+          name: userId
+          schema:
+            type: string
+            format: uuid
+          required: true
+          description: UUID of user
+          example: "7c93a680-2809-11eb-91d2-0242ac1b000d"
+      responses:
+        '200':
+          description: Current data of user
+          content:
+            application/json:
+              schema:
+                $ref:  "#/components/schemas/GetUser"
+        '404':
+          description: User not found
+          content:
+            application/text:
+              schema:
+                type: string
+                description: User could not be found
+        '500':
+          description: Failure
+          content:
+            application/text:
+              schema:
+                type: string
+                description: Error message why user could not be resumed
+
+  /user/v1/{userId}/parkingcards:
+    get:
+      description: Get parking cards for a userId
+      tags:
+        - user
+      operationId: getParkingCards
+      parameters:
+        - in: path
+          name: userId
+          schema:
+            type: string
+            format: uuid
+          required: true
+          description: UUID of user
+          example: "7c93a680-2809-11eb-91d2-0242ac1b000d"
+      responses:
+        '200':
+          description: Parking card objects
+          content:
+            application/json:
+              schema:
+                $ref:  "#/components/schemas/GetParkingCards"
+        '500':
+          description: Failure
+          content:
+            application/text:
+              schema:
+                type: string
+                description: error message
+
+  /user/v1/{userId}/valuecards:
+    get:
+      description: Get value cards for a userId
+      tags:
+        - user
+      operationId: getValueCards
+      parameters:
+        - in: path
+          name: userId
+          schema:
+            type: string
+            format: uuid
+          required: true
+          description: UUID of user
+          example: "7c93a680-2809-11eb-91d2-0242ac1b000d"
+      responses:
+        '200':
+          description: Value card objects
+          content:
+            application/json:
+              schema:
+                $ref:  "#/components/schemas/GetValueCards"
+        '500':
+          description: Failure
+          content:
+            application/text:
+              schema:
+                type: string
+                description: error message
+
+  /parkingcard/v1/search:
+    get:
+      deprecated: true
+      description: Returns a paged list of parking cards for searches
+      tags:
+        - parking card
+      operationId: searchParkingCards
+      parameters:
+        - in: query
+          name: externalCardId
+          schema:
+            type: string
+            maxLength: 256
+          required: false
+          description: Optional externalCardId to search for parkingcard
+        - in: query
+          name: searchTerm
+          schema:
+            type: string
+            maxLength: 64
+          required: false
+          description: |
+            Search parameter for serial number of any identification of the parkingcard.
+            The search is case insensitive. The searchTerm can be a beginning of the serial number.
+            The query is interpreted as a like search with lower('searchTerm%')
+      responses:
+        '200':
+          description: Parking card objects
+          content:
+            application/json:
+              schema:
+                $ref:  "#/components/schemas/GetParkingCards"
+        '500':
+          description: Failure
+          content:
+            application/text:
+              schema:
+                type: string
+                description: error message
+  /parkingcard/v1/searchpaged:
+    get:
+      description: Returns a paged list of parking cards for searches
+      tags:
+        - parking card
+      operationId: searchParkingCardsPaged
+      parameters:
+        - in: query
+          name: externalCardId
+          schema:
+            type: string
+            maxLength: 256
+          required: false
+          description: Optional externalCardId to search for parkingcard
+        - in: query
+          name: searchTerm
+          schema:
+            type: string
+            maxLength: 64
+          required: false
+          description: |
+            Search parameter for serial number of any identification of the parkingcard.
+            The search is case insensitive. The searchTerm can be a beginning of the serial number.
+            The query is interpreted as a like search with lower('searchTerm%')
+        - in: query
+          name: pagingToken
+          schema:
+            type: string
+            maxLength: 1024
+          required: false
+          description: Optional pagingToken to fetch the next page
+      responses:
+        '200':
+          description: Parking card objects
+          content:
+            application/json:
+              schema:
+                $ref:  "#/components/schemas/GetPagedParkingCards"
+        '500':
+          description: Failure
+          content:
+            application/text:
+              schema:
+                type: string
+                description: error message
+
+  /parkingcard/v1/{facilityNumber}/changes:
+    get:
+      description: Returns a paged list of parkingcards per facility for data extraction
+      tags:
+        - parking card
+      operationId: fetchChangedParkingcards
+      parameters:
+        - in: path
+          name: facilityNumber
+          schema:
+            type: string
+            maxLength: 64
+          required: true
+          description: Facility number of Parking.Logic
+          example: "0340042"
+        - in: query
+          name: pagingToken
+          schema:
+            type: string
+          required: false
+          description: Optional pagingToken to fetch next page of changed parkingcards. The previous response contains this token.
+      responses:
+        '200':
+          description: Changed Parkingcards objects
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GetPagedParkingCards"
+        '500':
+          description: Failure
+          content:
+            application/text:
+              schema:
+                type: string
+                description: error message
+
+  /parkingcard/v1/{facilityNumber}:
+    post:
+      description: Create a parking card
+      tags:
+        - parking card
+      operationId: createParkingCard
+      parameters:
+        - in: path
+          name: facilityNumber
+          schema:
+            type: string
+            maxLength: 64
+          required: true
+          description: Facility number of Parking.Logic
+          example: "0340042"
+        - in: header
+          name: Idempotency-Key
+          schema:
+            type: string
+            format: uuid
+          required: false
+          example: "7da7a728-f910-11e6-942a-68f728c1ba70"
+          description: |
+            The idempotency key is a free identifier created by the client to
+            identify a request. It is used by the service to identify subsequent
+            retries of the same request and ensure idempotent behavior by sending
+            the same response without executing the request a second time.
+
+            Clients should be careful as any subsequent requests with the same key
+            may return the same response without further check. Therefore, it is
+            recommended to use an UUID version 4 (random) or any other random
+            string with enough entropy to avoid collisions.
+
+            Idempotency keys never expire. Clients are responsible to create proper keys,
+            if they require idempotent behavior.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref:  "#/components/schemas/CreateParkingCard"
+      responses:
+        '200':
+          description: A parking card object
+          content:
+            application/json:
+              schema:
+                $ref:  "#/components/schemas/GetParkingCard"
+        '404':
+          description: FacilityNumber or other ids not found
+          content:
+            application/text:
+              schema:
+                type: string
+                description: FacilityNumber or other ids could not be found
+        '500':
+          description: Failure
+          content:
+            application/text:
+              schema:
+                type: string
+                description: Error message why parking card could not be created
+
+  /parkingcard/v1/{facilityNumber}/{parkingCardId}:
+    get:
+      description: Get a parking card
+      tags:
+        - parking card
+      operationId: getParkingCard
+      parameters:
+        - in: path
+          name: facilityNumber
+          schema:
+            type: string
+            maxLength: 64
+          required: true
+          description: Facility number of Parking.Logic
+          example: "0340042"
+        - in: path
+          name: parkingCardId
+          schema:
+            type: string
+            format: uuid
+          required: true
+          description: UUID of parking card to fetch
+          example: "7c93a680-2809-11eb-91d2-0242ac1b000d"
+      responses:
+        '200':
+          description: Current data of parking card
+          content:
+            application/json:
+              schema:
+                $ref:  "#/components/schemas/GetParkingCard"
+        '404':
+          description: Parking card or facilityNumber not found
+          content:
+            application/text:
+              schema:
+                type: string
+                description: Parking card or facilityNumber could not be found
+        '500':
+          description: Failure
+          content:
+            application/text:
+              schema:
+                type: string
+                description: Error message why parking card could not be fetched
+
+    put:
+      description: Update a parking card
+      tags:
+        - parking card
+      operationId: updateParkingCard
+      parameters:
+        - in: path
+          name: facilityNumber
+          schema:
+            type: string
+            maxLength: 64
+          required: true
+          description: Facility number of Parking.Logic
+          example: "0340042"
+        - in: path
+          name: parkingCardId
+          schema:
+            type: string
+            format: uuid
+          required: true
+          description: UUID of parking card to update
+          example: "7c93a680-2809-11eb-91d2-0242ac1b000d"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref:  "#/components/schemas/UpdateParkingCard"
+      responses:
+        '200':
+          description: A parking card object
+          content:
+            application/json:
+              schema:
+                $ref:  "#/components/schemas/GetParkingCard"
+        '404':
+          description: Parking card or facilityNumber not found
+          content:
+            application/text:
+              schema:
+                type: string
+                description: Parking card or facilityNumber could not be found
+        '500':
+          description: Failure
+          content:
+            application/text:
+              schema:
+                type: string
+                description: error message
+
+    delete:
+      description: Delete a parking card
+      tags:
+        - parking card
+      operationId: deleteParkingCard
+      parameters:
+        - in: path
+          name: facilityNumber
+          schema:
+            type: string
+            maxLength: 64
+          required: true
+          description: Facility number of Parking.Logic
+          example: "0340042"
+        - in: path
+          name: parkingCardId
+          schema:
+            type: string
+            format: uuid
+          required: true
+          description: UUID of parking card to delete
+          example: "7c93a680-2809-11eb-91d2-0242ac1b000d"
+      responses:
+        '204':
+          description: Successfully deleted
+        '500':
+          description: Failure
+          content:
+            application/text:
+              schema:
+                type: string
+                description: error message
+
+  /parkingcard/v1/{facilityNumber}/{parkingCardId}/anonymize:
+    post:
+      description: Anonymize a parking card
+      tags:
+        - parking card
+      operationId: anonymizeParkingCard
+      parameters:
+        - in: path
+          name: facilityNumber
+          schema:
+            type: string
+            maxLength: 64
+          required: true
+          description: Facility number of Parking.Logic
+          example: "0340042"
+        - in: path
+          name: parkingCardId
+          schema:
+            type: string
+            format: uuid
+          required: true
+          description: UUID of Standard Parking Card to anonymize
+          example: "7c93a680-2809-11eb-91d2-0242ac1b000d"
+      responses:
+        '200':
+          description: Current data of parking card
+          content:
+            application/json:
+              schema:
+                $ref:  "#/components/schemas/GetParkingCard"
+        '404':
+          description: Parking card or facilityNumber not found
+          content:
+            application/text:
+              schema:
+                type: string
+                description: Parking card or facilityNumber could not be found
+        '500':
+          description: Failure
+          content:
+            application/text:
+              schema:
+                type: string
+                description: Error message why parking card could not be anonymized
+
+  /parkingcard/v1/{facilityNumber}/{parkingCardId}/block:
+    post:
+      description: Block a parking card
+      tags:
+        - parking card
+      operationId: blockParkingCard
+      parameters:
+        - in: path
+          name: facilityNumber
+          schema:
+            type: string
+            maxLength: 64
+          required: true
+          description: Facility number of Parking.Logic
+          example: "0340042"
+        - in: path
+          name: parkingCardId
+          schema:
+            type: string
+            format: uuid
+          required: true
+          description: UUID of Standard Parking Card to block
+          example: "7c93a680-2809-11eb-91d2-0242ac1b000d"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BlockParkingCard'
+      responses:
+        '200':
+          description: Current data of parking card
+          content:
+            application/json:
+              schema:
+                $ref:  "#/components/schemas/GetParkingCard"
+        '404':
+          description: Parking card or facilityNumber not found
+          content:
+            application/text:
+              schema:
+                type: string
+                description: Parking card or facilityNumber could not be found
+        '500':
+          description: Failure
+          content:
+            application/text:
+              schema:
+                type: string
+                description: Error message why parking card could not be block
+
+  /parkingcard/v1/{facilityNumber}/{parkingCardId}/unblock:
+    post:
+      description: Unblock a parking card
+      tags:
+        - parking card
+      operationId: unblockParkingCard
+      parameters:
+        - in: path
+          name: facilityNumber
+          schema:
+            type: string
+            maxLength: 64
+          required: true
+          description: Facility number of Parking.Logic
+          example: "0340042"
+        - in: path
+          name: parkingCardId
+          schema:
+            type: string
+            format: uuid
+          required: true
+          description: UUID of Standard Parking Card to unblock
+          example: "7c93a680-2809-11eb-91d2-0242ac1b000d"
+      responses:
+        '200':
+          description: Current data of parking card
+          content:
+            application/json:
+              schema:
+                $ref:  "#/components/schemas/GetParkingCard"
+        '404':
+          description: Parking card or facilityNumber not found
+          content:
+            application/text:
+              schema:
+                type: string
+                description: Parking card or facilityNumber could not be found
+        '500':
+          description: Failure
+          content:
+            application/text:
+              schema:
+                type: string
+                description: Error message why parking card could not be unblocked
+
+  /parkingcard/v1/{facilityNumber}/{parkingCardId}/suspend:
+    post:
+      description: Suspend a parking card
+      tags:
+        - parking card
+      operationId: suspendParkingCard
+      parameters:
+        - in: path
+          name: facilityNumber
+          schema:
+            type: string
+            maxLength: 64
+          required: true
+          description: Facility number of Parking.Logic
+          example: "0340042"
+        - in: path
+          name: parkingCardId
+          schema:
+            type: string
+            format: uuid
+          required: true
+          description: UUID of Standard Parking Card to suspend
+          example: "7c93a680-2809-11eb-91d2-0242ac1b000d"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SuspendParkingCard'
+      responses:
+        '200':
+          description: Current data of parking card
+          content:
+            application/json:
+              schema:
+                $ref:  "#/components/schemas/GetParkingCard"
+        '404':
+          description: Parking card or facilityNumber not found
+          content:
+            application/text:
+              schema:
+                type: string
+                description: Parking card or facilityNumber could not be found
+        '500':
+          description: Failure
+          content:
+            application/text:
+              schema:
+                type: string
+                description: Error message why parking card could not be suspended
+
+  /parkingcard/v1/{facilityNumber}/{parkingCardId}/resume:
+    post:
+      description: Resume a parking card
+      tags:
+        - parking card
+      operationId: resumeParkingCard
+      parameters:
+        - in: path
+          name: facilityNumber
+          schema:
+            type: string
+            maxLength: 64
+          required: true
+          description: Facility number of Parking.Logic
+          example: "0340042"
+        - in: path
+          name: parkingCardId
+          schema:
+            type: string
+            format: uuid
+          required: true
+          description: UUID of Standard Parking Card to resume
+          example: "7c93a680-2809-11eb-91d2-0242ac1b000d"
+      responses:
+        '200':
+          description: Current data of parking card
+          content:
+            application/json:
+              schema:
+                $ref:  "#/components/schemas/GetParkingCard"
+        '404':
+          description: Parking card or facilityNumber not found
+          content:
+            application/text:
+              schema:
+                type: string
+                description: Parking card or facilityNumber could not be found
+        '500':
+          description: Failure
+          content:
+            application/text:
+              schema:
+                type: string
+                description: Error message why parking card could not be resumed
+
+  /valuecard/v1/search:
+    get:
+      deprecated: true
+      description: Returns a paged list of value cards for searches
+      tags:
+        - value card
+      operationId: searchValueCards
+      parameters:
+        - in: query
+          name: externalCardId
+          schema:
+            type: string
+            maxLength: 256
+          required: false
+          description: Optional externalCardId to search for valuecard
+        - in: query
+          name: searchTerm
+          schema:
+            type: string
+            maxLength: 64
+          required: false
+          description: |
+            Search parameter for serial number of any identification of the valuecard.
+            The search is case insensitive. The searchTerm can be a beginning of the serial number.
+            The query is interpreted as a like search with lower('searchTerm%')
+      responses:
+        '200':
+          description: Value card objects
+          content:
+            application/json:
+              schema:
+                $ref:  "#/components/schemas/GetValueCards"
+        '500':
+          description: Failure
+          content:
+            application/text:
+              schema:
+                type: string
+                description: error message
+  /valuecard/v1/searchpaged:
+    get:
+      description: Returns a paged list of value cards for searches
+      tags:
+        - value card
+      operationId: searchValueCardsPaged
+      parameters:
+        - in: query
+          name: externalCardId
+          schema:
+            type: string
+            maxLength: 256
+          required: false
+          description: Optional externalCardId to search for valuecard
+        - in: query
+          name: searchTerm
+          schema:
+            type: string
+            maxLength: 64
+          required: false
+          description: |
+            Search parameter for serial number of any identification of the valuecard.
+            The search is case insensitive. The searchTerm can be a beginning of the serial number.
+            The query is interpreted as a like search with lower('searchTerm%')
+        - in: query
+          name: pagingToken
+          schema:
+            type: string
+            maxLength: 1024
+          required: false
+          description: Optional pagingToken to fetch the next page
+      responses:
+        '200':
+          description: Value card objects
+          content:
+            application/json:
+              schema:
+                $ref:  "#/components/schemas/GetPagedValueCards"
+        '500':
+          description: Failure
+          content:
+            application/text:
+              schema:
+                type: string
+                description: error message
+
+  /valuecard/v1/{facilityNumber}/changes:
+    get:
+      description: Returns a paged list of valuecards per facility for data extraction
+      tags:
+        - value card
+      operationId: fetchChangedValuecards
+      parameters:
+        - in: path
+          name: facilityNumber
+          schema:
+            type: string
+            maxLength: 64
+          required: true
+          description: Facility number of Parking.Logic
+          example: "0340042"
+        - in: query
+          name: pagingToken
+          schema:
+            type: string
+          required: false
+          description: Optional pagingToken to fetch next page of changed valuecards. The previous response contains this token.
+      responses:
+        '200':
+          description: Changed Valuecards objects
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GetPagedValueCards"
+        '500':
+          description: Failure
+          content:
+            application/text:
+              schema:
+                type: string
+                description: error message
+
+  /valuecard/v1/{facilityNumber}:
+    post:
+      description: Create a value card
+      tags:
+        - value card
+      operationId: createValueCard
+      parameters:
+        - in: path
+          name: facilityNumber
+          schema:
+            type: string
+            maxLength: 64
+          required: true
+          description: Facility number of Parking.Logic
+          example: "0340042"
+        - in: header
+          name: Idempotency-Key
+          schema:
+            type: string
+            format: uuid
+          required: false
+          example: "7da7a728-f910-11e6-942a-68f728c1ba70"
+          description: |
+            The idempotency key is a free identifier created by the client to
+            identify a request. It is used by the service to identify subsequent
+            retries of the same request and ensure idempotent behavior by sending
+            the same response without executing the request a second time.
+
+            Clients should be careful as any subsequent requests with the same key
+            may return the same response without further check. Therefore, it is
+            recommended to use an UUID version 4 (random) or any other random
+            string with enough entropy to avoid collisions.
+
+            Idempotency keys never expire. Clients are responsible to create proper keys,
+            if they require idempotent behavior.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref:  "#/components/schemas/CreateValueCard"
+      responses:
+        '200':
+          description: Current data of value card
+          content:
+            application/json:
+              schema:
+                $ref:  "#/components/schemas/GetValueCard"
+        '404':
+          description: FacilityNumber or other ids not found
+          content:
+            application/text:
+              schema:
+                type: string
+                description: FacilityNumber or other ids could not be found
+        '500':
+          description: Failure
+          content:
+            application/text:
+              schema:
+                type: string
+                description: error message
+
+  /valuecard/v1/{facilityNumber}/{valueCardId}:
+    get:
+      description: Get a value card
+      tags:
+        - value card
+      operationId: getValueCard
+      parameters:
+        - in: path
+          name: facilityNumber
+          schema:
+            type: string
+            maxLength: 64
+          required: true
+          description: Facility number of Parking.Logic
+          example: "0340042"
+        - in: path
+          name: valueCardId
+          schema:
+            type: string
+            format: uuid
+          required: true
+          description: UUID of value card to fetch
+          example: "7c93a680-2809-11eb-91d2-0242ac1b000d"
+      responses:
+        '200':
+          description: Current data of value card
+          content:
+            application/json:
+              schema:
+                $ref:  "#/components/schemas/GetValueCard"
+        '404':
+          description: value card or facilityNumber not found
+          content:
+            application/text:
+              schema:
+                type: string
+                description: Value card or facilityNumber could not be found
+        '500':
+          description: Failure
+          content:
+            application/text:
+              schema:
+                type: string
+                description: error message
+
+    put:
+      description: Update a value card
+      tags:
+        - value card
+      operationId: updateValueCard
+      parameters:
+        - in: path
+          name: facilityNumber
+          schema:
+            type: string
+            maxLength: 64
+          required: true
+          description: Facility number of Parking.Logic
+          example: "0340042"
+        - in: path
+          name: valueCardId
+          schema:
+            type: string
+            format: uuid
+          required: true
+          description: UUID of value card to update
+          example: "7c93a680-2809-11eb-91d2-0242ac1b000d"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref:  "#/components/schemas/UpdateValueCard"
+      responses:
+        '200':
+          description: A value card object
+          content:
+            application/json:
+              schema:
+                $ref:  "#/components/schemas/GetValueCard"
+        '404':
+          description: value card or facilityNumber not found
+          content:
+            application/text:
+              schema:
+                type: string
+                description: Value card or facilityNumber could not be found
+        '500':
+          description: Failure
+          content:
+            application/text:
+              schema:
+                type: string
+                description: error message
+
+    delete:
+      description: Delete a value card
+      tags:
+        - value card
+      operationId: deleteValueCard
+      parameters:
+        - in: path
+          name: facilityNumber
+          schema:
+            type: string
+            maxLength: 64
+          required: true
+          description: Facility number of Parking.Logic
+          example: "0340042"
+        - in: path
+          name: valueCardId
+          schema:
+            type: string
+            format: uuid
+          required: true
+          description: UUID of value card to delete
+          example: "7c93a680-2809-11eb-91d2-0242ac1b000d"
+      responses:
+        '204':
+          description: Successfully deleted
+        '500':
+          description: Failure
+          content:
+            application/text:
+              schema:
+                type: string
+                description: error message
+
+  /valuecard/v1/{facilityNumber}/{valueCardId}/anonymize:
+    post:
+      description: Anonymize a value card
+      tags:
+        - value card
+      operationId: anonymizeValueCard
+      parameters:
+        - in: path
+          name: facilityNumber
+          schema:
+            type: string
+            maxLength: 64
+          required: true
+          description: Facility number of Parking.Logic
+          example: "0340042"
+        - in: path
+          name: valueCardId
+          schema:
+            type: string
+            format: uuid
+          required: true
+          description: UUID of Standard Value Card to anonymize
+          example: "7c93a680-2809-11eb-91d2-0242ac1b000d"
+      responses:
+        '200':
+          description: Current data of value card
+          content:
+            application/json:
+              schema:
+                $ref:  "#/components/schemas/GetValueCard"
+        '404':
+          description: value card or facilityNumber not found
+          content:
+            application/text:
+              schema:
+                type: string
+                description: Value card or facilityNumber could not be found
+        '500':
+          description: Failure
+          content:
+            application/text:
+              schema:
+                type: string
+                description: Error message why value card could not be anonymized
+
+  /valuecard/v1/{facilityNumber}/{valueCardId}/block:
+    post:
+      description: Block a value card
+      tags:
+        - value card
+      operationId: blockValueCard
+      parameters:
+        - in: path
+          name: facilityNumber
+          schema:
+            type: string
+            maxLength: 64
+          required: true
+          description: Facility number of Parking.Logic
+          example: "0340042"
+        - in: path
+          name: valueCardId
+          schema:
+            type: string
+            format: uuid
+          required: true
+          description: UUID of standard value card to block
+          example: "7c93a680-2809-11eb-91d2-0242ac1b000d"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BlockValueCard'
+      responses:
+        '200':
+          description: Current data of value card
+          content:
+            application/json:
+              schema:
+                $ref:  "#/components/schemas/GetValueCard"
+        '404':
+          description: value card or facilityNumber not found
+          content:
+            application/text:
+              schema:
+                type: string
+                description: Value card or facilityNumber could not be found
+        '500':
+          description: Failure
+          content:
+            application/text:
+              schema:
+                type: string
+                description: Error message why value card could not be blocked
+
+  /valuecard/v1/{facilityNumber}/{valueCardId}/unblock:
+    post:
+      description: Unblock a value card
+      tags:
+        - value card
+      operationId: unblockValueCard
+      parameters:
+        - in: path
+          name: facilityNumber
+          schema:
+            type: string
+            maxLength: 64
+          required: true
+          description: Facility number of Parking.Logic
+          example: "0340042"
+        - in: path
+          name: valueCardId
+          schema:
+            type: string
+            format: uuid
+          required: true
+          description: UUID of Standard Value Card to unblock
+          example: "7c93a680-2809-11eb-91d2-0242ac1b000d"
+      responses:
+        '200':
+          description: Current data of value card
+          content:
+            application/json:
+              schema:
+                $ref:  "#/components/schemas/GetValueCard"
+        '404':
+          description: value card or facilityNumber not found
+          content:
+            application/text:
+              schema:
+                type: string
+                description: Value card or facilityNumber could not be found
+        '500':
+          description: Failure
+          content:
+            application/text:
+              schema:
+                type: string
+                description: Error message why value card could not be unblocked
+
+  /valuecard/v1/{facilityNumber}/{valueCardId}/suspend:
+    post:
+      description: Suspend a value card
+      tags:
+        - value card
+      operationId: suspendValueCard
+      parameters:
+        - in: path
+          name: facilityNumber
+          schema:
+            type: string
+            maxLength: 64
+          required: true
+          description: Facility number of Parking.Logic
+          example: "0340042"
+        - in: path
+          name: valueCardId
+          schema:
+            type: string
+            format: uuid
+          required: true
+          description: UUID of Standard Value Card to suspend
+          example: "7c93a680-2809-11eb-91d2-0242ac1b000d"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SuspendValueCard'
+      responses:
+        '200':
+          description: Current data of value card
+          content:
+            application/json:
+              schema:
+                $ref:  "#/components/schemas/GetValueCard"
+        '404':
+          description: value card or facilityNumber not found
+          content:
+            application/text:
+              schema:
+                type: string
+                description: Value card or facilityNumber could not be found
+        '500':
+          description: Failure
+          content:
+            application/text:
+              schema:
+                type: string
+                description: Error message why value card could not be suspended
+
+  /valuecard/v1/{facilityNumber}/{valueCardId}/resume:
+    post:
+      description: Resume a value card
+      tags:
+        - value card
+      operationId: resumeValueCard
+      parameters:
+        - in: path
+          name: facilityNumber
+          schema:
+            type: string
+            maxLength: 64
+          required: true
+          description: Facility number of Parking.Logic
+          example: "0340042"
+        - in: path
+          name: valueCardId
+          schema:
+            type: string
+            format: uuid
+          required: true
+          description: UUID of Standard Value Card to resume
+          example: "7c93a680-2809-11eb-91d2-0242ac1b000d"
+      responses:
+        '200':
+          description: Current data of value card
+          content:
+            application/json:
+              schema:
+                $ref:  "#/components/schemas/GetValueCard"
+        '404':
+          description: value card or facilityNumber not found
+          content:
+            application/text:
+              schema:
+                type: string
+                description: Value card or facilityNumber could not be found
+        '500':
+          description: Failure
+          content:
+            application/text:
+              schema:
+                type: string
+                description: Error message why value card could not be resumed
+
+components:
+  securitySchemes:
+    basicAuth:
+      type: http
+      scheme: basic
+  schemas:
+    CreateCustomer:
+      allOf:
+        - $ref: "#/components/schemas/Customer"
+
+    GetCustomer:
+      allOf:
+        - $ref: "#/components/schemas/Customer"
+        - type: object
+          required:
+            - customerId
+            - lastUpdated
+          properties:
+            customerId:
+              type: string
+              format: uuid
+            lastUpdated:
+              type: string
+              format: date-time
+            blockDate:
+              type: string
+              format: date
+              nullable: true
+              description: This specifies the date when the customer, including all their associated users/cards, will be blocked. This means they will no longer be authorized to enter or exit the facility.
+              example: "2020-05-01"
+            expireDate:
+              type: string
+              format: date
+              nullable: true
+              description: This specifies the date when the customer contact will expire. This date will be set when an anonymizeCustomer is done but the customer contact still has valid contracts and subscriptions. After the expire date, no valid subscriptions etc. will exist and the customer contact will get anonymized automatically and can then not be fetched anymore by getCustomer.
+              example: "2020-05-01"
+            anonymized:
+              type: boolean
+              description: Boolean flag that the customer was marked as anonymized and overwritten with random values.
+              example: false
+            deleted:
+              type: boolean
+              description: Boolean flag that the customer was marked as deleted.
+              example: false
+
+    GetPagedCustomers:
+      type: object
+      properties:
+        nextPagingToken:
+          type: string
+          description: Token to be used for next request to fetch next page. If the token is null, no furhter changes are available.
+        customers:
+          type: array
+          items:
+            $ref: '#/components/schemas/GetCustomer'
+
+    GetCustomers:
+      type: array
+      items:
+        $ref: "#/components/schemas/GetCustomer"
+
+    UpdateCustomer:
+      allOf:
+        - $ref: "#/components/schemas/Customer"
+
+    BlockCustomer:
+      type: object
+      required:
+        - startDate
+      properties:
+        startDate:
+          type: string
+          format: date
+          description: when does block start
+
+    CreateUser:
+      allOf:
+        - $ref: "#/components/schemas/User"
+
+    GetPagedUsers:
+      type: object
+      properties:
+        nextPagingToken:
+          type: string
+          description: Token to be used for next request to fetch next page. If the token is null, no furhter changes are available.
+        users:
+          type: array
+          items:
+            $ref: '#/components/schemas/GetUser'
+
+    GetUser:
+      allOf:
+        - $ref: "#/components/schemas/User"
+        - type: object
+          required:
+            - userId
+            - lastUpdated
+          properties:
+            userId:
+              type: string
+              format: uuid
+            lastUpdated:
+              type: string
+              format: date-time
+            blockDate:
+              type: string
+              format: date
+              nullable: true
+              description: This specifies the date when the user, including all their associated cards, will be blocked. This means they will no longer be authorized to enter or exit the facility.
+              example: "2020-05-01"
+            suspension:
+              $ref: "#/components/schemas/Suspension"
+            expireDate:
+              type: string
+              format: date
+              nullable: true
+              description: This specifies the date when the user contact will expire. This date will be set when an anonymizeUser is done but the user contact still has valid subscriptions. After the expire date, no valid subscriptions etc. will exist and the user contact will get anonymized automatically and can then not be fetched anymore by getUser.
+              example: "2020-05-01"
+            anonymized:
+              type: boolean
+              description: Boolean flag that the user was marked as anonymized and overwritten with random values.
+              example: false
+            deleted:
+              type: boolean
+              description: Boolean flag that the user was marked as deleted.
+              example: false
+
+    GetUsers:
+      type: array
+      items:
+        $ref: "#/components/schemas/GetUser"
+
+    UpdateUser:
+      allOf:
+        - $ref: "#/components/schemas/User"
+
+    BlockUser:
+      type: object
+      required:
+        - startDate
+      properties:
+        startDate:
+          type: string
+          format: date
+          description: when does block start
+
+    SuspendUser:
+      type: object
+      required:
+        - startDate
+        - endDate
+      properties:
+        startDate:
+          type: string
+          format: date
+          description: when does suspend start
+        endDate:
+          type: string
+          format: date
+          description: when does suspend end
+
+    CreateParkingCard:
+      allOf:
+        - $ref: "#/components/schemas/ManageIdentification"
+        - $ref: "#/components/schemas/ParkingCard"
+        - type: object
+          required:
+            - userId
+          properties:
+            userId:
+              type: string
+              format: uuid
+              description: UUID identifying the user the parking belongs to
+              example: "7c93a680-2809-11eb-91d2-0242ac1b000d"
+            productId:
+              type: string
+              format: uuid
+              description: UUID identifying the product to be used for the Standard Parking Card
+              example: "7c93a680-2809-11eb-91d2-0242ac1b000d"
+
+    GetPagedParkingCards:
+      type: object
+      properties:
+        nextPagingToken:
+          type: string
+          description: Token to be used for next request to fetch next page. If the token is null, no furhter changes are available.
+        parkingCards:
+          type: array
+          items:
+            $ref: '#/components/schemas/GetParkingCard'
+
+    GetParkingCard:
+      allOf:
+        - $ref: "#/components/schemas/ManageDoorAccess"
+        - $ref: "#/components/schemas/ParkingCard"
+        - type: object
+          required:
+            - userId
+            - parkingCardId
+            - productId
+            - lastUpdated
+            - transferStatus
+            - productionReason
+          properties:
+            userId:
+              type: string
+              format: uuid
+              description: UUID identifying the user the parking belongs to
+              example: "7c93a680-2809-11eb-91d2-0242ac1b000d"
+            parkingCardId:
+              type: string
+              format: uuid
+              description: Standard Parking Card ID. Returned at creation of a Standard Parking Card and to be used by get, update, delete.
+            productId:
+              type: string
+              format: uuid
+            productName:
+              type: string
+              maxLength: 512
+              nullable: true
+            lastUpdated:
+              type: string
+              format: date-time
+            blockDate:
+              type: string
+              format: date
+              nullable: true
+            suspension:
+              $ref: "#/components/schemas/Suspension"
+            transferStatus:
+              $ref: "#/components/schemas/TransferStatus"
+            productionReason:
+              $ref: "#/components/schemas/ProductionReason"
+            anonymized:
+              type: boolean
+              description: Boolean flag that the parking card was marked as anonymized and overwritten with random values.
+              example: false
+            canceled:
+              type: boolean
+              description: Boolean flag that the parking card was canceled.
+              example: false
+
+    GetParkingCards:
+      type: array
+      items:
+        $ref: "#/components/schemas/GetParkingCard"
+
+    UpdateParkingCard:
+      allOf:
+        - $ref: "#/components/schemas/ManageIdentification"
+        - $ref: "#/components/schemas/ParkingCard"
+
+    BlockParkingCard:
+      type: object
+      required:
+        - startDate
+      properties:
+        startDate:
+          type: string
+          format: date
+          description: when does block start
+
+    SuspendParkingCard:
+      type: object
+      required:
+        - startDate
+        - endDate
+      properties:
+        startDate:
+          type: string
+          format: date
+          description: Must be between valid from and valid to of the parking card
+        endDate:
+          type: string
+          format: date
+          description: Must be between valid from and valid to of the parking card and after the start date of the suspension
+
+    CreateValueCard:
+      allOf:
+        - $ref: "#/components/schemas/ManageIdentification"
+        - $ref: "#/components/schemas/ValueCard"
+        - type: object
+          required:
+            - userId
+          properties:
+            userId:
+              type: string
+              format: uuid
+              description: UUID identifying the user the value Card belongs to
+              example: "7c93a680-2809-11eb-91d2-0242ac1b000d"
+            productId:
+              type: string
+              format: uuid
+              description: UUID identifying the product to be used for the value Card
+              example: "7c93a680-2809-11eb-91d2-0242ac1b000d"
+
+    GetPagedValueCards:
+      type: object
+      properties:
+        nextPagingToken:
+          type: string
+          description: Token to be used for next request to fetch next page. If the token is null, no furhter changes are available.
+        valueCards:
+          type: array
+          items:
+            $ref: '#/components/schemas/GetValueCard'
+
+    GetValueCard:
+      allOf:
+        - $ref: "#/components/schemas/ManageDoorAccess"
+        - $ref: "#/components/schemas/ValueCard"
+        - type: object
+          required:
+            - userId
+            - valueCardId
+            - productId
+            - lastUpdated
+            - transferStatus
+            - productionReason
+          properties:
+            userId:
+              type: string
+              format: uuid
+            valueCardId:
+              type: string
+              format: uuid
+              description: Value Card ID. Returned at creation of a Value Card and to be used by get, update, delete.
+            productId:
+              type: string
+              format: uuid
+            productName:
+              type: string
+              maxLength: 512
+              nullable: true
+            lastUpdated:
+              type: string
+              format: date-time
+            blockDate:
+              type: string
+              format: date
+              nullable: true
+            suspension:
+              $ref: "#/components/schemas/Suspension"
+            transferStatus:
+              $ref: "#/components/schemas/TransferStatus"
+            productionReason:
+              $ref: "#/components/schemas/ProductionReason"
+            anonymized:
+              type: boolean
+              description: Boolean flag that the value card was marked as anonymized and overwritten with random values.
+              example: false
+            canceled:
+              type: boolean
+              description: Boolean flag that the value card was canceled.
+              example: false
+
+    GetValueCards:
+      type: array
+      items:
+        $ref: "#/components/schemas/GetValueCard"
+
+    UpdateValueCard:
+      allOf:
+        - $ref: "#/components/schemas/ManageIdentification"
+        - $ref: "#/components/schemas/ValueCard"
+
+    BlockValueCard:
+      type: object
+      required:
+        - startDate
+      properties:
+        startDate:
+          type: string
+          format: date
+          description: when does block start
+
+    SuspendValueCard:
+      type: object
+      required:
+        - startDate
+        - endDate
+      properties:
+        startDate:
+          type: string
+          format: date
+          description: Must be between valid from and valid to of the value card
+        endDate:
+          type: string
+          format: date
+          description: Must be between valid from and valid to of the value card and after the start date of the suspension
+
+    Customer:
+      allOf:
+        - $ref: "#/components/schemas/Contact"
+        - type: object
+          properties:
+            #Hostcomm Mapped
+            parkingContract:
+              $ref:  "#/components/schemas/CustomerParkingContract"
+            #Hostcomm Mapped ends
+            contactType:
+              $ref:  "#/components/schemas/ContactType"
+
+    Contact:
+      allOf:
+        - $ref: "#/components/schemas/Details"
+        - type: object
+          properties:
+            #UI Mapped
+            externalContactId:
+              type: string
+              maxLength: 32
+              nullable: true
+              description: an external ID of the contact
+            website:
+              type: string
+              maxLength: 64
+              nullable: true
+              description: what is the users website
+              example: nowhere.gov
+            address:
+              $ref:  "#/components/schemas/Address"
+            communication:
+              $ref:  "#/components/schemas/Communication"
+            photo:
+              $ref:  "#/components/schemas/Photo"
+            department:
+              $ref:  "#/components/schemas/Department"
+            taxNumber:
+              type: string
+              description: Lets you enter the tax reference number.
+              maxLength: 16
+              nullable: true
+
+    CustomerParkingContract:
+      allOf:
+        - $ref:  "#/components/schemas/UserParkingContract"
+        - type: object
+          properties:
+            agreementNo:
+              type: string
+              maxLength: 20
+              nullable: true
+              description: This is a unique number assigned to the customer for identification purposes. You may enter any combination of numbers and letters and if nothin entered it will be automatically generated by the system
+            accountingNo:
+              type: string
+              maxLength: 20
+              nullable: true
+              description: Lets you enter the accounting number.
+            startDate:
+              type: string
+              format: date
+              nullable: true
+              description: This time specifies when the contract comes into effect. if not set will be today.
+              example: "2020-05-01"
+            endDate:
+              type: string
+              format: date
+              nullable: true
+              description: The end date must be later than or equal to the start date.
+              example: "2020-05-01"
+            defaultRemarks:
+              $ref:  "#/components/schemas/Remarks"
+            countNeutralCards:
+              type: boolean
+              description: If true, neutral cards will be included in the count.
+            maxLevel:
+              type: integer
+              nullable: true
+              description: Specifies the maximum number of contract parkers of the associated customer that may be present at the parking facility at the same time. Once this maximum level is reached, any further contract parkers of this user will be denied entry.
+              maximum: 9999
+            enterOverMax:
+              type: boolean
+              description: This will allow the contract parker to enter even if the maximum level has already been reached.
+
+    Details:
+      type: object
+      required:
+        - surname
+      properties:
+        surname:
+          type: string
+          maxLength: 64
+          description: Surname to store on contact
+          example: Williamson
+        additionalSurname:
+          type: string
+          maxLength: 64
+          nullable: true
+          description: the additional surname may be used e.g. for japanese culture where names in a second language are possible
+          example: Waters
+        firstname:
+          type: string
+          maxLength: 64
+          nullable: true
+          description: Firstname to store on contact
+          example: Louvenia
+        additionalFirstname:
+          type: string
+          maxLength: 64
+          nullable: true
+          description: the additional firstname may be used e.g. for japanese culture where names in a second language are possible
+          example: Hillary
+        middlename:
+          type: string
+          maxLength: 64
+          nullable: true
+          description: Middlename to store on contact
+          example: Emelia
+        title:
+          type: string
+          maxLength: 32
+          nullable: true
+          description: title to store on the contact
+          example: Mr
+        abbreviation:
+          type: string
+          nullable: true
+          description: The contact's short name
+          maxLength: 32
+          example: Emi
+        salutation:
+          type: string
+          description: the conatct's salutation
+          maxLength: 32
+          nullable: true
+          example: Dear
+        telephone:
+          type: string
+          maxLength: 64
+          nullable: true
+          description: Telephone to store on contact
+          example: 391-371-0986
+        mobile:
+          type: string
+          maxLength: 64
+          nullable: true
+          description: Mobile number to store on contact
+          example: 391-371-0986
+        fax:
+          type: string
+          maxLength: 64
+          nullable: true
+          description: Fax to store on contact
+          example: 391-371-0986
+        email:
+          type: string
+          maxLength: 64
+          nullable: true
+          description: Email to store on contact
+          example: john.doe@nowhere.gov
+        dateOfBirth:
+          type: string
+          format: date
+          nullable: true
+          description: The contact's date of Birth
+          example: "2020-05-14"
+        nationality:
+          type: string
+          nullable: true
+          maxLength: 64
+          description: The ISO country code
+          example: AT
+        language:
+          type: string
+          maxLength: 10
+          nullable: true
+          description: the spoken/preferred/default language of the contact
+        gender:
+          $ref:  "#/components/schemas/Gender"
+        legalIdentificationNumber:
+          type: string
+          maxLength: 64
+          nullable: true
+          description: Lets you enter the serial number of the customer’s ID document.
+          example: 50670009H68JD220WV28
+    Address:
+      type: object
+      required:
+        - zipcode
+        - city
+      properties:
+        lineOne:
+          type: string
+          maxLength: 64
+          nullable: true
+          example: "Unit 1"
+          description: the first line of the address.
+        lineTwo:
+          type: string
+          maxLength: 64
+          nullable: true
+          example: "1 Skidata Way"
+          description: the second line of the address
+        lineThree:
+          type: string
+          maxLength: 64
+          nullable: true
+          example: ""
+          description: the third line of the address
+        lineFour:
+          type: string
+          maxLength: 64
+          nullable: true
+          example: "Door 1"
+          description: the fourth line of the address
+        zipcode:
+          type: string
+          maxLength: 16
+          example: "1117 ZL"
+          description: the ZIP code of the city. If not set will default to the same as the facility when in Parking
+        city:
+          type: string
+          maxLength: 64
+          example: "Salzburg"
+          description: the city name. If not set will default to the same as the facility when in Parking
+        region:
+          type: string
+          maxLength: 25
+          nullable: true
+          example: "DACH"
+          description: the region name
+        country:
+          type: string
+          maxLength: 2
+          nullable: true
+          example: "AT"
+          description: the country code as ISO code
+
+    Communication:
+      type: object
+      required:
+        - marketing
+        - thirdParties
+        - mailing
+      properties:
+        marketing:
+          type: boolean
+          example: true
+          description: flag indicating if the contact accepts the usage of their personal data. Mapped to AcceptUsageOfPersonalData
+        thirdParties:
+          type: boolean
+          example: true
+          description: flag indicating if the contact accepts the submission of their personal data to 3rd parties
+        mailing:
+          type: boolean
+          example: true
+          description: the flag indicating if mailing contact is accepted
+
+    Photo:
+      type: object
+      required:
+        - data
+      properties:
+        data:
+          type: string
+          description: The raw base64 encoded string of the image of the user
+          example: "SGVsbG8gV29ybGQh"
+        expiration:
+          type: string
+          format: date
+          nullable: true
+          description: date of the contact's image expiration, to be provided as localdate defined by RFC 3339, section 5.6, for example, '2020-05-01'
+          example: "2020-05-01"
+
+    Department:
+      type: object
+      required:
+        - name
+      properties:
+        name:
+          type: string
+          description: Lets you enter the name of the contact’s business department. Will either create a new group if name doesn't exist or associate the contact with a new group
+          maxLength: 64
+        description:
+          type: string
+          nullable: true
+          description: Lets you enter a description of the contact’s business department.
+          maxLength: 256
+
+    UserParkingContract:
+      type: object
+      properties:
+        checkLP:
+          type: boolean
+          description: The license plate is verified in combination with the card data at entrance and exit gates.
+        passageLP:
+          type: boolean
+          description: Entry and exit permissions are verified exclusively via the vehicle license plate.
+        spaceNo:
+          type: string
+          description: The space which is allocated to the user.
+          maxLength: 5
+        sendElectronicReceipt:
+          type: boolean
+          description: If true, the receipt will be e-mailed to the customer
+        matchEntryPlate:
+          type: boolean
+          description: Contract parkers who have multiple license plates registered on the system may only exit with the same license plate that was scanned upon entry.
+        countUser:
+          type: boolean
+          description: Include the user in group counts
+        remarks:
+          $ref:  "#/components/schemas/Remarks"
+        overtimeCustomerCreditCardSetting:
+          $ref:  "#/components/schemas/OvertimeCustomerCreditCardSetting"
+
+    Remarks:
+      type: object
+      required:
+        - remark1
+      properties:
+        remark1:
+          type: string
+          maxLength: 50
+          example: "Important Customer"
+          description: First remark to store next to user or customer parking contract for helpdesk support.
+        remark2:
+          type: string
+          maxLength: 50
+          nullable: true
+          example: null
+          description: Second remark to store next to  user or customer parking contract for helpdesk support.
+        remark3:
+          type: string
+          maxLength: 50
+          nullable: true
+          example: null
+          description: Third remark to store next to  user or customer parking contract for helpdesk support.
+
+    Gender:
+      type: string
+      nullable: true
+      description: what is the contacts gender
+      enum:
+        - MALE
+        - FEMALE
+
+    ContactType:
+      type: string
+      nullable: true
+      description: what is the contacts type
+      enum:
+        - GROUP
+        - B2B
+
+    User:
+      allOf:
+        - $ref: "#/components/schemas/Contact"
+        - type: object
+          properties:
+            #UI Mapped
+            groupCustomerId:
+              type: string
+              format: uuid
+              nullable: true
+            b2bCustomerId:
+              type: string
+              format: uuid
+              nullable: true
+            licensePlates:
+              type: array
+              items:
+                $ref: "#/components/schemas/LicensePlate"
+            identifications:
+              type: array
+              items:
+                $ref: "#/components/schemas/Identification"
+            #UI Mapped ends
+            #Hostcomm Mapped
+            parkingContract:
+              $ref:  "#/components/schemas/UserParkingContract"
+            #Hostcomm Mapped ends
+
+    LicensePlate:
+      type: object
+      required:
+        - country
+        - value
+      properties:
+        country:
+          type: string
+          maxLength: 2
+          description: This field contains the ISO 3166 Alpha-2 (https://www.iban.com/country-codes) character country code
+          example: DE
+        state:
+          type: string
+          maxLength: 32
+          nullable: true
+          description: The state within the country
+        value:
+          type: string
+          maxLength: 32
+          description: LicensePlate number
+          example: HA 123 AB
+        vehicle:
+          type: string
+          maxLength: 64
+          nullable: true
+          description: The vehicle description
+
+    Identification:
+      type: object
+      required:
+        - type
+        - subType
+        - value
+      properties:
+        type:
+          type: string
+          maxLength: 256
+          description: This field must map to one of the GenericIdentification.type configured for the product, e.g. 'LP', 'EXT'
+          example: EXT
+        subType:
+          type: string
+          maxLength: 256
+          description: This field contains (depending on the Identification type) additional specification of the Identification, e.g. the ISO 3166 Alpha-2 (https://www.iban.com/country-codes) charcter country code for the type 'LP', the bar code format '15693' for the type 'EXT'. Provided by SKIDATA to match the configuration of the product references.
+          example: AirportCard
+        value:
+          type: string
+          maxLength: 256
+          description: This field contains (depending on the Identification type) SKIDATA Identification number, credit card/debit card number, serial number of a key-card, serial number of an electronic purse, license plate, external card system and serial number of an external card system card or bank identification / account number
+          example: MyCard 123
+
+    ManageIdentification:
+      type: object
+      properties:
+        primaryId:
+          $ref: "#/components/schemas/Identification"
+        secondaryIds:
+          type: array
+          items:
+            $ref: "#/components/schemas/Identification"
+          minItems: 0
+          maxItems: 4
+
+    ParkingCard:
+      type: object
+      properties:
+        validFrom:
+          type: string
+          format: date
+          nullable: true
+          description: |
+            Standard Parking Card 'validFrom' date.
+            If not provided in request, system will use current day as default validFrom date.
+            'validFrom' date must not overlap with other existing parking cards of an user.
+            To be provided as localtime defined by RFC 3339, section 5.6.
+          example: '2020-05-01'
+        validTo:
+          type: string
+          format: date
+          nullable: true
+          description: |
+            Standard Parking Card 'validTo' date.
+            If not provided in request, system will use validFrom date and adds validity period value from TODO.
+            'validTo' must be after 'validFrom', before or equals 'endDate' of customer and must
+            overlap of other existing cards of an user.
+            To be provided as localtime defined by RFC 3339, section 5.6.
+            Must be before max date in ParkingLogic which is 31.12.2049.
+          example: '2020-05-01'
+        singleNeutral:
+          type: boolean
+          description: should the article be granted single neutral access permission.
+          example: false
+        externalCardId:
+          type: string
+          nullable: true
+          description: External reference to be stored on user to link with integrator system.
+          example: ParkingCard-0001
+        carParks:
+          type: array
+          items:
+            $ref: "#/components/schemas/CarPark"
+
+    ValueCard:
+      type: object
+      properties:
+        validFrom:
+          type: string
+          format: date
+          nullable: true
+          description: |
+            Value Card 'validFrom' date.
+            If not provided in request, system will use current day as default validFrom date.
+            'validFrom' date must not overlap with other existing value cards of an user.
+            To be provided as localtime defined by RFC 3339, section 5.6.
+          example: '2020-05-01'
+        validTo:
+          type: string
+          format: date
+          nullable: true
+          description: |
+            Value Card 'validTo' date.
+            If not provided in request, system will use validFrom date and adds validity period value from TODO.
+            'validTo' must be after 'validFrom', before or equals 'endDate' of customer and must
+            overlap of other existing value cards of an user.
+            To be provided as localtime defined by RFC 3339, section 5.6.
+            Must be before max date in ParkingLogic which is 31.12.2049.
+          example: '2020-05-01'
+        singleNeutral:
+          type: boolean
+          description: should the article be granted single neutral access permission.
+          example: false
+        externalCardId:
+          type: string
+          nullable: true
+          description: an external reference user by the creator to map their id.
+          example: ValueCard-0001
+        carParks:
+          type: array
+          items:
+            $ref: "#/components/schemas/CarPark"
+
+    ManageDoorAccess:
+      type: object
+      properties:
+        primaryId:
+          $ref: "#/components/schemas/DoorAccess"
+        secondaryIds:
+          type: array
+          items:
+            $ref: "#/components/schemas/DoorAccess"
+          minItems: 0
+          maxItems: 4
+
+    Suspension:
+      type: object
+      required:
+        - startDate
+        - endDate
+      properties:
+        startDate:
+          type: string
+          format: date
+          description: Date when the suspension starts starts.
+          example: "2020-05-01"
+        endDate:
+          type: string
+          format: date
+          description: Date when the suspension starts ends.
+          example: "2020-05-01"
+
+    CarPark:
+      type: object
+      required:
+        - carParkNumber
+        - entryType
+      properties:
+        carParkNumber:
+          type: integer
+        entryType:
+          $ref: "#/components/schemas/EntryType"
+
+    DoorAccess:
+      allOf:
+        - $ref: "#/components/schemas/Identification"
+        - type: object
+          properties:
+            doorCode:
+              type: string
+              maxLength: 6
+              nullable: true
+              description: A code which can be enetered at a door reader for access.
+
+    EntryType:
+      type: string
+      enum:
+        - ACCESS_NOT_GRANTED
+        - ACCESS_GRANTED_WITH_TIMEWINDOW
+        - ACCESS_GRANTED_NO_TIMEWINDOW
+        - ACCESS_GRANTED_WITH_TIMEWINDOW_CARPARK_FULL
+
+    TransferStatus:
+      type: string
+      description: |
+        Indicates if an action (e.g. create, cancel, ...) has to be or was transferred to the Parking.Logic system or the transfer failed.
+      enum:
+        - PENDING
+        - TRANSFERRED
+        - FAILED
+
+    ProductionReason:
+      type: string
+      description: what is the production reason of the parking card
+      enum:
+        - NEW_TICKET
+        - EXTENDED_TICKET
+
+    OvertimeCustomerCreditCardSetting:
+      type: object
+      required:
+        - creditCardNumber
+        - expiryDate
+      properties:
+        creditCardNumber:
+          type: string
+          maxLength: 20
+          description: Number of customer credit card .
+          example: 5201 2815 0512 9736
+        expiryDate:
+          type: string
+          format: date
+          description: Expiration date of customer credit card.
+          example: "2020-05-01"

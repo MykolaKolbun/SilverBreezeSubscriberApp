@@ -14,6 +14,9 @@ public class User : Entity
 
     public string? ExternalContactId { get; set; }
 
+    /// <summary>UUID assigned by SKIDATA sweb when this user was created there (null until propagated).</summary>
+    public Guid? SkidataUserId { get; set; }
+
     public string? Name { get; set; }
     public string? Surname { get; set; }
     public string? FirstName { get; set; }

@@ -1,33 +1,17 @@
 # ParkingSubscription — Raspberry Pi (ARM64) deployment stack.
-# Services: PostgreSQL 16 + API + Nginx APK/static share.
-# (No RabbitMQ — the app uses in-process background workers; no admin UI yet.)
+# Services: API + AdminPanel + Nginx APK/static share.
 #
-# Copy this file + .env + init.sql + nginx-apk.conf to the Pi (~/SilverBreezeSubscriberApp)
+# PostgreSQL is NOT part of this stack: the app shares the EVCharging PostgreSQL
+# instance (container "db" / evchargingapi-db-1) on the external Docker network
+# "evchargingapi_default". The SilverBreeze database (SWeb_DB) + role (parking)
+# are provisioned once inside that instance with deploy/create-db.sql; the API
+# creates/updates its tables via EF Core migrations on startup.
+#
+# Copy this file + .env + nginx-apk.conf to the Pi (~/SilverBreezeSubscriberApp)
 # and run:  docker compose up -d
-# Host ports are chosen to not collide with the EVCharging stack on the same Pi:
-#   API 8085, APK share 8086. Postgres is NOT published (internal network only).
+# Host ports avoid the EVCharging stack on the same Pi:  API 8085, admin 8087, APK 8086.
 
 services:
-  postgres:
-    image: postgres:16-alpine
-    restart: unless-stopped
-    # No published port — the API reaches Postgres over the internal Docker
-    # network (Host=postgres:5432). Avoids clashing with EVCharging's DB on the
-    # host and keeps the database off the host network. For an external DB tool,
-    # use: docker compose exec postgres psql -U parking -d SWeb_DB
-    environment:
-      POSTGRES_DB: ${DB_NAME:-SWeb_DB}
-      POSTGRES_USER: ${DB_USER:-parking}
-      POSTGRES_PASSWORD: ${DB_PASSWORD}
-    volumes:
-      - postgres_data:/var/lib/postgresql/data
-      - ./init.sql:/docker-entrypoint-initdb.d/init.sql:ro
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-parking} -d ${DB_NAME:-SWeb_DB}"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-
   api:
     image: ${API_IMAGE:-ghcr.io/mykolakolbun/parkingsubscription-api:latest}
     restart: unless-stopped
@@ -37,7 +21,10 @@ services:
     environment:
       ASPNETCORE_ENVIRONMENT: Production
       Database__Provider: Postgres
-      ConnectionStrings__Default: "Host=postgres;Port=5432;Database=${DB_NAME:-SWeb_DB};Username=${DB_USER:-parking};Password=${DB_PASSWORD}"
+      # Shared EVCharging PostgreSQL, reached by its network alias "db" over the
+      # external evchargingapi_default network. SWeb_DB/parking are provisioned by
+      # deploy/create-db.sql; the password (parking role) comes from .env DB_PASSWORD.
+      ConnectionStrings__Default: "Host=${DB_HOST:-db};Port=5432;Database=${DB_NAME:-SWeb_DB};Username=${DB_USER:-parking};Password=${DB_PASSWORD}"
       Jwt__SigningKey: ${JWT_SIGNING_KEY}
       # TEST PHASE: email is stubbed, so registration returns the confirmation
       # token in the response and the app auto-confirms. Set to "false" once a
@@ -57,13 +44,24 @@ services:
       Fiscal__Checkbox__TaxCode: ${CHECKBOX_TAX_CODE}
       # Venue-wide cap on concurrently active subscriptions (parking capacity).
       Subscription__MaxActiveSubscriptions: ${MAX_ACTIVE_SUBSCRIPTIONS:-50}
-    depends_on:
-      postgres:
-        condition: service_healthy
+      # SKIDATA sweb(R) Subscribe API. Blank BaseUrl/credentials/facility → the API
+      # keeps the logging stub (no push). Username/Password are secrets from .env.
+      ParkingLogic__Skidata__BaseUrl: ${SKIDATA_BASE_URL}
+      ParkingLogic__Skidata__Username: ${SKIDATA_USERNAME}
+      ParkingLogic__Skidata__Password: ${SKIDATA_PASSWORD}
+      ParkingLogic__Skidata__FacilityNumber: ${SKIDATA_FACILITY_NUMBER}
+      ParkingLogic__Skidata__ParkingProductId: ${SKIDATA_PARKING_PRODUCT_ID}
+      ParkingLogic__Skidata__ValueProductId: ${SKIDATA_VALUE_PRODUCT_ID}
+      ParkingLogic__Skidata__QrIdentificationType: ${SKIDATA_QR_ID_TYPE:-EXT}
+      ParkingLogic__Skidata__QrIdentificationSubType: ${SKIDATA_QR_ID_SUBTYPE}
+      ParkingLogic__Skidata__CustomerLinkField: ${SKIDATA_CUSTOMER_LINK_FIELD:-b2b}
     volumes:
       # Data Protection keys that encrypt the iPay SignKey — persisted so restarts
       # can still decrypt what is stored in the database.
       - dataprotection_keys:/keys
+    networks:
+      - default
+      - evcharge
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
       interval: 30s
@@ -71,7 +69,7 @@ services:
       retries: 3
       start_period: 40s
 
-  # Admin panel (read-only views over the same Postgres). 8087 — 8081-8086 are taken.
+  # Admin panel over the same shared database. 8087 — 8081-8086 are taken.
   admin:
     image: ${ADMIN_IMAGE:-ghcr.io/mykolakolbun/parkingsubscription-admin:latest}
     restart: unless-stopped
@@ -80,16 +78,16 @@ services:
     environment:
       ASPNETCORE_ENVIRONMENT: Production
       Database__Provider: Postgres
-      ConnectionStrings__Default: "Host=postgres;Port=5432;Database=${DB_NAME:-SWeb_DB};Username=${DB_USER:-parking};Password=${DB_PASSWORD}"
+      ConnectionStrings__Default: "Host=${DB_HOST:-db};Port=5432;Database=${DB_NAME:-SWeb_DB};Username=${DB_USER:-parking};Password=${DB_PASSWORD}"
       Admin__Password: ${ADMIN_PASSWORD:-Passw0rd}
       # Share the API's Data Protection keys so secrets edited here (iPay/Checkbox)
       # are encrypted with the same key the API uses to decrypt them.
       DataProtection__KeysPath: /keys
-    depends_on:
-      postgres:
-        condition: service_healthy
     volumes:
       - dataprotection_keys:/keys
+    networks:
+      - default
+      - evcharge
 
   # Static file server for sharing the mobile APK (and any other static downloads).
   # Drop app-release.apk into ./apk on the Pi → downloadable at http://<pi>:8086/app-release.apk
@@ -104,5 +102,13 @@ services:
       - ./nginx-apk.conf:/etc/nginx/conf.d/default.conf:ro
 
 volumes:
-  postgres_data:
   dataprotection_keys:
+
+networks:
+  default:
+  # The EVCharging stack's network, where its PostgreSQL ("db") lives. Must already
+  # exist (docker network ls | grep evchargingapi_default). Marked external so this
+  # stack joins it rather than creating/owning it.
+  evcharge:
+    external: true
+    name: evchargingapi_default

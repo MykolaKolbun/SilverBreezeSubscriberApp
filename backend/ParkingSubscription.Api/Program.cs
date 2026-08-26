@@ -30,6 +30,32 @@ builder.Services.AddOpenApi();
 builder.Services.AddApplication();
 builder.Services.AddInfrastructure(builder.Configuration);
 
+// SKIDATA sweb(R) Subscribe API — real Parking.Logic integration. Non-secret config
+// (BaseUrl, FacilityNumber, product ids) comes from appsettings; basicAuth credentials
+// from the environment (.env). When fully configured we swap the logging stub
+// registered by AddInfrastructure for the real client; otherwise the stub stays.
+var skidata = new ParkingSubscription.Api.ParkingLogic.SkidataOptions();
+builder.Configuration.GetSection(ParkingSubscription.Api.ParkingLogic.SkidataOptions.SectionName).Bind(skidata);
+builder.Services.Configure<ParkingSubscription.Api.ParkingLogic.SkidataOptions>(
+    builder.Configuration.GetSection(ParkingSubscription.Api.ParkingLogic.SkidataOptions.SectionName));
+if (skidata.IsConfigured)
+{
+    var basicAuth = Convert.ToBase64String(Encoding.UTF8.GetBytes($"{skidata.Username}:{skidata.Password}"));
+    // A named HttpClient carries the basicAuth header (and gets Polly/handlers if added later).
+    builder.Services.AddHttpClient("skidata", http =>
+        http.DefaultRequestHeaders.Authorization =
+            new System.Net.Http.Headers.AuthenticationHeaderValue("Basic", basicAuth));
+    // The generated client keeps its own BaseUrl, so build it from that named HttpClient.
+    builder.Services.AddScoped(sp =>
+    {
+        var http = sp.GetRequiredService<IHttpClientFactory>().CreateClient("skidata");
+        return new ParkingSubscription.Api.Subscribe.Client(http) { BaseUrl = skidata.BaseUrl! };
+    });
+    // Swap the logging stub registered by AddInfrastructure for the real client.
+    builder.Services.AddScoped<ParkingSubscription.Application.Abstractions.IParkingLogicClient,
+        ParkingSubscription.Api.ParkingLogic.SkidataParkingLogicClient>();
+}
+
 // Data Protection — encrypts payment secrets at rest. Keys persist to a mounted
 // volume (DataProtection:KeysPath) in production so restarts keep the same key;
 // without a path (dev/tests) an ephemeral per-process key is used.

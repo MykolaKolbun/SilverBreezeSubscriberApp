@@ -70,6 +70,15 @@ jobs:
           CHECKBOX_BASE_URL:    ${{ secrets.CHECKBOX_BASE_URL }}
           CHECKBOX_TAX_CODE:    ${{ secrets.CHECKBOX_TAX_CODE }}
           ADMIN_PASSWORD:       ${{ secrets.ADMIN_PASSWORD }}
+          SKIDATA_BASE_URL:           ${{ secrets.SKIDATA_BASE_URL }}
+          SKIDATA_USERNAME:           ${{ secrets.SKIDATA_USERNAME }}
+          SKIDATA_PASSWORD:           ${{ secrets.SKIDATA_PASSWORD }}
+          SKIDATA_FACILITY_NUMBER:    ${{ secrets.SKIDATA_FACILITY_NUMBER }}
+          SKIDATA_PARKING_PRODUCT_ID: ${{ secrets.SKIDATA_PARKING_PRODUCT_ID }}
+          SKIDATA_VALUE_PRODUCT_ID:   ${{ secrets.SKIDATA_VALUE_PRODUCT_ID }}
+          SKIDATA_QR_ID_TYPE:         ${{ secrets.SKIDATA_QR_ID_TYPE }}
+          SKIDATA_QR_ID_SUBTYPE:      ${{ secrets.SKIDATA_QR_ID_SUBTYPE }}
+          SKIDATA_CUSTOMER_LINK_FIELD: ${{ secrets.SKIDATA_CUSTOMER_LINK_FIELD }}
         run: |
           mkdir -p ~/.ssh
           echo "${{ secrets.PI_SSH_PRIVATE_KEY }}" | base64 -d > ~/.ssh/id_ed25519
@@ -104,6 +113,15 @@ jobs:
             [ -n "$CHECKBOX_BASE_URL" ]    && printf 'CHECKBOX_BASE_URL=%s\n' "$CHECKBOX_BASE_URL"
             [ -n "$CHECKBOX_TAX_CODE" ]    && printf 'CHECKBOX_TAX_CODE=%s\n' "$CHECKBOX_TAX_CODE"
             [ -n "$ADMIN_PASSWORD" ]       && printf 'ADMIN_PASSWORD=%s\n' "$ADMIN_PASSWORD"
+            [ -n "$SKIDATA_BASE_URL" ]           && printf 'SKIDATA_BASE_URL=%s\n' "$SKIDATA_BASE_URL"
+            [ -n "$SKIDATA_USERNAME" ]           && printf 'SKIDATA_USERNAME=%s\n' "$SKIDATA_USERNAME"
+            [ -n "$SKIDATA_PASSWORD" ]           && printf 'SKIDATA_PASSWORD=%s\n' "$SKIDATA_PASSWORD"
+            [ -n "$SKIDATA_FACILITY_NUMBER" ]    && printf 'SKIDATA_FACILITY_NUMBER=%s\n' "$SKIDATA_FACILITY_NUMBER"
+            [ -n "$SKIDATA_PARKING_PRODUCT_ID" ] && printf 'SKIDATA_PARKING_PRODUCT_ID=%s\n' "$SKIDATA_PARKING_PRODUCT_ID"
+            [ -n "$SKIDATA_VALUE_PRODUCT_ID" ]   && printf 'SKIDATA_VALUE_PRODUCT_ID=%s\n' "$SKIDATA_VALUE_PRODUCT_ID"
+            [ -n "$SKIDATA_QR_ID_TYPE" ]         && printf 'SKIDATA_QR_ID_TYPE=%s\n' "$SKIDATA_QR_ID_TYPE"
+            [ -n "$SKIDATA_QR_ID_SUBTYPE" ]      && printf 'SKIDATA_QR_ID_SUBTYPE=%s\n' "$SKIDATA_QR_ID_SUBTYPE"
+            [ -n "$SKIDATA_CUSTOMER_LINK_FIELD" ] && printf 'SKIDATA_CUSTOMER_LINK_FIELD=%s\n' "$SKIDATA_CUSTOMER_LINK_FIELD"
           } | \
             ssh "$PI" '
               touch ~/SilverBreezeSubscriberApp/.env

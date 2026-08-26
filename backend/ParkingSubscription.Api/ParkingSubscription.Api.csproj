@@ -12,6 +12,8 @@
     <!-- Pinned to a patched 2.x in Directory.Packages.props (see comment there). -->
     <PackageReference Include="Microsoft.OpenApi" />
     <PackageReference Include="Microsoft.Extensions.Diagnostics.HealthChecks.EntityFrameworkCore" />
+    <!-- Runtime dependency of the NSwag-generated SKIDATA sweb client (SWebAPI/). -->
+    <PackageReference Include="Newtonsoft.Json" />
     <PackageReference Include="Microsoft.EntityFrameworkCore.Design">
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
       <PrivateAssets>all</PrivateAssets>
