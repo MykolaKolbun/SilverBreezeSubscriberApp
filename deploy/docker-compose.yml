@@ -30,23 +30,12 @@ services:
       # token in the response and the app auto-confirms. Set to "false" once a
       # real email provider is wired in.
       Auth__ExposeDevTokens: "true"
-      # iPay gateway. Provider=iPay and the sandbox BaseUrl come from
-      # appsettings.Production.json; the merchant id + secret SignKey are injected
-      # here from .env (never committed). SignKey is encrypted at rest on first boot.
-      Payment__iPay__MchId: ${IPAY_MCH_ID}
-      Payment__iPay__SignKey: ${IPAY_SIGN_KEY}
-      Payment__iPay__BaseUrl: ${IPAY_BASE_URL:-https://sandbox-checkout.ipay.ua/api302}
-      # Checkbox Online fiscalization. Provider + BaseUrl come from
-      # appsettings.Production.json; the PIN + license key (secrets) from .env.
-      Fiscal__Checkbox__Pin: ${CHECKBOX_PIN}
-      Fiscal__Checkbox__LicenseKey: ${CHECKBOX_LICENSE_KEY}
-      Fiscal__Checkbox__BaseUrl: ${CHECKBOX_BASE_URL:-https://api.checkbox.ua}
-      Fiscal__Checkbox__TaxCode: ${CHECKBOX_TAX_CODE}
       # Venue-wide cap on concurrently active subscriptions (parking capacity).
       Subscription__MaxActiveSubscriptions: ${MAX_ACTIVE_SUBSCRIPTIONS:-50}
-      # SKIDATA sweb(R) Subscribe API is configured entirely from the AdminPanel
-      # (ParkingIntegrationConfig, secrets encrypted with the shared DP keys) — no
-      # env vars here. The client no-ops until it is enabled there.
+      # iPay, Checkbox and SKIDATA credentials are configured from the AdminPanel
+      # (Settings) and stored encrypted in the DB with the shared Data Protection
+      # keys — no gateway secrets in env. Providers default to Stub until configured;
+      # Provider names (iPay / CheckboxOnline) come from appsettings.Production.json.
     volumes:
       # Data Protection keys that encrypt the iPay SignKey — persisted so restarts
       # can still decrypt what is stored in the database.

@@ -62,14 +62,7 @@ jobs:
         env:
           DB_PASSWORD:     ${{ secrets.DB_PASSWORD }}
           JWT_SIGNING_KEY: ${{ secrets.JWT_SIGNING_KEY }}
-          IPAY_MCH_ID:     ${{ secrets.IPAY_MCH_ID }}
-          IPAY_SIGN_KEY:   ${{ secrets.IPAY_SIGN_KEY }}
-          IPAY_BASE_URL:   ${{ secrets.IPAY_BASE_URL }}
-          CHECKBOX_PIN:         ${{ secrets.CHECKBOX_PIN }}
-          CHECKBOX_LICENSE_KEY: ${{ secrets.CHECKBOX_LICENSE_KEY }}
-          CHECKBOX_BASE_URL:    ${{ secrets.CHECKBOX_BASE_URL }}
-          CHECKBOX_TAX_CODE:    ${{ secrets.CHECKBOX_TAX_CODE }}
-          ADMIN_PASSWORD:       ${{ secrets.ADMIN_PASSWORD }}
+          ADMIN_PASSWORD:  ${{ secrets.ADMIN_PASSWORD }}
         run: |
           mkdir -p ~/.ssh
           echo "${{ secrets.PI_SSH_PRIVATE_KEY }}" | base64 -d > ~/.ssh/id_ed25519
@@ -92,18 +85,12 @@ jobs:
 
           # Upsert only the required secrets into .env on the Pi; other vars preserved.
           # Secrets flow: GitHub Secrets -> env: block -> printf (local) -> stdin -> Pi (never in argv).
-          # iPay vars are written only when set, so an unset secret never clobbers the .env.
+          # Gateway credentials (iPay/Checkbox/SKIDATA) are NOT here — they are managed
+          # from the AdminPanel and stored encrypted in the DB.
           {
             printf 'DB_PASSWORD=%s\n' "$DB_PASSWORD"
             printf 'JWT_SIGNING_KEY=%s\n' "$JWT_SIGNING_KEY"
-            [ -n "$IPAY_MCH_ID" ]   && printf 'IPAY_MCH_ID=%s\n' "$IPAY_MCH_ID"
-            [ -n "$IPAY_SIGN_KEY" ] && printf 'IPAY_SIGN_KEY=%s\n' "$IPAY_SIGN_KEY"
-            [ -n "$IPAY_BASE_URL" ] && printf 'IPAY_BASE_URL=%s\n' "$IPAY_BASE_URL"
-            [ -n "$CHECKBOX_PIN" ]         && printf 'CHECKBOX_PIN=%s\n' "$CHECKBOX_PIN"
-            [ -n "$CHECKBOX_LICENSE_KEY" ] && printf 'CHECKBOX_LICENSE_KEY=%s\n' "$CHECKBOX_LICENSE_KEY"
-            [ -n "$CHECKBOX_BASE_URL" ]    && printf 'CHECKBOX_BASE_URL=%s\n' "$CHECKBOX_BASE_URL"
-            [ -n "$CHECKBOX_TAX_CODE" ]    && printf 'CHECKBOX_TAX_CODE=%s\n' "$CHECKBOX_TAX_CODE"
-            [ -n "$ADMIN_PASSWORD" ]       && printf 'ADMIN_PASSWORD=%s\n' "$ADMIN_PASSWORD"
+            [ -n "$ADMIN_PASSWORD" ] && printf 'ADMIN_PASSWORD=%s\n' "$ADMIN_PASSWORD"
           } | \
             ssh "$PI" '
               touch ~/SilverBreezeSubscriberApp/.env

@@ -115,43 +115,8 @@ await using (var scope = app.Services.CreateAsyncScope())
 
     await DbSeeder.SeedAsync(db);
 
-    // Seed/refresh the iPay gateway config from environment (SignKey never lives in
-    // appsettings — only in the Pi .env). The SignKey is encrypted before it is stored.
-    var mchId = app.Configuration["Payment:iPay:MchId"];
-    var signKey = app.Configuration["Payment:iPay:SignKey"];
-    var ipayBaseUrl = app.Configuration["Payment:iPay:BaseUrl"];
-    if (!string.IsNullOrWhiteSpace(mchId) && !string.IsNullOrWhiteSpace(signKey))
-    {
-        var protector = scope.ServiceProvider.GetRequiredService<ParkingSubscription.Application.Abstractions.ICredentialProtector>();
-        var row = await db.PaymentGatewayConfigs.FindAsync([ParkingSubscription.Domain.Entities.PaymentGatewayConfig.SingletonId], cancellationToken: default)
-                  ?? db.PaymentGatewayConfigs.Add(new ParkingSubscription.Domain.Entities.PaymentGatewayConfig()).Entity;
-        row.MerchantId = mchId;
-        row.SignKeyEncrypted = protector.Protect(signKey);
-        row.BaseUrl = string.IsNullOrWhiteSpace(ipayBaseUrl) ? row.BaseUrl : ipayBaseUrl;
-        row.UpdatedAt = DateTimeOffset.UtcNow;
-        await db.SaveChangesAsync();
-        Log.Information("iPay gateway config seeded from environment (merchant {MerchantId})", mchId);
-    }
-
-    // Seed/refresh the Checkbox Online fiscal config from environment (PIN + license are
-    // secrets — only in the Pi .env — and are encrypted before storage).
-    var fiscalPin = app.Configuration["Fiscal:Checkbox:Pin"];
-    var fiscalLicense = app.Configuration["Fiscal:Checkbox:LicenseKey"];
-    var fiscalBaseUrl = app.Configuration["Fiscal:Checkbox:BaseUrl"];
-    var fiscalTaxCode = app.Configuration["Fiscal:Checkbox:TaxCode"];
-    if (!string.IsNullOrWhiteSpace(fiscalPin))
-    {
-        var protector = scope.ServiceProvider.GetRequiredService<ParkingSubscription.Application.Abstractions.ICredentialProtector>();
-        var row = await db.FiscalGatewayConfigs.FindAsync([ParkingSubscription.Domain.Entities.FiscalGatewayConfig.SingletonId], cancellationToken: default)
-                  ?? db.FiscalGatewayConfigs.Add(new ParkingSubscription.Domain.Entities.FiscalGatewayConfig()).Entity;
-        row.PinCodeEncrypted = protector.Protect(fiscalPin);
-        if (!string.IsNullOrWhiteSpace(fiscalLicense)) row.LicenseKeyEncrypted = protector.Protect(fiscalLicense);
-        if (!string.IsNullOrWhiteSpace(fiscalBaseUrl)) row.BaseUrl = fiscalBaseUrl;
-        if (int.TryParse(fiscalTaxCode, out var tc)) row.TaxCode = tc;
-        row.UpdatedAt = DateTimeOffset.UtcNow;
-        await db.SaveChangesAsync();
-        Log.Information("Checkbox fiscal config seeded from environment");
-    }
+    // iPay, Checkbox and SKIDATA gateway credentials are configured from the
+    // AdminPanel (Settings) and stored encrypted in the DB — no env seeding here.
 }
 
 app.Run();
