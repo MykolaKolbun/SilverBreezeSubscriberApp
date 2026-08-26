@@ -80,6 +80,7 @@ public sealed class UserService(IAppDbContext db, ChangePropagator propagator) :
         user.Surname = req.Surname ?? user.Surname;
         user.FirstName = req.FirstName ?? user.FirstName;
         user.Email = req.Email ?? user.Email;
+        user.Mobile = req.Mobile ?? user.Mobile;
         user.Touch();
 
         if (await db.ParkingCards.AnyAsync(c => c.UserId == id, ct) ||

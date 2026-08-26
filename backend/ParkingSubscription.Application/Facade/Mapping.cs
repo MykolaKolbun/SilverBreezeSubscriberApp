@@ -10,7 +10,7 @@ public static class Mapping
         c.IsBlocked, c.IsDeleted, c.UpdatedAt);
 
     public static UserDto ToDto(this User u) => new(
-        u.Id, u.CustomerId, u.ExternalContactId, u.Name, u.Surname, u.FirstName, u.Email,
+        u.Id, u.CustomerId, u.ExternalContactId, u.Name, u.Surname, u.FirstName, u.Email, u.Mobile,
         u.IsBlocked, u.IsSuspended, u.AnonymizationState, u.IsDeleted, u.UpdatedAt);
 
     public static ParkingCardDto ToDto(this ParkingCard p) => new(

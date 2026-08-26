@@ -23,7 +23,6 @@ import {
   ChevronRight,
   MailIcon,
   MoonIcon,
-  PhoneIcon,
   PlusIcon,
   SignOutIcon,
   SunIcon,
@@ -43,6 +42,15 @@ function fieldStyle(t: Theme) {
     color: t.fg1,
     fontFamily: fonts.inter500,
     fontSize: 14,
+  } as const;
+}
+
+function fieldLabel(t: Theme) {
+  return {
+    fontFamily: fonts.inter500,
+    fontSize: 12,
+    lineHeight: 16,
+    color: t.fg3,
   } as const;
 }
 
@@ -491,14 +499,15 @@ export function ProfileScreen() {
           {tr('profile.plateNote', { name: VENUE.name })}
         </Text>
 
-        {/* Contact info */}
+        {/* Contact details — email read-only, name + phone editable (synced) */}
         <View
           style={{
             backgroundColor: t.bgElevated,
             borderWidth: 1,
             borderColor: t.border,
             borderRadius: 16,
-            overflow: 'hidden',
+            padding: 16,
+            gap: 12,
           }}
         >
           <ContactRow
@@ -507,13 +516,65 @@ export function ProfileScreen() {
             label={tr('profile.email')}
             value={email ?? tr('profile.notSet')}
           />
-          {divider}
-          <ContactRow
-            theme={t}
-            icon={<PhoneIcon size={18} color={t.fg2} />}
-            label={tr('profile.phone')}
-            value={tr('profile.notSet')}
-          />
+
+          <View style={{ flexDirection: 'row', gap: 10 }}>
+            <View style={{ flex: 1, gap: 6 }}>
+              <Text style={fieldLabel(t)}>{tr('profile.firstName')}</Text>
+              <TextInput
+                value={app.profileDraft.firstName}
+                onChangeText={(v) => app.updateProfileField('firstName', v)}
+                placeholder={tr('profile.firstName')}
+                placeholderTextColor={t.fg3}
+                style={fieldStyle(t)}
+              />
+            </View>
+            <View style={{ flex: 1, gap: 6 }}>
+              <Text style={fieldLabel(t)}>{tr('profile.surname')}</Text>
+              <TextInput
+                value={app.profileDraft.surname}
+                onChangeText={(v) => app.updateProfileField('surname', v)}
+                placeholder={tr('profile.surname')}
+                placeholderTextColor={t.fg3}
+                style={fieldStyle(t)}
+              />
+            </View>
+          </View>
+
+          <View style={{ gap: 6 }}>
+            <Text style={fieldLabel(t)}>{tr('profile.phone')}</Text>
+            <TextInput
+              value={app.profileDraft.mobile}
+              onChangeText={(v) => app.updateProfileField('mobile', v)}
+              placeholder="+380…"
+              placeholderTextColor={t.fg3}
+              keyboardType="phone-pad"
+              style={fieldStyle(t)}
+            />
+          </View>
+
+          <Pressable
+            disabled={!app.profileChanged}
+            onPress={app.saveProfile}
+            style={{
+              height: 40,
+              borderRadius: 12,
+              backgroundColor: t.volt,
+              opacity: app.profileChanged ? 1 : 0.4,
+              alignItems: 'center',
+              justifyContent: 'center',
+            }}
+          >
+            <Text
+              style={{
+                fontFamily: fonts.inter700,
+                fontSize: 13,
+                lineHeight: 18,
+                color: ON_VOLT,
+              }}
+            >
+              {tr('profile.save')}
+            </Text>
+          </Pressable>
         </View>
 
         {/* Subscription shortcut */}

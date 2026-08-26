@@ -18,11 +18,11 @@ public sealed record CreateUserRequest(
     Guid CustomerId, string? ExternalContactId, string? Name, string? Surname, string? FirstName, string? Email);
 
 public sealed record UpdateUserRequest(
-    string? Name, string? Surname, string? FirstName, string? Email);
+    string? Name, string? Surname, string? FirstName, string? Email, string? Mobile = null);
 
 public sealed record UserDto(
     Guid Id, Guid CustomerId, string? ExternalContactId, string? Name, string? Surname, string? FirstName,
-    string? Email, bool IsBlocked, bool IsSuspended, AnonymizationState AnonymizationState,
+    string? Email, string? Mobile, bool IsBlocked, bool IsSuspended, AnonymizationState AnonymizationState,
     bool IsDeleted, DateTimeOffset UpdatedAt);
 
 // ---- Parking card (ТЗ §4.3) ----

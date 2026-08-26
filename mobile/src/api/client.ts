@@ -89,6 +89,13 @@ export interface PagedCards {
   items: ApiCard[];
   nextPagingToken?: string | null;
 }
+export interface ApiUser {
+  id: string;
+  firstName?: string | null;
+  surname?: string | null;
+  email?: string | null;
+  mobile?: string | null;
+}
 export interface ApiVehicle {
   id: string;
   userId: string;
@@ -158,6 +165,15 @@ export const api = {
   // Payment history (most recent first) for the profile History screen.
   getPaymentsHistory: (userId: string, token: string) =>
     req<ApiPayment[]>(`/users/${userId}/payments`, { token }),
+
+  // User profile (name + phone) — bidirectional offline sync.
+  getUser: (userId: string, token: string) =>
+    req<ApiUser>(`/users/${userId}`, { token }),
+  updateUser: (
+    userId: string,
+    b: { firstName?: string; surname?: string; mobile?: string },
+    token: string
+  ) => req<ApiUser>(`/users/${userId}`, { method: 'PUT', body: b, token }),
 
   // Vehicles (bidirectional offline sync).
   getVehicles: (userId: string, token: string) =>

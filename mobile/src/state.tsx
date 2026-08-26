@@ -40,12 +40,20 @@ export interface Vehicle {
   plate: string;
 }
 
+export interface Profile {
+  firstName: string;
+  surname: string;
+  mobile: string;
+}
+
 const THEME_KEY = 'silverbreeze.theme';
 const LANG_KEY = 'silverbreeze.lang';
 const SESSION_KEY = 'silverbreeze.session';
 const CARDS_KEY = 'silverbreeze.cards';
 const VEHICLES_KEY = 'silverbreeze.vehicles';
+const PROFILE_KEY = 'silverbreeze.profile';
 const MAX_VEHICLES = 3;
+const EMPTY_PROFILE: Profile = { firstName: '', surname: '', mobile: '' };
 
 interface AppState {
   theme: Theme;
@@ -98,6 +106,12 @@ interface AppState {
   payState: PayState;
   confirmPayment: () => void;
 
+  // Profile (name + phone), bidirectional offline sync
+  profileDraft: Profile;
+  profileChanged: boolean;
+  updateProfileField: (key: keyof Profile, value: string) => void;
+  saveProfile: () => void;
+
   // Vehicles (local, cosmetic)
   vehicles: Vehicle[];
   drafts: Vehicle[];
@@ -137,6 +151,12 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
 
   const [payState, setPayState] = useState<PayState>('idle');
 
+  const [profile, setProfile] = useState<Profile>(EMPTY_PROFILE);
+  const [profileDraft, setProfileDraft] = useState<Profile>(EMPTY_PROFILE);
+  const profileRef = useRef<Profile>(EMPTY_PROFILE);
+  const profileDirtyRef = useRef(false);
+  const profileSyncingRef = useRef(false);
+
   const [vehicles, setVehicles] = useState<Vehicle[]>([]);
   const [drafts, setDrafts] = useState<Vehicle[]>([]);
   const vehiclesRef = useRef<Vehicle[]>([]);
@@ -171,6 +191,20 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
           if (cachedCards) {
             try {
               setCards(JSON.parse(cachedCards));
+            } catch {
+              /* ignore corrupt cache */
+            }
+          }
+          // Load cached profile (offline-friendly), then sync bidirectionally.
+          const rawProfile = await AsyncStorage.getItem(PROFILE_KEY);
+          if (rawProfile) {
+            try {
+              const parsed = JSON.parse(rawProfile);
+              const p: Profile = { ...EMPTY_PROFILE, ...(parsed.profile ?? {}) };
+              profileRef.current = p;
+              profileDirtyRef.current = parsed.dirty ?? false;
+              setProfile(p);
+              setProfileDraft({ ...p });
             } catch {
               /* ignore corrupt cache */
             }
@@ -255,8 +289,8 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
 
   const loadData = async () => {
     await Promise.all([loadPlans(), refreshCards()]);
-    // Bidirectional vehicle sync: push local changes first, then pull server state.
-    await syncVehicles(true);
+    // Bidirectional sync: push local changes first, then pull server state.
+    await Promise.all([syncProfile(true), syncVehicles(true)]);
   };
 
   const loadPlans = async () => {
@@ -410,7 +444,12 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     setHistory([]);
     AsyncStorage.removeItem(CARDS_KEY).catch(() => {});
     AsyncStorage.removeItem(VEHICLES_KEY).catch(() => {});
+    AsyncStorage.removeItem(PROFILE_KEY).catch(() => {});
     setPlanId(null);
+    profileRef.current = EMPTY_PROFILE;
+    profileDirtyRef.current = false;
+    setProfile(EMPTY_PROFILE);
+    setProfileDraft(EMPTY_PROFILE);
     vehiclesRef.current = [];
     deletedRef.current = [];
     setVehicles([]);
@@ -496,6 +535,71 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         );
       }
     })();
+  };
+
+  // ---- profile: name + phone (offline-first, bidirectional sync) ----
+  const persistProfile = () =>
+    AsyncStorage.setItem(
+      PROFILE_KEY,
+      JSON.stringify({ profile: profileRef.current, dirty: profileDirtyRef.current })
+    ).catch(() => {});
+
+  const updateProfileField = (key: keyof Profile, value: string) =>
+    setProfileDraft((d) => ({ ...d, [key]: value }));
+
+  const saveProfile = () => {
+    const next: Profile = { ...profileDraft };
+    profileRef.current = next;
+    setProfile(next);
+    profileDirtyRef.current = true;
+    persistProfile();
+    void syncProfile(false);
+  };
+
+  const pushProfile = async () => {
+    const s = sessionRef.current;
+    if (!s || !profileDirtyRef.current) return;
+    try {
+      const p = profileRef.current;
+      await authed((tok) =>
+        api.updateUser(s.userId, { firstName: p.firstName, surname: p.surname, mobile: p.mobile }, tok)
+      );
+      profileDirtyRef.current = false;
+      persistProfile();
+    } catch {
+      /* offline/other: keep dirty, retry next sync */
+    }
+  };
+
+  const pullProfile = async () => {
+    const s = sessionRef.current;
+    if (!s) return;
+    try {
+      const u = await authed((tok) => api.getUser(s.userId, tok));
+      if (profileDirtyRef.current) return; // keep not-yet-pushed local edits
+      const next: Profile = {
+        firstName: u.firstName ?? '',
+        surname: u.surname ?? '',
+        mobile: u.mobile ?? '',
+      };
+      profileRef.current = next;
+      setProfile(next);
+      setProfileDraft({ ...next });
+      persistProfile();
+    } catch {
+      /* offline — keep the cached profile */
+    }
+  };
+
+  const syncProfile = async (pull: boolean) => {
+    if (!sessionRef.current || profileSyncingRef.current) return;
+    profileSyncingRef.current = true;
+    try {
+      await pushProfile();
+      if (pull) await pullProfile();
+    } finally {
+      profileSyncingRef.current = false;
+    }
   };
 
   // ---- vehicles (offline-first, bidirectional sync) ----
@@ -670,6 +774,14 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
 
     payState,
     confirmPayment,
+
+    profileDraft,
+    profileChanged:
+      profileDraft.firstName !== profile.firstName ||
+      profileDraft.surname !== profile.surname ||
+      profileDraft.mobile !== profile.mobile,
+    updateProfileField,
+    saveProfile,
 
     vehicles,
     drafts,
