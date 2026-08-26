@@ -247,6 +247,27 @@ button:hover { background: var(--sb-blue-dark); }
     margin-bottom: 14px;
 }
 .form input:focus { outline: none; border-color: var(--sb-blue); }
+.form select {
+    height: 42px;
+    padding: 0 10px;
+    background: #fff;
+    border: 1px solid #CCD0D6;
+    border-radius: 10px;
+    color: var(--sb-black);
+    font-size: 15px;
+    margin-bottom: 14px;
+}
+.form select:focus { outline: none; border-color: var(--sb-blue); }
+.form label.check {
+    flex-direction: row;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    color: var(--sb-black);
+    font-size: 14px;
+    margin-bottom: 14px;
+}
+.form label.check input { width: auto; height: auto; margin: 0; }
 .form button {
     height: 36px;
     border-radius: 8px;

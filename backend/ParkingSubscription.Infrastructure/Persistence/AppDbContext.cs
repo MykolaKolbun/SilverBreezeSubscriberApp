@@ -22,6 +22,7 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options)
     public DbSet<FiscalGatewayConfig> FiscalGatewayConfigs => Set<FiscalGatewayConfig>();
     public DbSet<FiscalReceiptBlob> FiscalReceiptBlobs => Set<FiscalReceiptBlob>();
     public DbSet<AdminConfig> AdminConfigs => Set<AdminConfig>();
+    public DbSet<ParkingIntegrationConfig> ParkingIntegrationConfigs => Set<ParkingIntegrationConfig>();
 
     protected override void OnModelCreating(ModelBuilder b)
     {
@@ -121,6 +122,17 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options)
         {
             e.Property(x => x.Id).ValueGeneratedNever(); // singleton row (id = 1)
             e.Property(x => x.PasswordHash).HasMaxLength(200);
+        });
+
+        b.Entity<ParkingIntegrationConfig>(e =>
+        {
+            e.Property(x => x.Id).ValueGeneratedNever(); // singleton row (id = 1)
+            e.Property(x => x.BaseUrl).HasMaxLength(256);
+            e.Property(x => x.FacilityNumber).HasMaxLength(64);
+            e.Property(x => x.DefaultCountry).HasMaxLength(2);
+            e.Property(x => x.QrIdentificationType).HasMaxLength(256);
+            e.Property(x => x.QrIdentificationSubType).HasMaxLength(256);
+            e.Property(x => x.CustomerLinkField).HasMaxLength(16);
         });
 
         // SQLite cannot ORDER BY / compare DateTimeOffset. Store all DateTimeOffset

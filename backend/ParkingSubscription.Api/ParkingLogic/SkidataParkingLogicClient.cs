@@ -1,5 +1,6 @@
+using System.Net.Http.Headers;
+using System.Text;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Options;
 using ParkingSubscription.Api.Subscribe;
 using ParkingSubscription.Application.Abstractions;
 using ParkingSubscription.Domain.Entities;
@@ -13,24 +14,46 @@ namespace ParkingSubscription.Api.ParkingLogic;
 
 /// <summary>
 /// Real <see cref="IParkingLogicClient"/> backed by the SKIDATA sweb(R) Subscribe API
-/// (the generated <see cref="Client"/>). Drained by the outbox: each message is
-/// translated into the matching sweb call for its (kind, operation), and the UUID
-/// sweb assigns on create is stored back on our entity so later update/block/etc.
-/// can target it. Runs on the same scoped <see cref="AppDbContext"/> as the outbox
-/// worker, so those id writes are committed together with the delivery status.
+/// (the generated <see cref="Client"/>). Configuration lives in the single-row
+/// <see cref="ParkingIntegrationConfig"/>, edited from the AdminPanel — no env secrets.
+/// The row is read at the start of every propagation, so enabling/disabling or changing
+/// credentials takes effect on the next outbox tick without a redeploy. When the config
+/// is disabled or incomplete the client no-ops (logs and returns), exactly like the stub.
+///
+/// Drained by the outbox on the same scoped <see cref="AppDbContext"/> as the worker, so
+/// the UUIDs sweb assigns on create are committed together with the delivery status.
 /// </summary>
 public sealed class SkidataParkingLogicClient(
     AppDbContext db,
-    Client client,
+    IHttpClientFactory httpFactory,
+    ICredentialProtector protector,
     IClock clock,
-    IOptions<SkidataOptions> options,
     ILogger<SkidataParkingLogicClient> logger) : IParkingLogicClient
 {
-    private readonly SkidataOptions _opt = options.Value;
+    // Set at the start of each PropagateAsync (scoped service, sequential outbox calls).
+    private ParkingIntegrationConfig _cfg = default!;
+    private Client _client = default!;
 
     public async Task<string> PropagateAsync(
         EntityKind kind, Guid entityId, PropagationOperation op, string? payloadJson, CancellationToken ct = default)
     {
+        var cfg = await db.ParkingIntegrationConfigs.AsNoTracking()
+            .FirstOrDefaultAsync(c => c.Id == ParkingIntegrationConfig.SingletonId, ct);
+
+        var username = Decrypt(cfg?.UsernameEncrypted);
+        var password = Decrypt(cfg?.PasswordEncrypted);
+        if (cfg is null || !cfg.Enabled
+            || string.IsNullOrWhiteSpace(cfg.BaseUrl)
+            || string.IsNullOrWhiteSpace(cfg.FacilityNumber)
+            || string.IsNullOrEmpty(username) || string.IsNullOrEmpty(password))
+        {
+            logger.LogDebug("SKIDATA integration disabled/incomplete — skipping {Op} {Kind} {Id}", op, kind, entityId);
+            return $"skidata:disabled:{kind}:{entityId:N}";
+        }
+
+        _cfg = cfg;
+        _client = BuildClient(cfg, username, password);
+
         return kind switch
         {
             EntityKind.Customer => await HandleCustomerAsync(entityId, op, ct),
@@ -39,6 +62,21 @@ public sealed class SkidataParkingLogicClient(
             EntityKind.ValueCard => await HandleValueCardAsync(entityId, op, ct),
             _ => throw new NotSupportedException($"Unknown entity kind {kind}")
         };
+    }
+
+    private Client BuildClient(ParkingIntegrationConfig cfg, string username, string password)
+    {
+        var http = httpFactory.CreateClient("skidata");
+        var basic = Convert.ToBase64String(Encoding.UTF8.GetBytes($"{username}:{password}"));
+        http.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Basic", basic);
+        return new Client(http) { BaseUrl = cfg.BaseUrl! };
+    }
+
+    private string? Decrypt(string? enc)
+    {
+        if (string.IsNullOrEmpty(enc)) return null;
+        try { return protector.Unprotect(enc); }
+        catch { return null; }
     }
 
     // ---- Customer ----------------------------------------------------------
@@ -54,21 +92,21 @@ public sealed class SkidataParkingLogicClient(
             case PropagationOperation.Create:
             case PropagationOperation.Update:
                 if (customer.SkidataCustomerId is Guid updId)
-                    await client.UpdateCustomerAsync(updId, MapCustomer(customer), ct);
+                    await _client.UpdateCustomerAsync(updId, MapCustomer(customer), ct);
                 else
                     await EnsureCustomerAsync(customer, ct);
                 break;
             case PropagationOperation.Block:
-                await client.BlockCustomerAsync(await EnsureCustomerAsync(customer, ct), new BlockCustomer { StartDate = today }, ct);
+                await _client.BlockCustomerAsync(await EnsureCustomerAsync(customer, ct), new BlockCustomer { StartDate = today }, ct);
                 break;
             case PropagationOperation.Unblock:
-                if (customer.SkidataCustomerId is Guid unId) await client.UnblockCustomerAsync(unId, ct);
+                if (customer.SkidataCustomerId is Guid unId) await _client.UnblockCustomerAsync(unId, ct);
                 break;
             case PropagationOperation.Anonymize:
-                if (customer.SkidataCustomerId is Guid anId) await client.AnonymizeCustomerAsync(anId, ct);
+                if (customer.SkidataCustomerId is Guid anId) await _client.AnonymizeCustomerAsync(anId, ct);
                 break;
             case PropagationOperation.Delete:
-                if (customer.SkidataCustomerId is Guid delId) await client.DeleteCustomerAsync(delId, ct);
+                if (customer.SkidataCustomerId is Guid delId) await _client.DeleteCustomerAsync(delId, ct);
                 break;
             default:
                 logger.LogWarning("Unsupported customer operation {Op}", op);
@@ -82,7 +120,7 @@ public sealed class SkidataParkingLogicClient(
     {
         if (customer.SkidataCustomerId is Guid existing) return existing;
 
-        var created = await client.CreateCustomerAsync(customer.Id, MapCustomer(customer), ct);
+        var created = await _client.CreateCustomerAsync(customer.Id, MapCustomer(customer), ct);
         customer.SkidataCustomerId = created.CustomerId;
         customer.Touch();
         logger.LogInformation("SKIDATA customer created {LocalId} -> {RemoteId}", customer.Id, created.CustomerId);
@@ -110,28 +148,28 @@ public sealed class SkidataParkingLogicClient(
             case PropagationOperation.Create:
             case PropagationOperation.Update:
                 if (user.SkidataUserId is Guid updId)
-                    await client.UpdateUserAsync(updId, await MapUserAsync(user, ct), ct);
+                    await _client.UpdateUserAsync(updId, await MapUserAsync(user, ct), ct);
                 else
                     await EnsureUserAsync(user, ct);
                 break;
             case PropagationOperation.Block:
-                await client.BlockUserAsync(await EnsureUserAsync(user, ct), new BlockUser { StartDate = today }, ct);
+                await _client.BlockUserAsync(await EnsureUserAsync(user, ct), new BlockUser { StartDate = today }, ct);
                 break;
             case PropagationOperation.Unblock:
-                if (user.SkidataUserId is Guid unId) await client.UnblockUserAsync(unId, ct);
+                if (user.SkidataUserId is Guid unId) await _client.UnblockUserAsync(unId, ct);
                 break;
             case PropagationOperation.Suspend:
-                await client.SuspendUserAsync(await EnsureUserAsync(user, ct),
+                await _client.SuspendUserAsync(await EnsureUserAsync(user, ct),
                     new SuspendUser { StartDate = today, EndDate = today }, ct);
                 break;
             case PropagationOperation.Resume:
-                if (user.SkidataUserId is Guid reId) await client.ResumeUserAsync(reId, ct);
+                if (user.SkidataUserId is Guid reId) await _client.ResumeUserAsync(reId, ct);
                 break;
             case PropagationOperation.Anonymize:
-                if (user.SkidataUserId is Guid anId) await client.AnonymizeUserAsync(anId, ct);
+                if (user.SkidataUserId is Guid anId) await _client.AnonymizeUserAsync(anId, ct);
                 break;
             case PropagationOperation.Delete:
-                if (user.SkidataUserId is Guid delId) await client.DeleteUserAsync(delId, ct);
+                if (user.SkidataUserId is Guid delId) await _client.DeleteUserAsync(delId, ct);
                 break;
             default:
                 logger.LogWarning("Unsupported user operation {Op}", op);
@@ -145,7 +183,7 @@ public sealed class SkidataParkingLogicClient(
     {
         if (user.SkidataUserId is Guid existing) return existing;
 
-        var created = await client.CreateUserAsync(user.Id, await MapUserAsync(user, ct), ct);
+        var created = await _client.CreateUserAsync(user.Id, await MapUserAsync(user, ct), ct);
         user.SkidataUserId = created.UserId;
         user.Touch();
         logger.LogInformation("SKIDATA user created {LocalId} -> {RemoteId}", user.Id, created.UserId);
@@ -165,7 +203,7 @@ public sealed class SkidataParkingLogicClient(
             Email = user.Email,
             ExternalContactId = user.ExternalContactId ?? user.Id.ToString("N")
         };
-        if (_opt.CustomerLinkField.Equals("group", StringComparison.OrdinalIgnoreCase))
+        if (string.Equals(_cfg.CustomerLinkField, "group", StringComparison.OrdinalIgnoreCase))
             dto.GroupCustomerId = customerRemoteId;
         else
             dto.B2bCustomerId = customerRemoteId;
@@ -176,7 +214,7 @@ public sealed class SkidataParkingLogicClient(
 
     private async Task<string> HandleParkingCardAsync(Guid id, PropagationOperation op, CancellationToken ct)
     {
-        var facility = RequireFacility();
+        var facility = _cfg.FacilityNumber!;
         var card = await db.ParkingCards.Include(c => c.User).ThenInclude(u => u!.Customer)
             .FirstOrDefaultAsync(c => c.Id == id, ct)
             ?? throw new InvalidOperationException($"ParkingCard {id} not found for propagation");
@@ -189,7 +227,7 @@ public sealed class SkidataParkingLogicClient(
                 break;
             case PropagationOperation.Update:
                 if (card.SkidataCardId is Guid updId)
-                    await client.UpdateParkingCardAsync(facility, updId, new UpdateParkingCard
+                    await _client.UpdateParkingCardAsync(facility, updId, new UpdateParkingCard
                     {
                         ValidFrom = ToDate(card.StartDate),
                         ValidTo = ToDate(card.EndDate),
@@ -199,24 +237,24 @@ public sealed class SkidataParkingLogicClient(
                     await EnsureParkingCardAsync(facility, card, ct);
                 break;
             case PropagationOperation.Block:
-                await client.BlockParkingCardAsync(facility, await EnsureParkingCardAsync(facility, card, ct),
+                await _client.BlockParkingCardAsync(facility, await EnsureParkingCardAsync(facility, card, ct),
                     new BlockParkingCard { StartDate = today }, ct);
                 break;
             case PropagationOperation.Unblock:
-                if (card.SkidataCardId is Guid unId) await client.UnblockParkingCardAsync(facility, unId, ct);
+                if (card.SkidataCardId is Guid unId) await _client.UnblockParkingCardAsync(facility, unId, ct);
                 break;
             case PropagationOperation.Suspend:
-                await client.SuspendParkingCardAsync(facility, await EnsureParkingCardAsync(facility, card, ct),
+                await _client.SuspendParkingCardAsync(facility, await EnsureParkingCardAsync(facility, card, ct),
                     new SuspendParkingCard { StartDate = ToDate(card.StartDate), EndDate = ToDate(card.EndDate) }, ct);
                 break;
             case PropagationOperation.Resume:
-                if (card.SkidataCardId is Guid reId) await client.ResumeParkingCardAsync(facility, reId, ct);
+                if (card.SkidataCardId is Guid reId) await _client.ResumeParkingCardAsync(facility, reId, ct);
                 break;
             case PropagationOperation.Anonymize:
-                if (card.SkidataCardId is Guid anId) await client.AnonymizeParkingCardAsync(facility, anId, ct);
+                if (card.SkidataCardId is Guid anId) await _client.AnonymizeParkingCardAsync(facility, anId, ct);
                 break;
             case PropagationOperation.Delete:
-                if (card.SkidataCardId is Guid delId) await client.DeleteParkingCardAsync(facility, delId, ct);
+                if (card.SkidataCardId is Guid delId) await _client.DeleteParkingCardAsync(facility, delId, ct);
                 break;
             default:
                 logger.LogWarning("Unsupported parking card operation {Op}", op);
@@ -241,9 +279,9 @@ public sealed class SkidataParkingLogicClient(
             ExternalCardId = card.ExternalCardId ?? card.Id.ToString("N"),
             PrimaryId = QrIdentification(card)
         };
-        if (_opt.ParkingProductId is Guid pid) body.ProductId = pid;
+        if (_cfg.ParkingProductId is Guid pid) body.ProductId = pid;
 
-        var created = await client.CreateParkingCardAsync(facility, card.Id, body, ct);
+        var created = await _client.CreateParkingCardAsync(facility, card.Id, body, ct);
         card.SkidataCardId = created.ParkingCardId;
         card.Touch();
         logger.LogInformation("SKIDATA parking card created {LocalId} -> {RemoteId}", card.Id, created.ParkingCardId);
@@ -252,8 +290,8 @@ public sealed class SkidataParkingLogicClient(
 
     private Identification QrIdentification(ParkingCard card) => new()
     {
-        Type = _opt.QrIdentificationType,
-        SubType = _opt.QrIdentificationSubType,
+        Type = NonEmpty(_cfg.QrIdentificationType, "EXT"),
+        SubType = _cfg.QrIdentificationSubType ?? string.Empty,
         Value = card.QrPayload
     };
 
@@ -261,7 +299,7 @@ public sealed class SkidataParkingLogicClient(
 
     private async Task<string> HandleValueCardAsync(Guid id, PropagationOperation op, CancellationToken ct)
     {
-        var facility = RequireFacility();
+        var facility = _cfg.FacilityNumber!;
         var card = await db.ValueCards.Include(c => c.User).ThenInclude(u => u!.Customer)
             .FirstOrDefaultAsync(c => c.Id == id, ct)
             ?? throw new InvalidOperationException($"ValueCard {id} not found for propagation");
@@ -274,17 +312,17 @@ public sealed class SkidataParkingLogicClient(
                 if (card.SkidataCardId is null) await EnsureValueCardAsync(facility, card, ct);
                 break;
             case PropagationOperation.Block:
-                await client.BlockValueCardAsync(facility, await EnsureValueCardAsync(facility, card, ct),
+                await _client.BlockValueCardAsync(facility, await EnsureValueCardAsync(facility, card, ct),
                     new BlockValueCard { StartDate = today }, ct);
                 break;
             case PropagationOperation.Unblock:
-                if (card.SkidataCardId is Guid unId) await client.UnblockValueCardAsync(facility, unId, ct);
+                if (card.SkidataCardId is Guid unId) await _client.UnblockValueCardAsync(facility, unId, ct);
                 break;
             case PropagationOperation.Anonymize:
-                if (card.SkidataCardId is Guid anId) await client.AnonymizeValueCardAsync(facility, anId, ct);
+                if (card.SkidataCardId is Guid anId) await _client.AnonymizeValueCardAsync(facility, anId, ct);
                 break;
             case PropagationOperation.Delete:
-                if (card.SkidataCardId is Guid delId) await client.DeleteValueCardAsync(facility, delId, ct);
+                if (card.SkidataCardId is Guid delId) await _client.DeleteValueCardAsync(facility, delId, ct);
                 break;
             default:
                 logger.LogWarning("Unsupported value card operation {Op}", op);
@@ -306,9 +344,9 @@ public sealed class SkidataParkingLogicClient(
             UserId = userRemoteId,
             ExternalCardId = card.ExternalCardId ?? card.Id.ToString("N")
         };
-        if (_opt.ValueProductId is Guid pid) body.ProductId = pid;
+        if (_cfg.ValueProductId is Guid pid) body.ProductId = pid;
 
-        var created = await client.CreateValueCardAsync(facility, card.Id, body, ct);
+        var created = await _client.CreateValueCardAsync(facility, card.Id, body, ct);
         card.SkidataCardId = created.ValueCardId;
         card.Touch();
         logger.LogInformation("SKIDATA value card created {LocalId} -> {RemoteId}", card.Id, created.ValueCardId);
@@ -316,9 +354,6 @@ public sealed class SkidataParkingLogicClient(
     }
 
     // ---- Helpers -----------------------------------------------------------
-
-    private string RequireFacility() =>
-        _opt.FacilityNumber ?? throw new InvalidOperationException("ParkingLogic:Skidata:FacilityNumber is not configured");
 
     private static DateTimeOffset ToDate(DateOnly d) =>
         new(d.ToDateTime(TimeOnly.MinValue), TimeSpan.Zero);

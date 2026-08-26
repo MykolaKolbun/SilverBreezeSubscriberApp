@@ -26,6 +26,20 @@ public sealed class SettingsModel(AppDbContext db, ICredentialProtector protecto
     // Parking capacity
     [BindProperty] public int? ParkingCapacity { get; set; }
 
+    // SKIDATA sweb parking integration
+    [BindProperty] public bool SkidataEnabled { get; set; }
+    [BindProperty] public string? SkidataBaseUrl { get; set; }
+    [BindProperty] public string? SkidataUsername { get; set; }
+    [BindProperty] public string? SkidataPassword { get; set; }
+    [BindProperty] public string? SkidataFacilityNumber { get; set; }
+    [BindProperty] public string? SkidataParkingProductId { get; set; }
+    [BindProperty] public string? SkidataValueProductId { get; set; }
+    [BindProperty] public string? SkidataQrType { get; set; }
+    [BindProperty] public string? SkidataQrSubType { get; set; }
+    [BindProperty] public string? SkidataCustomerLinkField { get; set; }
+    public bool SkidataHasUsername { get; private set; }
+    public bool SkidataHasPassword { get; private set; }
+
     public string? Saved { get; private set; }
 
     public async Task OnGetAsync(CancellationToken ct) => await LoadAsync(ct);
@@ -47,6 +61,19 @@ public sealed class SettingsModel(AppDbContext db, ICredentialProtector protecto
 
         ParkingCapacity = await db.AdminConfigs.AsNoTracking()
             .Select(a => a.MaxActiveSubscriptions).FirstOrDefaultAsync(ct);
+
+        var sk = await db.ParkingIntegrationConfigs.AsNoTracking()
+            .FirstOrDefaultAsync(x => x.Id == ParkingIntegrationConfig.SingletonId, ct);
+        SkidataEnabled = sk?.Enabled ?? false;
+        SkidataBaseUrl = sk?.BaseUrl;
+        SkidataFacilityNumber = sk?.FacilityNumber;
+        SkidataParkingProductId = sk?.ParkingProductId?.ToString();
+        SkidataValueProductId = sk?.ValueProductId?.ToString();
+        SkidataQrType = sk?.QrIdentificationType ?? "EXT";
+        SkidataQrSubType = sk?.QrIdentificationSubType;
+        SkidataCustomerLinkField = sk?.CustomerLinkField ?? "b2b";
+        SkidataHasUsername = !string.IsNullOrEmpty(sk?.UsernameEncrypted);
+        SkidataHasPassword = !string.IsNullOrEmpty(sk?.PasswordEncrypted);
     }
 
     public async Task<IActionResult> OnPostFiscalAsync(CancellationToken ct)
@@ -88,6 +115,27 @@ public sealed class SettingsModel(AppDbContext db, ICredentialProtector protecto
             await db.SaveChangesAsync(ct);
         }
         Saved = "parking";
+        await LoadAsync(ct);
+        return Page();
+    }
+
+    public async Task<IActionResult> OnPostSkidataAsync(CancellationToken ct)
+    {
+        var row = await db.ParkingIntegrationConfigs.FindAsync([ParkingIntegrationConfig.SingletonId], ct)
+                  ?? db.ParkingIntegrationConfigs.Add(new ParkingIntegrationConfig()).Entity;
+        row.Enabled = SkidataEnabled;
+        row.BaseUrl = string.IsNullOrWhiteSpace(SkidataBaseUrl) ? row.BaseUrl : SkidataBaseUrl.Trim();
+        row.FacilityNumber = string.IsNullOrWhiteSpace(SkidataFacilityNumber) ? row.FacilityNumber : SkidataFacilityNumber.Trim();
+        row.ParkingProductId = Guid.TryParse(SkidataParkingProductId, out var pp) ? pp : null;
+        row.ValueProductId = Guid.TryParse(SkidataValueProductId, out var vp) ? vp : null;
+        row.QrIdentificationType = string.IsNullOrWhiteSpace(SkidataQrType) ? "EXT" : SkidataQrType.Trim();
+        row.QrIdentificationSubType = string.IsNullOrWhiteSpace(SkidataQrSubType) ? null : SkidataQrSubType.Trim();
+        row.CustomerLinkField = string.Equals(SkidataCustomerLinkField, "group", StringComparison.OrdinalIgnoreCase) ? "group" : "b2b";
+        if (!string.IsNullOrWhiteSpace(SkidataUsername)) row.UsernameEncrypted = protector.Protect(SkidataUsername.Trim());
+        if (!string.IsNullOrWhiteSpace(SkidataPassword)) row.PasswordEncrypted = protector.Protect(SkidataPassword.Trim());
+        row.UpdatedAt = DateTimeOffset.UtcNow;
+        await db.SaveChangesAsync(ct);
+        Saved = "skidata";
         await LoadAsync(ct);
         return Page();
     }
