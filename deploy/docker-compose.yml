@@ -46,14 +46,14 @@ services:
       Subscription__MaxActiveSubscriptions: ${MAX_ACTIVE_SUBSCRIPTIONS:-50}
       # SKIDATA sweb(R) Subscribe API. Blank BaseUrl/credentials/facility → the API
       # keeps the logging stub (no push). Username/Password are secrets from .env.
-      ParkingLogic__Skidata__BaseUrl: ${SKIDATA_BASE_URL}
-      ParkingLogic__Skidata__Username: ${SKIDATA_USERNAME}
-      ParkingLogic__Skidata__Password: ${SKIDATA_PASSWORD}
-      ParkingLogic__Skidata__FacilityNumber: ${SKIDATA_FACILITY_NUMBER}
-      ParkingLogic__Skidata__ParkingProductId: ${SKIDATA_PARKING_PRODUCT_ID}
-      ParkingLogic__Skidata__ValueProductId: ${SKIDATA_VALUE_PRODUCT_ID}
+      ParkingLogic__Skidata__BaseUrl: ${SKIDATA_BASE_URL:-}
+      ParkingLogic__Skidata__Username: ${SKIDATA_USERNAME:-}
+      ParkingLogic__Skidata__Password: ${SKIDATA_PASSWORD:-}
+      ParkingLogic__Skidata__FacilityNumber: ${SKIDATA_FACILITY_NUMBER:-}
+      ParkingLogic__Skidata__ParkingProductId: ${SKIDATA_PARKING_PRODUCT_ID:-}
+      ParkingLogic__Skidata__ValueProductId: ${SKIDATA_VALUE_PRODUCT_ID:-}
       ParkingLogic__Skidata__QrIdentificationType: ${SKIDATA_QR_ID_TYPE:-EXT}
-      ParkingLogic__Skidata__QrIdentificationSubType: ${SKIDATA_QR_ID_SUBTYPE}
+      ParkingLogic__Skidata__QrIdentificationSubType: ${SKIDATA_QR_ID_SUBTYPE:-}
       ParkingLogic__Skidata__CustomerLinkField: ${SKIDATA_CUSTOMER_LINK_FIELD:-b2b}
     volumes:
       # Data Protection keys that encrypt the iPay SignKey — persisted so restarts
