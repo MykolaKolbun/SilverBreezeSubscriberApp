@@ -14,6 +14,7 @@ public interface IAppDbContext
     DbSet<User> Users { get; }
     DbSet<ParkingCard> ParkingCards { get; }
     DbSet<ValueCard> ValueCards { get; }
+    DbSet<Vehicle> Vehicles { get; }
     DbSet<AppAccount> AppAccounts { get; }
     DbSet<LoginOtp> LoginOtps { get; }
     DbSet<OutboxMessage> OutboxMessages { get; }

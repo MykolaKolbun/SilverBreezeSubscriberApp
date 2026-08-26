@@ -18,5 +18,11 @@ public class SubscriptionPlan : Entity
     /// <summary>Validity length of the card issued for this plan, in days.</summary>
     public int DurationDays { get; set; }
 
+    /// <summary>
+    /// SKIDATA sweb product/article id issued for this plan — used as
+    /// <c>CreateParkingCard.productId</c> when the card is pushed to the parking system.
+    /// </summary>
+    public string? ArticleId { get; set; }
+
     public bool IsActive { get; set; } = true;
 }

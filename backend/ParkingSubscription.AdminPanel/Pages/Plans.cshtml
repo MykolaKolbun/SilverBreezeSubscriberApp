@@ -1,0 +1,73 @@
+@page
+@model ParkingSubscription.AdminPanel.Pages.PlansModel
+@{
+    ViewData["Title"] = "Тарифи";
+}
+<div class="page-head">
+    <h2>Тарифи</h2>
+    <span class="muted">Абонементи та їх sweb Article ID</span>
+</div>
+
+@if (Model.Error != null) { <div class="card sect"><div class="error">@Model.Error</div></div> }
+@if (Model.Saved != null) { <div class="ok-msg" style="margin-bottom:12px;">Збережено.</div> }
+
+<div class="card" style="margin-bottom:16px;">
+    <table class="grid">
+        <thead>
+            <tr>
+                <th>Код</th>
+                <th>Назва</th>
+                <th>Ціна, ₴</th>
+                <th>Днів</th>
+                <th>Article ID (sweb)</th>
+                <th>Активний</th>
+                <th></th>
+            </tr>
+        </thead>
+        <tbody>
+        @if (Model.Plans.Count == 0)
+        {
+            <tr><td colspan="7" class="muted center">Тарифів ще немає.</td></tr>
+        }
+        @foreach (var p in Model.Plans)
+        {
+            <tr>
+                <td class="mono">@p.Code</td>
+                <td><form method="post" asp-page-handler="Save" id="f-@p.Id">
+                    <input type="hidden" name="id" value="@p.Id" />
+                    <input type="text" name="name" value="@p.Name" style="width:100%;" />
+                </form></td>
+                <td><input type="number" step="0.01" min="0" name="price" value="@ParkingSubscription.AdminPanel.Pages.PlansModel.PriceUah(p.PriceMinor)" form="f-@p.Id" style="width:90px;" /></td>
+                <td><input type="number" min="1" name="durationDays" value="@p.DurationDays" form="f-@p.Id" style="width:70px;" /></td>
+                <td><input type="text" name="articleId" value="@p.ArticleId" placeholder="—" form="f-@p.Id" style="width:100%;" /></td>
+                <td class="center"><input type="checkbox" name="isActive" value="true" @(p.IsActive ? "checked" : "") form="f-@p.Id" /></td>
+                <td style="white-space:nowrap;">
+                    <button type="submit" form="f-@p.Id" class="btn-sm">Зберегти</button>
+                    <button type="submit" form="d-@p.Id" class="btn-sm btn-danger">Видалити</button>
+                    <form method="post" asp-page-handler="Delete" id="d-@p.Id" style="display:none;">
+                        <input type="hidden" name="id" value="@p.Id" />
+                    </form>
+                </td>
+            </tr>
+        }
+        </tbody>
+    </table>
+</div>
+
+<div class="card sect" style="max-width:520px;">
+    <h3>Новий тариф</h3>
+    <form method="post" asp-page-handler="Add" class="form">
+        <label>Код</label>
+        <input type="text" asp-for="NewCode" placeholder="напр. MONTHLY" />
+        <label>Назва</label>
+        <input type="text" asp-for="NewName" placeholder="Місячний" />
+        <label>Ціна, ₴</label>
+        <input type="number" step="0.01" min="0" asp-for="NewPrice" placeholder="900" />
+        <label>Тривалість, днів</label>
+        <input type="number" min="1" asp-for="NewDurationDays" placeholder="30" />
+        <label>Article ID (sweb productId)</label>
+        <input type="text" asp-for="NewArticleId" placeholder="UUID або код артикула" />
+        <label class="check"><input type="checkbox" asp-for="NewActive" /> Активний</label>
+        <button type="submit">Додати</button>
+    </form>
+</div>

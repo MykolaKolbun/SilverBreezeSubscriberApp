@@ -32,11 +32,6 @@ public sealed class SettingsModel(AppDbContext db, ICredentialProtector protecto
     [BindProperty] public string? SkidataUsername { get; set; }
     [BindProperty] public string? SkidataPassword { get; set; }
     [BindProperty] public string? SkidataFacilityNumber { get; set; }
-    [BindProperty] public string? SkidataParkingProductId { get; set; }
-    [BindProperty] public string? SkidataValueProductId { get; set; }
-    [BindProperty] public string? SkidataQrType { get; set; }
-    [BindProperty] public string? SkidataQrSubType { get; set; }
-    [BindProperty] public string? SkidataCustomerLinkField { get; set; }
     public bool SkidataHasUsername { get; private set; }
     public bool SkidataHasPassword { get; private set; }
 
@@ -67,11 +62,6 @@ public sealed class SettingsModel(AppDbContext db, ICredentialProtector protecto
         SkidataEnabled = sk?.Enabled ?? false;
         SkidataBaseUrl = sk?.BaseUrl;
         SkidataFacilityNumber = sk?.FacilityNumber;
-        SkidataParkingProductId = sk?.ParkingProductId?.ToString();
-        SkidataValueProductId = sk?.ValueProductId?.ToString();
-        SkidataQrType = sk?.QrIdentificationType ?? "EXT";
-        SkidataQrSubType = sk?.QrIdentificationSubType;
-        SkidataCustomerLinkField = sk?.CustomerLinkField ?? "b2b";
         SkidataHasUsername = !string.IsNullOrEmpty(sk?.UsernameEncrypted);
         SkidataHasPassword = !string.IsNullOrEmpty(sk?.PasswordEncrypted);
     }
@@ -126,11 +116,6 @@ public sealed class SettingsModel(AppDbContext db, ICredentialProtector protecto
         row.Enabled = SkidataEnabled;
         row.BaseUrl = string.IsNullOrWhiteSpace(SkidataBaseUrl) ? row.BaseUrl : SkidataBaseUrl.Trim();
         row.FacilityNumber = string.IsNullOrWhiteSpace(SkidataFacilityNumber) ? row.FacilityNumber : SkidataFacilityNumber.Trim();
-        row.ParkingProductId = Guid.TryParse(SkidataParkingProductId, out var pp) ? pp : null;
-        row.ValueProductId = Guid.TryParse(SkidataValueProductId, out var vp) ? vp : null;
-        row.QrIdentificationType = string.IsNullOrWhiteSpace(SkidataQrType) ? "EXT" : SkidataQrType.Trim();
-        row.QrIdentificationSubType = string.IsNullOrWhiteSpace(SkidataQrSubType) ? null : SkidataQrSubType.Trim();
-        row.CustomerLinkField = string.Equals(SkidataCustomerLinkField, "group", StringComparison.OrdinalIgnoreCase) ? "group" : "b2b";
         if (!string.IsNullOrWhiteSpace(SkidataUsername)) row.UsernameEncrypted = protector.Protect(SkidataUsername.Trim());
         if (!string.IsNullOrWhiteSpace(SkidataPassword)) row.PasswordEncrypted = protector.Protect(SkidataPassword.Trim());
         row.UpdatedAt = DateTimeOffset.UtcNow;

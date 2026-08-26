@@ -106,8 +106,14 @@ public sealed class SkidataParkingLogicClient(
                 if (customer.SkidataCustomerId is Guid anId) await _client.AnonymizeCustomerAsync(anId, ct);
                 break;
             case PropagationOperation.Delete:
+            {
+                // sweb requires deletion in reverse order: cards -> users -> customer.
+                var facility = _cfg.FacilityNumber!;
+                var users = await db.Users.Where(u => u.CustomerId == customer.Id).ToListAsync(ct);
+                foreach (var u in users) await DeleteUserCascadeAsync(u, facility, ct);
                 if (customer.SkidataCustomerId is Guid delId) await _client.DeleteCustomerAsync(delId, ct);
                 break;
+            }
             default:
                 logger.LogWarning("Unsupported customer operation {Op}", op);
                 break;
@@ -169,7 +175,8 @@ public sealed class SkidataParkingLogicClient(
                 if (user.SkidataUserId is Guid anId) await _client.AnonymizeUserAsync(anId, ct);
                 break;
             case PropagationOperation.Delete:
-                if (user.SkidataUserId is Guid delId) await _client.DeleteUserAsync(delId, ct);
+                // Reverse order: delete the user's cards before the user itself.
+                await DeleteUserCascadeAsync(user, _cfg.FacilityNumber!, ct);
                 break;
             default:
                 logger.LogWarning("Unsupported user operation {Op}", op);
@@ -279,13 +286,34 @@ public sealed class SkidataParkingLogicClient(
             ExternalCardId = card.ExternalCardId ?? card.Id.ToString("N"),
             PrimaryId = QrIdentification(card)
         };
-        if (_cfg.ParkingProductId is Guid pid) body.ProductId = pid;
+        var productId = await ResolveProductIdAsync(card, ct);
+        if (productId is Guid pid) body.ProductId = pid;
 
         var created = await _client.CreateParkingCardAsync(facility, card.Id, body, ct);
         card.SkidataCardId = created.ParkingCardId;
+        if (productId is Guid p) card.ProductId = p;
         card.Touch();
         logger.LogInformation("SKIDATA parking card created {LocalId} -> {RemoteId}", card.Id, created.ParkingCardId);
         return created.ParkingCardId;
+    }
+
+    /// <summary>
+    /// The sweb productId for a card comes from its plan's <see cref="SubscriptionPlan.ArticleId"/>
+    /// (a UUID). Falls back to a productId already stored on the card. Null → the field is omitted.
+    /// </summary>
+    private async Task<Guid?> ResolveProductIdAsync(ParkingCard card, CancellationToken ct)
+    {
+        if (card.SubscriptionPlanId is Guid planId)
+        {
+            var articleId = await db.SubscriptionPlans.AsNoTracking()
+                .Where(p => p.Id == planId).Select(p => p.ArticleId).FirstOrDefaultAsync(ct);
+            if (Guid.TryParse(articleId, out var fromPlan)) return fromPlan;
+            if (!string.IsNullOrWhiteSpace(articleId))
+                logger.LogWarning("Plan {PlanId} ArticleId '{ArticleId}' is not a valid sweb productId (GUID)", planId, articleId);
+        }
+        if (card.ProductId is Guid stored) return stored;
+        logger.LogWarning("No sweb productId (ArticleId) for card {CardId} — creating card without productId", card.Id);
+        return null;
     }
 
     private Identification QrIdentification(ParkingCard card) => new()
@@ -351,6 +379,24 @@ public sealed class SkidataParkingLogicClient(
         card.Touch();
         logger.LogInformation("SKIDATA value card created {LocalId} -> {RemoteId}", card.Id, created.ValueCardId);
         return created.ValueCardId;
+    }
+
+    // ---- Cascade delete (reverse order: cards -> user -> customer) ----------
+
+    /// <summary>Deletes a user's cards in sweb, then the user itself.</summary>
+    private async Task DeleteUserCascadeAsync(User user, string facility, CancellationToken ct)
+    {
+        var parkingCards = await db.ParkingCards
+            .Where(c => c.UserId == user.Id && c.SkidataCardId != null).ToListAsync(ct);
+        foreach (var c in parkingCards)
+            if (c.SkidataCardId is Guid pcid) await _client.DeleteParkingCardAsync(facility, pcid, ct);
+
+        var valueCards = await db.ValueCards
+            .Where(c => c.UserId == user.Id && c.SkidataCardId != null).ToListAsync(ct);
+        foreach (var c in valueCards)
+            if (c.SkidataCardId is Guid vcid) await _client.DeleteValueCardAsync(facility, vcid, ct);
+
+        if (user.SkidataUserId is Guid uid) await _client.DeleteUserAsync(uid, ct);
     }
 
     // ---- Helpers -----------------------------------------------------------

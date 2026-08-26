@@ -12,6 +12,7 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options)
     public DbSet<User> Users => Set<User>();
     public DbSet<ParkingCard> ParkingCards => Set<ParkingCard>();
     public DbSet<ValueCard> ValueCards => Set<ValueCard>();
+    public DbSet<Vehicle> Vehicles => Set<Vehicle>();
     public DbSet<AppAccount> AppAccounts => Set<AppAccount>();
     public DbSet<LoginOtp> LoginOtps => Set<LoginOtp>();
     public DbSet<OutboxMessage> OutboxMessages => Set<OutboxMessage>();
@@ -30,6 +31,7 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options)
         {
             e.HasIndex(x => x.ExternalContactId);
             e.HasIndex(x => x.UpdatedAt);
+            e.Property(x => x.Mobile).HasMaxLength(64);
             e.HasMany(x => x.Users).WithOne(x => x.Customer!).HasForeignKey(x => x.CustomerId);
         });
 
@@ -38,8 +40,20 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options)
             e.HasIndex(x => x.ExternalContactId);
             e.HasIndex(x => x.UpdatedAt);
             e.HasIndex(x => x.CustomerId);
+            e.Property(x => x.Mobile).HasMaxLength(64);
             e.HasMany(x => x.ParkingCards).WithOne(x => x.User!).HasForeignKey(x => x.UserId);
             e.HasMany(x => x.ValueCards).WithOne(x => x.User!).HasForeignKey(x => x.UserId);
+            e.HasMany(x => x.Vehicles).WithOne(x => x.User!).HasForeignKey(x => x.UserId);
+        });
+
+        b.Entity<Vehicle>(e =>
+        {
+            e.HasIndex(x => x.UserId);
+            e.HasIndex(x => x.PlateNumber);
+            e.Property(x => x.PlateNumber).HasMaxLength(32);
+            e.Property(x => x.Country).HasMaxLength(2);
+            e.Property(x => x.Make).HasMaxLength(32);
+            e.Property(x => x.Model).HasMaxLength(32);
         });
 
         b.Entity<ParkingCard>(e =>
@@ -48,6 +62,15 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options)
             e.HasIndex(x => x.UpdatedAt);
             e.HasIndex(x => new { x.UserId, x.Status });
             e.Property(x => x.QrPayload).HasMaxLength(256);
+            e.Property(x => x.ProductName).HasMaxLength(512);
+            e.OwnsMany(x => x.CarParks, o => o.ToTable("ParkingCardCarParks"));
+            e.OwnsMany(x => x.SecondaryIds, o =>
+            {
+                o.ToTable("ParkingCardSecondaryIds");
+                o.Property(i => i.Type).HasMaxLength(256);
+                o.Property(i => i.SubType).HasMaxLength(256);
+                o.Property(i => i.Value).HasMaxLength(256);
+            });
         });
 
         b.Entity<ValueCard>(e =>
@@ -89,6 +112,9 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options)
         {
             e.HasIndex(x => x.Code).IsUnique();
             e.Property(x => x.Currency).HasMaxLength(3);
+            e.Property(x => x.Code).HasMaxLength(64);
+            e.Property(x => x.Name).HasMaxLength(128);
+            e.Property(x => x.ArticleId).HasMaxLength(128);
         });
 
         b.Entity<Payment>(e =>

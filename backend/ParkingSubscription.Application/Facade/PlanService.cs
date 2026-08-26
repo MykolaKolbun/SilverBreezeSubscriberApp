@@ -15,7 +15,7 @@ public sealed class PlanService(IAppDbContext db) : IPlanService
 {
     public async Task<IReadOnlyList<PlanDto>> GetActiveAsync(CancellationToken ct = default) =>
         await db.SubscriptionPlans.AsNoTracking()
-            .Where(p => p.IsActive)
+            .Where(p => p.IsActive && !p.IsDeleted)
             .OrderBy(p => p.PriceMinor)
             .Select(p => new PlanDto(p.Id, p.Code, p.Name, p.PriceMinor, p.Currency, p.DurationDays))
             .ToListAsync(ct);

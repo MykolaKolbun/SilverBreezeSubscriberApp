@@ -21,11 +21,39 @@ public class ParkingCard : Entity
     public Guid? SubscriptionPlanId { get; set; }
     public SubscriptionPlan? SubscriptionPlan { get; set; }
 
+    /// <summary>SKIDATA product UUID this card was issued against (sweb productId).</summary>
+    public Guid? ProductId { get; set; }
+
+    /// <summary>Human-readable product name from sweb (sweb productName).</summary>
+    public string? ProductName { get; set; }
+
     public DateOnly StartDate { get; set; }
     public DateOnly EndDate { get; set; }
 
     public CardStatus Status { get; set; } = CardStatus.Active;
     public AnonymizationState AnonymizationState { get; set; } = AnonymizationState.None;
+
+    /// <summary>Granted single neutral access permission (sweb singleNeutral).</summary>
+    public bool SingleNeutral { get; set; }
+
+    /// <summary>Card was canceled in the parking system (sweb GetParkingCard.canceled).</summary>
+    public bool Canceled { get; set; }
+
+    /// <summary>Date the card gets blocked in the parking system (sweb blockDate).</summary>
+    public DateOnly? BlockDate { get; set; }
+
+    /// <summary>Production reason from sweb (new vs extended ticket).</summary>
+    public CardProductionReason? ProductionReason { get; set; }
+
+    /// <summary>Suspension window (sweb Suspension.startDate/endDate); null when not suspended.</summary>
+    public DateOnly? SuspensionStartDate { get; set; }
+    public DateOnly? SuspensionEndDate { get; set; }
+
+    /// <summary>Car parks this card is valid for, with entry permission (sweb carParks).</summary>
+    public ICollection<CardCarPark> CarParks { get; set; } = new List<CardCarPark>();
+
+    /// <summary>Secondary identifications on the card (sweb secondaryIds).</summary>
+    public ICollection<CardIdentification> SecondaryIds { get; set; } = new List<CardIdentification>();
 
     /// <summary>Payload encoded into the QR code — the card identifier (ТЗ §7).</summary>
     public string QrPayload { get; set; } = string.Empty;

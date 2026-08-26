@@ -56,3 +56,19 @@ public enum PropagationOperation
     Resume = 6,
     Anonymize = 7
 }
+
+/// <summary>Why a parking card was produced (sweb ProductionReason).</summary>
+public enum CardProductionReason
+{
+    NewTicket = 0,
+    ExtendedTicket = 1
+}
+
+/// <summary>Access granted for a car park entry (sweb EntryType on CarPark).</summary>
+public enum CarParkEntryType
+{
+    AccessNotGranted = 0,
+    AccessGrantedWithTimeWindow = 1,
+    AccessGrantedNoTimeWindow = 2,
+    AccessGrantedWithTimeWindowCarParkFull = 3
+}

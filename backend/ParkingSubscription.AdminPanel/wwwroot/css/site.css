@@ -173,6 +173,8 @@ main { flex: 1; display: flex; flex-direction: column; min-width: 0; }
 }
 .grid tbody tr:last-child td { border-bottom: none; }
 .grid tbody tr:hover td { background: #FafBfc; }
+.grid tbody tr.row-link { cursor: pointer; }
+.grid tbody tr.row-link:hover td { background: rgba(0, 155, 221, 0.06); }
 
 .badge {
     display: inline-block;
@@ -295,3 +297,24 @@ button:hover { background: var(--sb-blue-dark); }
     color: var(--sb-dark);
 }
 .hint { margin: -8px 0 12px; font-size: 12px; }
+
+/* ---- Small table buttons (Plans) ---- */
+.grid input[type="text"], .grid input[type="number"] {
+    height: 32px;
+    padding: 0 8px;
+    border: 1px solid #CCD0D6;
+    border-radius: 6px;
+    font-size: 13px;
+    background: #fff;
+    color: var(--sb-black);
+}
+.grid input:focus { outline: none; border-color: var(--sb-blue); }
+.btn-sm {
+    height: 30px;
+    padding: 0 12px;
+    border-radius: 6px;
+    font-size: 12px;
+    font-weight: 600;
+}
+.btn-danger { background: #D64545; }
+.btn-danger:hover { background: #b93a3a; }

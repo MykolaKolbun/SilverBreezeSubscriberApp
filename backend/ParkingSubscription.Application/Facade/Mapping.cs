@@ -19,4 +19,7 @@ public static class Mapping
 
     public static ValueCardDto ToDto(this ValueCard v) => new(
         v.Id, v.UserId, v.ExternalCardId, v.BalanceMinor, v.Currency, v.Status, v.IsDeleted, v.UpdatedAt);
+
+    public static VehicleDto ToDto(this Vehicle v) => new(
+        v.Id, v.UserId, v.PlateNumber, v.Country, v.Make, v.Model, v.IsDeleted, v.UpdatedAt);
 }

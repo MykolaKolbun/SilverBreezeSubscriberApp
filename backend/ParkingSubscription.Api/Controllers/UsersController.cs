@@ -9,7 +9,7 @@ namespace ParkingSubscription.Api.Controllers;
 [ApiController]
 [Route("users")]
 [Authorize]
-public sealed class UsersController(IUserService users, IPaymentService payments) : ControllerBase
+public sealed class UsersController(IUserService users, IPaymentService payments, IVehicleService vehicles) : ControllerBase
 {
     [HttpPost]
     public async Task<ActionResult<UserDto>> Create(CreateUserRequest req, CancellationToken ct)
@@ -86,6 +86,11 @@ public sealed class UsersController(IUserService users, IPaymentService payments
     [HttpGet("{id:guid}/value-cards")]
     public async Task<ActionResult<PagedResult<ValueCardDto>>> ValueCards(Guid id, [FromQuery] string? pagingToken, CancellationToken ct) =>
         Ok(await users.GetValueCardsAsync(id, pagingToken, ct));
+
+    /// <summary>The user's registered vehicles (license plates), for the profile screen.</summary>
+    [HttpGet("{id:guid}/vehicles")]
+    public async Task<ActionResult<IReadOnlyList<VehicleDto>>> Vehicles(Guid id, CancellationToken ct) =>
+        Ok(await vehicles.GetByUserAsync(id, ct));
 
     /// <summary>The user's payment history (most recent first), for the profile "History" screen.</summary>
     [HttpGet("{id:guid}/payments")]

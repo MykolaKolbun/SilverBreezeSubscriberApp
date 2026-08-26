@@ -20,6 +20,7 @@ public static class DependencyInjection
         services.AddScoped<IUserService, UserService>();
         services.AddScoped<IParkingCardService, ParkingCardService>();
         services.AddScoped<IValueCardService, ValueCardService>();
+        services.AddScoped<IVehicleService, VehicleService>();
         services.AddScoped<IPaymentService, PaymentService>();
         services.AddScoped<IWalletAppService, WalletAppService>();
 

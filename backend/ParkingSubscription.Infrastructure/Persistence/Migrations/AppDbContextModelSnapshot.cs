@@ -173,6 +173,10 @@ namespace ParkingSubscription.Infrastructure.Persistence.Migrations
                     b.Property<bool>("IsDeleted")
                         .HasColumnType("boolean");
 
+                    b.Property<string>("Mobile")
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)");
+
                     b.Property<string>("Name")
                         .HasColumnType("text");
 
@@ -324,6 +328,12 @@ namespace ParkingSubscription.Infrastructure.Persistence.Migrations
                     b.Property<int>("AnonymizationState")
                         .HasColumnType("integer");
 
+                    b.Property<DateOnly?>("BlockDate")
+                        .HasColumnType("date");
+
+                    b.Property<bool>("Canceled")
+                        .HasColumnType("boolean");
+
                     b.Property<DateTimeOffset>("CreatedAt")
                         .HasColumnType("timestamp with time zone");
 
@@ -336,10 +346,23 @@ namespace ParkingSubscription.Infrastructure.Persistence.Migrations
                     b.Property<bool>("IsDeleted")
                         .HasColumnType("boolean");
 
+                    b.Property<Guid?>("ProductId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("ProductName")
+                        .HasMaxLength(512)
+                        .HasColumnType("character varying(512)");
+
+                    b.Property<int?>("ProductionReason")
+                        .HasColumnType("integer");
+
                     b.Property<string>("QrPayload")
                         .IsRequired()
                         .HasMaxLength(256)
                         .HasColumnType("character varying(256)");
+
+                    b.Property<bool>("SingleNeutral")
+                        .HasColumnType("boolean");
 
                     b.Property<Guid?>("SkidataCardId")
                         .HasColumnType("uuid");
@@ -352,6 +375,12 @@ namespace ParkingSubscription.Infrastructure.Persistence.Migrations
 
                     b.Property<Guid?>("SubscriptionPlanId")
                         .HasColumnType("uuid");
+
+                    b.Property<DateOnly?>("SuspensionEndDate")
+                        .HasColumnType("date");
+
+                    b.Property<DateOnly?>("SuspensionStartDate")
+                        .HasColumnType("date");
 
                     b.Property<DateTimeOffset>("UpdatedAt")
                         .HasColumnType("timestamp with time zone");
@@ -519,9 +548,14 @@ namespace ParkingSubscription.Infrastructure.Persistence.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uuid");
 
+                    b.Property<string>("ArticleId")
+                        .HasMaxLength(128)
+                        .HasColumnType("character varying(128)");
+
                     b.Property<string>("Code")
                         .IsRequired()
-                        .HasColumnType("text");
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)");
 
                     b.Property<DateTimeOffset>("CreatedAt")
                         .HasColumnType("timestamp with time zone");
@@ -542,7 +576,8 @@ namespace ParkingSubscription.Infrastructure.Persistence.Migrations
 
                     b.Property<string>("Name")
                         .IsRequired()
-                        .HasColumnType("text");
+                        .HasMaxLength(128)
+                        .HasColumnType("character varying(128)");
 
                     b.Property<long>("PriceMinor")
                         .HasColumnType("bigint");
@@ -566,6 +601,9 @@ namespace ParkingSubscription.Infrastructure.Persistence.Migrations
 
                     b.Property<int>("AnonymizationState")
                         .HasColumnType("integer");
+
+                    b.Property<bool>("CheckLp")
+                        .HasColumnType("boolean");
 
                     b.Property<DateTimeOffset>("CreatedAt")
                         .HasColumnType("timestamp with time zone");
@@ -591,8 +629,18 @@ namespace ParkingSubscription.Infrastructure.Persistence.Migrations
                     b.Property<bool>("IsSuspended")
                         .HasColumnType("boolean");
 
+                    b.Property<bool>("MatchEntryPlate")
+                        .HasColumnType("boolean");
+
+                    b.Property<string>("Mobile")
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)");
+
                     b.Property<string>("Name")
                         .HasColumnType("text");
+
+                    b.Property<bool>("PassageLp")
+                        .HasColumnType("boolean");
 
                     b.Property<Guid?>("SkidataUserId")
                         .HasColumnType("uuid");
@@ -660,6 +708,51 @@ namespace ParkingSubscription.Infrastructure.Persistence.Migrations
                     b.ToTable("ValueCards");
                 });
 
+            modelBuilder.Entity("ParkingSubscription.Domain.Entities.Vehicle", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("Country")
+                        .IsRequired()
+                        .HasMaxLength(2)
+                        .HasColumnType("character varying(2)");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("boolean");
+
+                    b.Property<string>("Make")
+                        .HasMaxLength(32)
+                        .HasColumnType("character varying(32)");
+
+                    b.Property<string>("Model")
+                        .HasMaxLength(32)
+                        .HasColumnType("character varying(32)");
+
+                    b.Property<string>("PlateNumber")
+                        .IsRequired()
+                        .HasMaxLength(32)
+                        .HasColumnType("character varying(32)");
+
+                    b.Property<DateTimeOffset>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uuid");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("PlateNumber");
+
+                    b.HasIndex("UserId");
+
+                    b.ToTable("Vehicles");
+                });
+
             modelBuilder.Entity("ParkingSubscription.Domain.Entities.AppAccount", b =>
                 {
                     b.HasOne("ParkingSubscription.Domain.Entities.User", "User")
@@ -682,6 +775,69 @@ namespace ParkingSubscription.Infrastructure.Persistence.Migrations
                         .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
+
+                    b.OwnsMany("ParkingSubscription.Domain.Entities.CardCarPark", "CarParks", b1 =>
+                        {
+                            b1.Property<Guid>("ParkingCardId")
+                                .HasColumnType("uuid");
+
+                            b1.Property<int>("Id")
+                                .ValueGeneratedOnAdd()
+                                .HasColumnType("integer");
+
+                            NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b1.Property<int>("Id"));
+
+                            b1.Property<int>("CarParkNumber")
+                                .HasColumnType("integer");
+
+                            b1.Property<int>("EntryType")
+                                .HasColumnType("integer");
+
+                            b1.HasKey("ParkingCardId", "Id");
+
+                            b1.ToTable("ParkingCardCarParks", (string)null);
+
+                            b1.WithOwner()
+                                .HasForeignKey("ParkingCardId");
+                        });
+
+                    b.OwnsMany("ParkingSubscription.Domain.Entities.CardIdentification", "SecondaryIds", b1 =>
+                        {
+                            b1.Property<Guid>("ParkingCardId")
+                                .HasColumnType("uuid");
+
+                            b1.Property<int>("Id")
+                                .ValueGeneratedOnAdd()
+                                .HasColumnType("integer");
+
+                            NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b1.Property<int>("Id"));
+
+                            b1.Property<string>("SubType")
+                                .IsRequired()
+                                .HasMaxLength(256)
+                                .HasColumnType("character varying(256)");
+
+                            b1.Property<string>("Type")
+                                .IsRequired()
+                                .HasMaxLength(256)
+                                .HasColumnType("character varying(256)");
+
+                            b1.Property<string>("Value")
+                                .IsRequired()
+                                .HasMaxLength(256)
+                                .HasColumnType("character varying(256)");
+
+                            b1.HasKey("ParkingCardId", "Id");
+
+                            b1.ToTable("ParkingCardSecondaryIds", (string)null);
+
+                            b1.WithOwner()
+                                .HasForeignKey("ParkingCardId");
+                        });
+
+                    b.Navigation("CarParks");
+
+                    b.Navigation("SecondaryIds");
 
                     b.Navigation("SubscriptionPlan");
 
@@ -735,6 +891,17 @@ namespace ParkingSubscription.Infrastructure.Persistence.Migrations
                     b.Navigation("User");
                 });
 
+            modelBuilder.Entity("ParkingSubscription.Domain.Entities.Vehicle", b =>
+                {
+                    b.HasOne("ParkingSubscription.Domain.Entities.User", "User")
+                        .WithMany("Vehicles")
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("User");
+                });
+
             modelBuilder.Entity("ParkingSubscription.Domain.Entities.Customer", b =>
                 {
                     b.Navigation("Users");
@@ -745,6 +912,8 @@ namespace ParkingSubscription.Infrastructure.Persistence.Migrations
                     b.Navigation("ParkingCards");
 
                     b.Navigation("ValueCards");
+
+                    b.Navigation("Vehicles");
                 });
 #pragma warning restore 612, 618
         }

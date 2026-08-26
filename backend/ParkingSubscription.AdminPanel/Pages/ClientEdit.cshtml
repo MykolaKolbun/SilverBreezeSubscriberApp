@@ -1,0 +1,91 @@
+@page "{id:guid?}"
+@model ParkingSubscription.AdminPanel.Pages.ClientEditModel
+@{
+    ViewData["Title"] = "Клієнт";
+}
+<div class="page-head">
+    <a asp-page="/Clients" class="muted" style="text-decoration:none;">← Клієнти</a>
+    <h2>Редагування клієнта</h2>
+</div>
+
+<div class="muted" style="margin:-8px 0 16px;">
+    ID @Model.Id.ToString()[..8] · @(Model.Email ?? "—")
+    @if (Model.HasActiveSubscription) { <span class="badge ok">Активний абонемент</span> } else { <span class="badge">Без абонемента</span> }
+    @if (Model.IsBlocked) { <span class="badge" style="color:#D64545;border-color:#D64545;">Заблокований</span> }
+    @if (Model.IsSuspended) { <span class="badge">Призупинений</span> }
+</div>
+
+<div class="settings-grid">
+
+    <div class="card sect">
+        <h3>Дані користувача</h3>
+        <form method="post" asp-page-handler="Save" class="form">
+            <label>Ім'я</label>
+            <input type="text" asp-for="FirstName" placeholder="—" />
+            <label>Прізвище</label>
+            <input type="text" asp-for="Surname" placeholder="—" />
+            <label>Email</label>
+            <input type="text" value="@(Model.Email ?? "")" disabled />
+            <div class="muted hint">Email — логін користувача, змінюється лише самим користувачем.</div>
+            <label>Мобільний телефон</label>
+            <input type="text" asp-for="Mobile" placeholder="+380…" />
+
+            <h3 style="margin-top:18px;">Політика в'їзду за номером</h3>
+            <label class="check"><input type="checkbox" asp-for="PassageLp" /> passageLP — в'їзд/виїзд лише за номером</label>
+            <label class="check"><input type="checkbox" asp-for="CheckLp" /> checkLP — номер разом із карткою</label>
+            <label class="check"><input type="checkbox" asp-for="MatchEntryPlate" /> matchEntryPlate — виїзд тим самим номером</label>
+
+            @if (Model.Saved == "user") { <div class="ok-msg">Збережено.</div> }
+            <button type="submit">Зберегти</button>
+        </form>
+    </div>
+
+    <div class="card sect">
+        <h3>Керування</h3>
+        <div class="form">
+            <div class="muted" style="margin-bottom:12px;">Блокування/призупинення синхронізуються з паркінгом.</div>
+            <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px;">
+                @if (!Model.IsBlocked)
+                {
+                    <form method="post" asp-page-handler="Block"><button type="submit">Заблокувати</button></form>
+                }
+                else
+                {
+                    <form method="post" asp-page-handler="Unblock"><button type="submit">Розблокувати</button></form>
+                }
+                @if (!Model.IsSuspended)
+                {
+                    <form method="post" asp-page-handler="Suspend"><button type="submit">Призупинити</button></form>
+                }
+                else
+                {
+                    <form method="post" asp-page-handler="Resume"><button type="submit">Відновити</button></form>
+                }
+            </div>
+            @if (Model.Saved is "blocked" or "unblocked" or "suspended" or "resumed") { <div class="ok-msg">Готово.</div> }
+
+            <h3 style="margin-top:6px;">Автомобілі</h3>
+            @if (Model.Vehicles.Count == 0)
+            {
+                <div class="muted">Немає доданих авто.</div>
+            }
+            else
+            {
+                <table class="grid">
+                    <thead><tr><th>Номер</th><th>Марка</th><th>Модель</th></tr></thead>
+                    <tbody>
+                    @foreach (var v in Model.Vehicles)
+                    {
+                        <tr>
+                            <td class="mono">@v.PlateNumber</td>
+                            <td>@(v.Make ?? "—")</td>
+                            <td>@(v.Model ?? "—")</td>
+                        </tr>
+                    }
+                    </tbody>
+                </table>
+            }
+        </div>
+    </div>
+
+</div>

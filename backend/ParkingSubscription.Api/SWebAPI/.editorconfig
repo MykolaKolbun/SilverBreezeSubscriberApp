@@ -1,0 +1,18 @@
+# NSwag-generated SKIDATA sweb client + models. Suppress the cosmetic generated-code
+# warnings here (instead of per-file #pragma walls) so the files stay readable.
+[*.cs]
+dotnet_diagnostic.CS0108.severity = none
+dotnet_diagnostic.CS0114.severity = none
+dotnet_diagnostic.CS0472.severity = none
+dotnet_diagnostic.CS0612.severity = none
+dotnet_diagnostic.CS0649.severity = none
+dotnet_diagnostic.CS1573.severity = none
+dotnet_diagnostic.CS1591.severity = none
+dotnet_diagnostic.CS8073.severity = none
+dotnet_diagnostic.CS3016.severity = none
+dotnet_diagnostic.CS8600.severity = none
+dotnet_diagnostic.CS8603.severity = none
+dotnet_diagnostic.CS8604.severity = none
+dotnet_diagnostic.CS8618.severity = none
+dotnet_diagnostic.CS8625.severity = none
+dotnet_diagnostic.CS8765.severity = none

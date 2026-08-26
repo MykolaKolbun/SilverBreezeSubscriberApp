@@ -41,3 +41,10 @@ public sealed record CreateValueCardRequest(Guid UserId, long BalanceMinor, stri
 public sealed record ValueCardDto(
     Guid Id, Guid UserId, string? ExternalCardId, long BalanceMinor, string Currency,
     CardStatus Status, bool IsDeleted, DateTimeOffset UpdatedAt);
+
+// ---- Vehicle (license plate for parking entry) ----
+public sealed record CreateVehicleRequest(Guid UserId, string PlateNumber, string? Country, string? Make, string? Model);
+public sealed record UpdateVehicleRequest(string? PlateNumber, string? Country, string? Make, string? Model);
+public sealed record VehicleDto(
+    Guid Id, Guid UserId, string PlateNumber, string Country, string? Make, string? Model,
+    bool IsDeleted, DateTimeOffset UpdatedAt);

@@ -31,7 +31,7 @@
         }
         @foreach (var c in Model.Clients)
         {
-            <tr>
+            <tr class="row-link" onclick="location.href='@Url.Page("/ClientEdit", new { id = c.Id })'">
                 <td class="mono">@c.Id.ToString()[..8]</td>
                 <td>@(string.IsNullOrWhiteSpace(c.Name) ? "—" : c.Name)</td>
                 <td>@(c.Email ?? "—")</td>

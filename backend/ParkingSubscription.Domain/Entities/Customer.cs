@@ -23,6 +23,9 @@ public class Customer : Entity
     public string? FirstName { get; set; }
     public string? Email { get; set; }
 
+    /// <summary>Mobile phone number (sweb Contact.mobile).</summary>
+    public string? Mobile { get; set; }
+
     public bool IsBlocked { get; set; }
 
     public ICollection<User> Users { get; set; } = new List<User>();
