@@ -517,6 +517,19 @@ export function ProfileScreen() {
             value={email ?? tr('profile.notSet')}
           />
 
+          {!app.profileComplete && (
+            <Text
+              style={{
+                fontFamily: fonts.inter500,
+                fontSize: 12,
+                lineHeight: 16,
+                color: t.volt,
+              }}
+            >
+              {tr('profile.completeHint')}
+            </Text>
+          )}
+
           <View style={{ flexDirection: 'row', gap: 10 }}>
             <View style={{ flex: 1, gap: 6 }}>
               <Text style={fieldLabel(t)}>{tr('profile.firstName')}</Text>

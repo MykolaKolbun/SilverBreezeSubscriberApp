@@ -109,6 +109,8 @@ interface AppState {
   // Profile (name + phone), bidirectional offline sync
   profileDraft: Profile;
   profileChanged: boolean;
+  // True once name + surname + phone are filled; required before buying a pass.
+  profileComplete: boolean;
   updateProfileField: (key: keyof Profile, value: string) => void;
   saveProfile: () => void;
 
@@ -398,6 +400,8 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     setAuthStatus('in');
     setScreen('pass');
     await loadData();
+    // After registration, nudge the user to complete their profile before buying.
+    if (!isProfileComplete()) promptCompleteProfile();
   };
 
   const authMsg = (e: unknown, fallbackKey: string) =>
@@ -461,7 +465,26 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   };
 
   // ---- navigation / buy ----
+  // Name is required to buy a pass; phone is optional (desirable, not gated).
+  const isProfileComplete = () => {
+    const p = profileRef.current;
+    return !!(p.firstName.trim() && p.surname.trim());
+  };
+
+  const promptCompleteProfile = () => {
+    Alert.alert(
+      translate(langRef.current, 'profile.completeTitle'),
+      translate(langRef.current, 'profile.completeBody')
+    );
+    setScreen('profile');
+  };
+
   const openPlans = () => {
+    // An incomplete profile can't buy a pass — send the user to fill it first.
+    if (!isProfileComplete()) {
+      promptCompleteProfile();
+      return;
+    }
     setStartDate(nextStartISO(cards));
     setPlanId((cur) => cur ?? plans[0]?.id ?? null);
     setScreen('plans');
@@ -485,6 +508,10 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   const confirmPayment = () => {
     const s = sessionRef.current;
     if (payState !== 'idle' || !s || !planId) return;
+    if (!isProfileComplete()) {
+      promptCompleteProfile();
+      return;
+    }
     setPayState('processing');
     (async () => {
       try {
@@ -780,6 +807,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       profileDraft.firstName !== profile.firstName ||
       profileDraft.surname !== profile.surname ||
       profileDraft.mobile !== profile.mobile,
+    profileComplete: !!(profile.firstName.trim() && profile.surname.trim()),
     updateProfileField,
     saveProfile,
 
