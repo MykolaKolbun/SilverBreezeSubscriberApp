@@ -23,7 +23,7 @@
     @if (Model.HasActiveSubscription) { <span class="badge ok">Активний абонемент</span> } else { <span class="badge">Без абонемента</span> }
 </div>
 
-<div class="settings-grid">
+<div class="client-grid">
 
     <div class="card sect">
         <h3>Дані користувача</h3>
@@ -39,86 +39,101 @@
             <input type="text" asp-for="Mobile" placeholder="+380…" />
 
             <h3 style="margin-top:18px;">Політика в'їзду за номером</h3>
-            <label class="check"><input type="checkbox" asp-for="PassageLp" /> passageLP — в'їзд/виїзд лише за номером</label>
-            <label class="check"><input type="checkbox" asp-for="CheckLp" /> checkLP — номер разом із карткою</label>
-            <label class="check"><input type="checkbox" asp-for="MatchEntryPlate" /> matchEntryPlate — виїзд тим самим номером</label>
+            @{ var hasVehicles = Model.Vehicles.Count > 0; }
+            @if (!hasVehicles)
+            {
+                <div class="muted hint">Доступно за наявності хоча б одного авто в профілі.</div>
+            }
+            <label class="check"><input type="checkbox" asp-for="PassageLp" disabled="@(!hasVehicles)" /> passageLP — дозволити проїзд по номеру авто</label>
+            <label class="check"><input type="checkbox" asp-for="CheckLp" disabled="@(!hasVehicles)" /> checkLP — перевіряти відповідність номера з профілем (в'їзд на іншому авто заборонено)</label>
+            <label class="check"><input type="checkbox" asp-for="MatchEntryPlate" disabled="@(!hasVehicles)" /> matchEntryPlate — виїзд лише на авто, яким був в'їзд</label>
 
             @if (Model.Saved == "user") { <div class="ok-msg">Збережено.</div> }
             <button type="submit">Зберегти</button>
         </form>
     </div>
 
-    <div class="card sect">
-        <h3>Абонементи</h3>
-        <div class="muted" style="margin-bottom:12px;">Блокування/призупинення абонемента синхронізуються з паркінгом.</div>
-        @if (Model.Saved == "card") { <div class="ok-msg" style="margin-bottom:10px;">Готово.</div> }
-        @if (Model.Cards.Count == 0)
-        {
-            <div class="muted">Немає абонементів.</div>
-        }
-        else
-        {
-            <table class="grid">
-                <thead><tr><th>Тариф</th><th>Період</th><th>Статус</th><th></th></tr></thead>
-                <tbody>
-                @foreach (var c in Model.Cards)
-                {
-                    <tr>
-                        <td>@(c.PlanName ?? "—")</td>
-                        <td class="mono">@c.StartDate.ToString("yyyy-MM-dd") – @c.EndDate.ToString("yyyy-MM-dd")</td>
-                        <td>
-                            <span class="badge @(c.Status == ParkingSubscription.Domain.Enums.CardStatus.Active ? "ok" : "")">@StatusLabel(c.Status)</span>
-                        </td>
-                        <td style="white-space:nowrap;">
-                            @switch (c.Status)
-                            {
-                                case ParkingSubscription.Domain.Enums.CardStatus.Active:
-                                    <form method="post" asp-page-handler="CardBlock" asp-route-cardId="@c.Id" style="display:inline;">
-                                        <button type="submit" class="btn-sm">Заблокувати</button>
-                                    </form>
-                                    <form method="post" asp-page-handler="CardSuspend" asp-route-cardId="@c.Id" style="display:inline;">
-                                        <button type="submit" class="btn-sm">Призупинити</button>
-                                    </form>
-                                    break;
-                                case ParkingSubscription.Domain.Enums.CardStatus.Blocked:
-                                    <form method="post" asp-page-handler="CardUnblock" asp-route-cardId="@c.Id" style="display:inline;">
-                                        <button type="submit" class="btn-sm">Розблокувати</button>
-                                    </form>
-                                    break;
-                                case ParkingSubscription.Domain.Enums.CardStatus.Suspended:
-                                    <form method="post" asp-page-handler="CardResume" asp-route-cardId="@c.Id" style="display:inline;">
-                                        <button type="submit" class="btn-sm">Відновити</button>
-                                    </form>
-                                    break;
-                            }
-                        </td>
-                    </tr>
-                }
-                </tbody>
-            </table>
-        }
+    <div class="client-col">
 
-        <h3 style="margin-top:18px;">Автомобілі</h3>
-        @if (Model.Vehicles.Count == 0)
-        {
-            <div class="muted">Немає доданих авто.</div>
-        }
-        else
-        {
-            <table class="grid">
-                <thead><tr><th>Номер</th><th>Марка</th><th>Модель</th></tr></thead>
-                <tbody>
-                @foreach (var v in Model.Vehicles)
-                {
-                    <tr>
-                        <td class="mono">@v.PlateNumber</td>
-                        <td>@(v.Make ?? "—")</td>
-                        <td>@(v.Model ?? "—")</td>
-                    </tr>
-                }
-                </tbody>
-            </table>
-        }
+        <div class="card sect">
+            <h3>Абонементи</h3>
+            <div class="muted" style="margin-bottom:12px;">Блокування/призупинення абонемента синхронізуються з паркінгом.</div>
+            @if (Model.Saved == "card") { <div class="ok-msg" style="margin-bottom:10px;">Готово.</div> }
+            @if (Model.Cards.Count == 0)
+            {
+                <div class="muted">Немає абонементів.</div>
+            }
+            else
+            {
+                <div style="overflow-x:auto;">
+                    <table class="grid">
+                        <thead><tr><th>Тариф</th><th>Період</th><th>Статус</th><th></th></tr></thead>
+                        <tbody>
+                        @foreach (var c in Model.Cards)
+                        {
+                            <tr>
+                                <td style="white-space:nowrap;">@(c.PlanName ?? "—")</td>
+                                <td class="mono" style="white-space:nowrap;">@c.StartDate.ToString("yyyy-MM-dd") – @c.EndDate.ToString("yyyy-MM-dd")</td>
+                                <td>
+                                    <span class="badge @(c.Status == ParkingSubscription.Domain.Enums.CardStatus.Active ? "ok" : "")">@StatusLabel(c.Status)</span>
+                                </td>
+                                <td style="white-space:nowrap;">
+                                    @switch (c.Status)
+                                    {
+                                        case ParkingSubscription.Domain.Enums.CardStatus.Active:
+                                            <form method="post" asp-page-handler="CardBlock" asp-route-cardId="@c.Id" style="display:inline;">
+                                                <button type="submit" class="btn-sm">Заблокувати</button>
+                                            </form>
+                                            <form method="post" asp-page-handler="CardSuspend" asp-route-cardId="@c.Id" style="display:inline;">
+                                                <button type="submit" class="btn-sm">Призупинити</button>
+                                            </form>
+                                            break;
+                                        case ParkingSubscription.Domain.Enums.CardStatus.Blocked:
+                                            <form method="post" asp-page-handler="CardUnblock" asp-route-cardId="@c.Id" style="display:inline;">
+                                                <button type="submit" class="btn-sm">Розблокувати</button>
+                                            </form>
+                                            break;
+                                        case ParkingSubscription.Domain.Enums.CardStatus.Suspended:
+                                            <form method="post" asp-page-handler="CardResume" asp-route-cardId="@c.Id" style="display:inline;">
+                                                <button type="submit" class="btn-sm">Відновити</button>
+                                            </form>
+                                            break;
+                                    }
+                                </td>
+                            </tr>
+                        }
+                        </tbody>
+                    </table>
+                </div>
+            }
+        </div>
+
+        <div class="card sect">
+            <h3>Автомобілі</h3>
+            @if (Model.Vehicles.Count == 0)
+            {
+                <div class="muted">Немає доданих авто.</div>
+            }
+            else
+            {
+                <div style="overflow-x:auto;">
+                    <table class="grid">
+                        <thead><tr><th>Номер</th><th>Марка</th><th>Модель</th></tr></thead>
+                        <tbody>
+                        @foreach (var v in Model.Vehicles)
+                        {
+                            <tr>
+                                <td class="mono">@v.PlateNumber</td>
+                                <td>@(v.Make ?? "—")</td>
+                                <td>@(v.Model ?? "—")</td>
+                            </tr>
+                        }
+                        </tbody>
+                    </table>
+                </div>
+            }
+        </div>
+
     </div>
 
 </div>

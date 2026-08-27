@@ -80,9 +80,11 @@ public sealed class ClientEditModel(AppDbContext db) : PageModel
         user.FirstName = first;
         user.Surname = surname;
         user.Mobile = mobile;
-        user.PassageLp = PassageLp;
-        user.CheckLp = CheckLp;
-        user.MatchEntryPlate = MatchEntryPlate;
+        // LP entry policy requires at least one vehicle on the profile.
+        var hasVehicles = await db.Vehicles.AnyAsync(v => v.UserId == Id && !v.IsDeleted, ct);
+        user.PassageLp = hasVehicles && PassageLp;
+        user.CheckLp = hasVehicles && CheckLp;
+        user.MatchEntryPlate = hasVehicles && MatchEntryPlate;
         user.Touch();
         Enqueue(EntityKind.User, user.Id, PropagationOperation.Update);
 
