@@ -8,11 +8,19 @@
     <h2>Редагування клієнта</h2>
 </div>
 
+@functions {
+    static string StatusLabel(ParkingSubscription.Domain.Enums.CardStatus s) => s switch
+    {
+        ParkingSubscription.Domain.Enums.CardStatus.Active => "Активний",
+        ParkingSubscription.Domain.Enums.CardStatus.Blocked => "Заблокований",
+        ParkingSubscription.Domain.Enums.CardStatus.Suspended => "Призупинений",
+        _ => "Видалений"
+    };
+}
+
 <div class="muted" style="margin:-8px 0 16px;">
     ID @Model.Id.ToString()[..8] · @(Model.Email ?? "—")
     @if (Model.HasActiveSubscription) { <span class="badge ok">Активний абонемент</span> } else { <span class="badge">Без абонемента</span> }
-    @if (Model.IsBlocked) { <span class="badge" style="color:#D64545;border-color:#D64545;">Заблокований</span> }
-    @if (Model.IsSuspended) { <span class="badge">Призупинений</span> }
 </div>
 
 <div class="settings-grid">
@@ -41,51 +49,76 @@
     </div>
 
     <div class="card sect">
-        <h3>Керування</h3>
-        <div class="form">
-            <div class="muted" style="margin-bottom:12px;">Блокування/призупинення синхронізуються з паркінгом.</div>
-            <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px;">
-                @if (!Model.IsBlocked)
+        <h3>Абонементи</h3>
+        <div class="muted" style="margin-bottom:12px;">Блокування/призупинення абонемента синхронізуються з паркінгом.</div>
+        @if (Model.Saved == "card") { <div class="ok-msg" style="margin-bottom:10px;">Готово.</div> }
+        @if (Model.Cards.Count == 0)
+        {
+            <div class="muted">Немає абонементів.</div>
+        }
+        else
+        {
+            <table class="grid">
+                <thead><tr><th>Тариф</th><th>Період</th><th>Статус</th><th></th></tr></thead>
+                <tbody>
+                @foreach (var c in Model.Cards)
                 {
-                    <form method="post" asp-page-handler="Block"><button type="submit">Заблокувати</button></form>
+                    <tr>
+                        <td>@(c.PlanName ?? "—")</td>
+                        <td class="mono">@c.StartDate.ToString("yyyy-MM-dd") – @c.EndDate.ToString("yyyy-MM-dd")</td>
+                        <td>
+                            <span class="badge @(c.Status == ParkingSubscription.Domain.Enums.CardStatus.Active ? "ok" : "")">@StatusLabel(c.Status)</span>
+                        </td>
+                        <td style="white-space:nowrap;">
+                            @switch (c.Status)
+                            {
+                                case ParkingSubscription.Domain.Enums.CardStatus.Active:
+                                    <form method="post" asp-page-handler="CardBlock" asp-route-cardId="@c.Id" style="display:inline;">
+                                        <button type="submit" class="btn-sm">Заблокувати</button>
+                                    </form>
+                                    <form method="post" asp-page-handler="CardSuspend" asp-route-cardId="@c.Id" style="display:inline;">
+                                        <button type="submit" class="btn-sm">Призупинити</button>
+                                    </form>
+                                    break;
+                                case ParkingSubscription.Domain.Enums.CardStatus.Blocked:
+                                    <form method="post" asp-page-handler="CardUnblock" asp-route-cardId="@c.Id" style="display:inline;">
+                                        <button type="submit" class="btn-sm">Розблокувати</button>
+                                    </form>
+                                    break;
+                                case ParkingSubscription.Domain.Enums.CardStatus.Suspended:
+                                    <form method="post" asp-page-handler="CardResume" asp-route-cardId="@c.Id" style="display:inline;">
+                                        <button type="submit" class="btn-sm">Відновити</button>
+                                    </form>
+                                    break;
+                            }
+                        </td>
+                    </tr>
                 }
-                else
-                {
-                    <form method="post" asp-page-handler="Unblock"><button type="submit">Розблокувати</button></form>
-                }
-                @if (!Model.IsSuspended)
-                {
-                    <form method="post" asp-page-handler="Suspend"><button type="submit">Призупинити</button></form>
-                }
-                else
-                {
-                    <form method="post" asp-page-handler="Resume"><button type="submit">Відновити</button></form>
-                }
-            </div>
-            @if (Model.Saved is "blocked" or "unblocked" or "suspended" or "resumed") { <div class="ok-msg">Готово.</div> }
+                </tbody>
+            </table>
+        }
 
-            <h3 style="margin-top:6px;">Автомобілі</h3>
-            @if (Model.Vehicles.Count == 0)
-            {
-                <div class="muted">Немає доданих авто.</div>
-            }
-            else
-            {
-                <table class="grid">
-                    <thead><tr><th>Номер</th><th>Марка</th><th>Модель</th></tr></thead>
-                    <tbody>
-                    @foreach (var v in Model.Vehicles)
-                    {
-                        <tr>
-                            <td class="mono">@v.PlateNumber</td>
-                            <td>@(v.Make ?? "—")</td>
-                            <td>@(v.Model ?? "—")</td>
-                        </tr>
-                    }
-                    </tbody>
-                </table>
-            }
-        </div>
+        <h3 style="margin-top:18px;">Автомобілі</h3>
+        @if (Model.Vehicles.Count == 0)
+        {
+            <div class="muted">Немає доданих авто.</div>
+        }
+        else
+        {
+            <table class="grid">
+                <thead><tr><th>Номер</th><th>Марка</th><th>Модель</th></tr></thead>
+                <tbody>
+                @foreach (var v in Model.Vehicles)
+                {
+                    <tr>
+                        <td class="mono">@v.PlateNumber</td>
+                        <td>@(v.Make ?? "—")</td>
+                        <td>@(v.Model ?? "—")</td>
+                    </tr>
+                }
+                </tbody>
+            </table>
+        }
     </div>
 
 </div>

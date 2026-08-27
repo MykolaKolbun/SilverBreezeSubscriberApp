@@ -21,9 +21,8 @@ public sealed class ClientEditModel(AppDbContext db) : PageModel
 
     // Read-only context
     public string? Email { get; private set; }
-    public bool IsBlocked { get; private set; }
-    public bool IsSuspended { get; private set; }
     public bool HasActiveSubscription { get; private set; }
+    public IReadOnlyList<CardRow> Cards { get; private set; } = [];
     public IReadOnlyList<Vehicle> Vehicles { get; private set; } = [];
     public string? Saved { get; private set; }
 
@@ -44,14 +43,26 @@ public sealed class ClientEditModel(AppDbContext db) : PageModel
         PassageLp = user.PassageLp;
         CheckLp = user.CheckLp;
         MatchEntryPlate = user.MatchEntryPlate;
-        IsBlocked = user.IsBlocked;
-        IsSuspended = user.IsSuspended;
 
         Email = await db.AppAccounts.Where(a => a.UserId == Id).Select(a => a.Email).FirstOrDefaultAsync(ct)
                 ?? user.Email;
         var today = DateOnly.FromDateTime(DateTime.UtcNow);
         HasActiveSubscription = await db.ParkingCards.AnyAsync(
             c => c.UserId == Id && c.Status == CardStatus.Active && !c.IsDeleted && c.EndDate >= today, ct);
+
+        Cards = await db.ParkingCards.AsNoTracking()
+            .Where(c => c.UserId == Id && !c.IsDeleted)
+            .OrderByDescending(c => c.StartDate)
+            .Select(c => new CardRow
+            {
+                Id = c.Id,
+                PlanName = c.SubscriptionPlan != null ? c.SubscriptionPlan.Name : null,
+                StartDate = c.StartDate,
+                EndDate = c.EndDate,
+                Status = c.Status
+            })
+            .ToListAsync(ct);
+
         Vehicles = await db.Vehicles.AsNoTracking()
             .Where(v => v.UserId == Id && !v.IsDeleted).OrderBy(v => v.CreatedAt).ToListAsync(ct);
         return true;
@@ -92,46 +103,29 @@ public sealed class ClientEditModel(AppDbContext db) : PageModel
         return Page();
     }
 
-    public Task<IActionResult> OnPostBlockAsync(CancellationToken ct) => SetStatusAsync(block: true, ct);
-    public Task<IActionResult> OnPostUnblockAsync(CancellationToken ct) => SetStatusAsync(block: false, ct);
-    public Task<IActionResult> OnPostSuspendAsync(CancellationToken ct) => SetSuspendAsync(suspend: true, ct);
-    public Task<IActionResult> OnPostResumeAsync(CancellationToken ct) => SetSuspendAsync(suspend: false, ct);
+    // Block/suspend act on an individual subscription (sweb ParkingCard operations).
+    public Task<IActionResult> OnPostCardBlockAsync(Guid cardId, CancellationToken ct) =>
+        SetCardStatusAsync(cardId, CardStatus.Blocked, PropagationOperation.Block, ct);
+    public Task<IActionResult> OnPostCardUnblockAsync(Guid cardId, CancellationToken ct) =>
+        SetCardStatusAsync(cardId, CardStatus.Active, PropagationOperation.Unblock, ct);
+    public Task<IActionResult> OnPostCardSuspendAsync(Guid cardId, CancellationToken ct) =>
+        SetCardStatusAsync(cardId, CardStatus.Suspended, PropagationOperation.Suspend, ct);
+    public Task<IActionResult> OnPostCardResumeAsync(Guid cardId, CancellationToken ct) =>
+        SetCardStatusAsync(cardId, CardStatus.Active, PropagationOperation.Resume, ct);
 
-    private async Task<IActionResult> SetStatusAsync(bool block, CancellationToken ct)
+    private async Task<IActionResult> SetCardStatusAsync(
+        Guid cardId, CardStatus status, PropagationOperation op, CancellationToken ct)
     {
-        var user = await db.Users.FirstOrDefaultAsync(u => u.Id == Id && !u.IsDeleted, ct);
-        if (user is null) return RedirectToPage("/Clients");
-        var op = block ? PropagationOperation.Block : PropagationOperation.Unblock;
-
-        user.IsBlocked = block;
-        user.Touch();
-        Enqueue(EntityKind.User, user.Id, op);
-
-        // Same person — block/unblock the paired Customer too (cascades to its cards in sweb).
-        var customer = await db.Customers.FirstOrDefaultAsync(c => c.Id == user.CustomerId, ct);
-        if (customer is not null)
+        var card = await db.ParkingCards
+            .FirstOrDefaultAsync(c => c.Id == cardId && c.UserId == Id && !c.IsDeleted, ct);
+        if (card is not null)
         {
-            customer.IsBlocked = block;
-            customer.Touch();
-            Enqueue(EntityKind.Customer, customer.Id, op);
+            card.Status = status;
+            card.Touch();
+            Enqueue(EntityKind.ParkingCard, card.Id, op);
+            await db.SaveChangesAsync(ct);
+            Saved = "card";
         }
-
-        await db.SaveChangesAsync(ct);
-        Saved = block ? "blocked" : "unblocked";
-        await LoadAsync(ct);
-        return Page();
-    }
-
-    private async Task<IActionResult> SetSuspendAsync(bool suspend, CancellationToken ct)
-    {
-        var user = await db.Users.FirstOrDefaultAsync(u => u.Id == Id && !u.IsDeleted, ct);
-        if (user is null) return RedirectToPage("/Clients");
-        user.IsSuspended = suspend;
-        user.Touch();
-        // Suspend is a User-level concept in sweb — no CustomerSuspend, so User only.
-        Enqueue(EntityKind.User, user.Id, suspend ? PropagationOperation.Suspend : PropagationOperation.Resume);
-        await db.SaveChangesAsync(ct);
-        Saved = suspend ? "suspended" : "resumed";
         await LoadAsync(ct);
         return Page();
     }
@@ -141,4 +135,13 @@ public sealed class ClientEditModel(AppDbContext db) : PageModel
         db.OutboxMessages.Add(new OutboxMessage { EntityKind = kind, EntityId = entityId, Operation = op });
 
     private static string? Trim(string? s) => string.IsNullOrWhiteSpace(s) ? null : s.Trim();
+
+    public sealed class CardRow
+    {
+        public Guid Id { get; init; }
+        public string? PlanName { get; init; }
+        public DateOnly StartDate { get; init; }
+        public DateOnly EndDate { get; init; }
+        public CardStatus Status { get; init; }
+    }
 }
