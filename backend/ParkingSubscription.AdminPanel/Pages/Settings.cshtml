@@ -66,6 +66,16 @@
             <div class="muted hint">@Kept(Model.SkidataHasPassword)</div>
             <label>Facility Number</label>
             <input type="text" asp-for="SkidataFacilityNumber" placeholder="напр. 1" />
+            <label>QR Identification — Type</label>
+            <input type="text" asp-for="SkidataQrType" placeholder="EXT" />
+            <label>QR Identification — SubType (формат штрих-коду)</label>
+            <input type="text" asp-for="SkidataQrSubType" placeholder="від SKIDATA (напр. QR_CODE)" />
+            <label>Звʼязок user → customer</label>
+            <select asp-for="SkidataCustomerLink">
+                <option value="b2b">b2bCustomerId</option>
+                <option value="group">groupCustomerId</option>
+            </select>
+            <div class="muted" style="margin:-8px 0 12px;">Яке поле CreateUser привʼязує користувача до клієнта — уточніть у SKIDATA.</div>
             @if (Model.Saved == "skidata") { <div class="ok-msg">Збережено.</div> }
             <button type="submit">Зберегти</button>
         </form>

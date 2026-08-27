@@ -32,6 +32,9 @@ public sealed class SettingsModel(AppDbContext db, ICredentialProtector protecto
     [BindProperty] public string? SkidataUsername { get; set; }
     [BindProperty] public string? SkidataPassword { get; set; }
     [BindProperty] public string? SkidataFacilityNumber { get; set; }
+    [BindProperty] public string? SkidataQrType { get; set; }
+    [BindProperty] public string? SkidataQrSubType { get; set; }
+    [BindProperty] public string? SkidataCustomerLink { get; set; }
     public bool SkidataHasUsername { get; private set; }
     public bool SkidataHasPassword { get; private set; }
 
@@ -62,6 +65,9 @@ public sealed class SettingsModel(AppDbContext db, ICredentialProtector protecto
         SkidataEnabled = sk?.Enabled ?? false;
         SkidataBaseUrl = sk?.BaseUrl;
         SkidataFacilityNumber = sk?.FacilityNumber;
+        SkidataQrType = sk?.QrIdentificationType ?? "EXT";
+        SkidataQrSubType = sk?.QrIdentificationSubType;
+        SkidataCustomerLink = sk?.CustomerLinkField ?? "b2b";
         SkidataHasUsername = !string.IsNullOrEmpty(sk?.UsernameEncrypted);
         SkidataHasPassword = !string.IsNullOrEmpty(sk?.PasswordEncrypted);
     }
@@ -116,6 +122,9 @@ public sealed class SettingsModel(AppDbContext db, ICredentialProtector protecto
         row.Enabled = SkidataEnabled;
         row.BaseUrl = string.IsNullOrWhiteSpace(SkidataBaseUrl) ? row.BaseUrl : SkidataBaseUrl.Trim();
         row.FacilityNumber = string.IsNullOrWhiteSpace(SkidataFacilityNumber) ? row.FacilityNumber : SkidataFacilityNumber.Trim();
+        row.QrIdentificationType = string.IsNullOrWhiteSpace(SkidataQrType) ? row.QrIdentificationType : SkidataQrType.Trim();
+        row.QrIdentificationSubType = string.IsNullOrWhiteSpace(SkidataQrSubType) ? null : SkidataQrSubType.Trim();
+        row.CustomerLinkField = string.Equals(SkidataCustomerLink, "group", StringComparison.OrdinalIgnoreCase) ? "group" : "b2b";
         if (!string.IsNullOrWhiteSpace(SkidataUsername)) row.UsernameEncrypted = protector.Protect(SkidataUsername.Trim());
         if (!string.IsNullOrWhiteSpace(SkidataPassword)) row.PasswordEncrypted = protector.Protect(SkidataPassword.Trim());
         row.UpdatedAt = DateTimeOffset.UtcNow;
