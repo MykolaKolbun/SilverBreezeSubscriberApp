@@ -33,7 +33,8 @@ Field mappings pushed today:
 - **Customer/User**: `Surname`, `FirstName`, `Email`, `Mobile`, `ExternalContactId`.
 - **User** also: `licensePlates[]` ← the user's `Vehicle` rows
   (`Country`→country, `PlateNumber`→value, `"{Make} {Model}"`→vehicle); LP-entry policy
-  flags live on `User` (`PassageLp`/`CheckLp`/`MatchEntryPlate`).
+  flags (`PassageLp`/`CheckLp`/`MatchEntryPlate`) are sent nested under
+  `user.parkingContract` (`passageLP`/`checkLP`/`matchEntryPlate`), per the sweb schema.
 - **ParkingCard**: `userId`, `validFrom/validTo` (StartDate/EndDate), `externalCardId`,
   `primaryId` (QR as an `EXT` Identification from `QrPayload`), `productId`
   (from the plan's `ArticleId`), `singleNeutral`, `secondaryIds[]` (`CardIdentification`),

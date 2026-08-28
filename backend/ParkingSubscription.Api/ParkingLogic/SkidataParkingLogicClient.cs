@@ -209,7 +209,14 @@ public sealed class SkidataParkingLogicClient(
             Firstname = user.FirstName,
             Email = user.Email,
             Mobile = user.Mobile,
-            ExternalContactId = user.ExternalContactId ?? user.Id.ToString("N")
+            ExternalContactId = user.ExternalContactId ?? user.Id.ToString("N"),
+            // License-plate entry policy lives under user.parkingContract in sweb.
+            ParkingContract = new UserParkingContract
+            {
+                PassageLP = user.PassageLp,
+                CheckLP = user.CheckLp,
+                MatchEntryPlate = user.MatchEntryPlate
+            }
         };
         if (string.Equals(_cfg.CustomerLinkField, "group", StringComparison.OrdinalIgnoreCase))
             dto.GroupCustomerId = customerRemoteId;
