@@ -40,8 +40,12 @@ public class ParkingIntegrationConfig
     /// <summary>Identification.type for the QR payload (e.g. "EXT").</summary>
     public string? QrIdentificationType { get; set; } = "EXT";
 
-    /// <summary>Identification.subType for the QR payload (barcode format from SKIDATA).</summary>
-    public string? QrIdentificationSubType { get; set; }
+    /// <summary>
+    /// Identification.subType for the QR payload. sweb's own auto-generated external
+    /// identification uses subType "_SDCP" (spec §3.4.1.3.4); default to that unless
+    /// SKIDATA specifies a different barcode subType.
+    /// </summary>
+    public string? QrIdentificationSubType { get; set; } = "_SDCP";
 
     /// <summary>Which CreateUser field links a user to its customer: "b2b" or "group".</summary>
     public string? CustomerLinkField { get; set; } = "b2b";

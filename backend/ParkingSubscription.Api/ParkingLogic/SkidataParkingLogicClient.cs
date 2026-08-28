@@ -338,7 +338,7 @@ public sealed class SkidataParkingLogicClient(
     private Identification QrIdentification(ParkingCard card) => new()
     {
         Type = NonEmpty(_cfg.QrIdentificationType, "EXT"),
-        SubType = _cfg.QrIdentificationSubType ?? string.Empty,
+        SubType = NonEmpty(_cfg.QrIdentificationSubType, "_SDCP"),
         Value = card.QrPayload
     };
 

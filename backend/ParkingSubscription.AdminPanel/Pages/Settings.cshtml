@@ -57,7 +57,8 @@
         <form method="post" asp-page-handler="Skidata" class="form">
             <label class="check"><input type="checkbox" asp-for="SkidataEnabled" /> Увімкнути надсилання абонементів у паркінг</label>
             <label>Base URL</label>
-            <input type="text" asp-for="SkidataBaseUrl" placeholder="https://sweb.skidata.com/bei/DTASales/SubscribeApi" />
+            <input type="text" asp-for="SkidataBaseUrl" placeholder="https://car.webhost.skidata.com/bei/DTASales/SubscribeApi" />
+            <div class="muted" style="margin:-8px 0 12px;">Продакшн (EU): car.webhost.skidata.com · стейджинг: sweb.skidata.com. Уточніть регіон у SKIDATA.</div>
             <label>Логін (basicAuth)</label>
             <input type="text" asp-for="SkidataUsername" autocomplete="off" placeholder="••••••" />
             <div class="muted hint">@Kept(Model.SkidataHasUsername)</div>
@@ -69,7 +70,7 @@
             <label>QR Identification — Type</label>
             <input type="text" asp-for="SkidataQrType" placeholder="EXT" />
             <label>QR Identification — SubType (формат штрих-коду)</label>
-            <input type="text" asp-for="SkidataQrSubType" placeholder="від SKIDATA (напр. QR_CODE)" />
+            <input type="text" asp-for="SkidataQrSubType" placeholder="_SDCP (за замовч.)" />
             <label>Звʼязок user → customer</label>
             <select asp-for="SkidataCustomerLink">
                 <option value="b2b">b2bCustomerId</option>

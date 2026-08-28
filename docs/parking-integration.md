@@ -67,10 +67,28 @@ Data Protection keys), `FacilityNumber`. Non-editable defaults live on the entit
 so enabling/changing it needs no redeploy; while it is disabled or incomplete the adapter
 **no-ops** (dev/tests unaffected).
 
-> To confirm with SKIDATA before going live: which `CreateUser` field links user→customer
-> (`b2bCustomerId` vs `groupCustomerId`), the QR identification type/subType, the per-plan
-> `ArticleId` product UUIDs, and the full `BaseUrl` (e.g.
-> `https://sweb.skidata.com/bei/DTASales/SubscribeApi`).
+### What the official sweb spec (v2.3) settles
+
+- **Base URL is region-specific.** `sweb.skidata.com` is **staging**; production is
+  `https://car.webhost.skidata.com/bei/DTASales/SubscribeApi` (EU Car),
+  `car.au.skidata.com` (Asia-Pacific) or `hb.usa.skidata.com` (US). Set the correct
+  region in the AdminPanel.
+- **user→customer link.** `b2bCustomerId` links the user to an existing B2B customer
+  contact (our 1:1 model) — the default. `groupCustomerId` links to a contact *group*.
+- **QR / primary identification.** If none is sent, sweb generates one as type `EXT`,
+  subType `_SDCP`. We send the QR payload as the primaryId with those same defaults
+  (`QrIdentificationType=EXT`, `QrIdentificationSubType=_SDCP`) — overridable in Settings.
+- **`productId` is optional** (spec §2.3.2 / §3.4.1.3.1): omit it and DTA assigns the
+  contractor's default `CAR_CONTRACT_PARKING` product. Provide the per-plan `ArticleId`
+  to pin an exact product — fetch the UUIDs via the **Inventory API** (`.../InventoryApi`,
+  "fetch subscribe products inventory") or ask SKIDATA.
+- **Dates are date-only** (`format: date`, e.g. `2022-03-07`) — the generated client's
+  `DateFormatConverter` emits `yyyy-MM-dd`, matching the spec.
+- **DTA retries onward delivery to Parking.Logic for ~14 days** after it accepts our call,
+  independent of our outbox's 5 delivery retries to DTA.
+
+> Still worth a quick confirmation with SKIDATA: the exact region host, the `FacilityNumber`,
+> and whether their barrier scanners expect the `_SDCP` subType for the QR (vs a custom one).
 
 ## License-plate entry policy
 
