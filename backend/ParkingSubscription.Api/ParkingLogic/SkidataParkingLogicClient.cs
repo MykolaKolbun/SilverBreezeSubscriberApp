@@ -342,12 +342,33 @@ public sealed class SkidataParkingLogicClient(
         return null;
     }
 
-    private Identification QrIdentification(ParkingCard card) => new()
+    /// <summary>
+    /// The card's primary identification carrying the mobile QR payload (sweb type 'EXT').
+    /// The subType is the bar-code format SKIDATA configured for the product and must match
+    /// it exactly. If it is not configured we return null so the primaryId is OMITTED — the
+    /// card is still created (and license-plate entry works); QR recognition begins once the
+    /// operator sets the subType in the AdminPanel. Sending an empty/guessed subType would
+    /// be rejected (Identification.subType is required and product-matched).
+    /// </summary>
+    private Identification? QrIdentification(ParkingCard card)
     {
-        Type = NonEmpty(_cfg.QrIdentificationType, "EXT"),
-        SubType = NonEmpty(_cfg.QrIdentificationSubType, "_SDCP"),
-        Value = card.QrPayload
-    };
+        if (string.IsNullOrWhiteSpace(_cfg.QrIdentificationSubType))
+        {
+            logger.LogWarning(
+                "SKIDATA QR subType not configured — omitting primaryId for card {CardId}. " +
+                "Set the SKIDATA-provided bar-code format in Settings to enable QR recognition.",
+                card.Id);
+            return null;
+        }
+        if (string.IsNullOrWhiteSpace(card.QrPayload))
+            return null;
+        return new Identification
+        {
+            Type = NonEmpty(_cfg.QrIdentificationType, "EXT"),
+            SubType = _cfg.QrIdentificationSubType!.Trim(),
+            Value = card.QrPayload
+        };
+    }
 
     /// <summary>Secondary card identifications (sweb secondaryIds); null when none.</summary>
     private static ICollection<Identification>? MapSecondaryIds(ParkingCard card) =>

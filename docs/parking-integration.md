@@ -76,9 +76,13 @@ so enabling/changing it needs no redeploy; while it is disabled or incomplete th
   region in the AdminPanel.
 - **user→customer link.** `b2bCustomerId` links the user to an existing B2B customer
   contact (our 1:1 model) — the default. `groupCustomerId` links to a contact *group*.
-- **QR / primary identification.** If none is sent, sweb generates one as type `EXT`,
-  subType `_SDCP`. We send the QR payload as the primaryId with those same defaults
-  (`QrIdentificationType=EXT`, `QrIdentificationSubType=_SDCP`) — overridable in Settings.
+- **QR / primary identification.** We send the mobile QR payload as the card's `primaryId`
+  with type `EXT`; its `subType` is the **bar-code format SKIDATA configures for the product**
+  (e.g. `15693`) and must match that config exactly — SKIDATA provides the value, set it in
+  Settings. (`_SDCP` is only sweb's *auto-generated* subType when NO primaryId is sent, and is
+  not a valid value for our provided identification.) While the subType is empty the adapter
+  omits `primaryId` — the card is still created and license-plate entry works; QR recognition
+  begins once the subType is filled in.
 - **`productId` is optional** (spec §2.3.2 / §3.4.1.3.1): omit it and DTA assigns the
   contractor's default `CAR_CONTRACT_PARKING` product. Provide the per-plan `ArticleId`
   to pin an exact product — fetch the UUIDs via the **Inventory API** (`.../InventoryApi`,

@@ -70,7 +70,8 @@
             <label>QR Identification — Type</label>
             <input type="text" asp-for="SkidataQrType" placeholder="EXT" />
             <label>QR Identification — SubType (формат штрих-коду)</label>
-            <input type="text" asp-for="SkidataQrSubType" placeholder="_SDCP (за замовч.)" />
+            <input type="text" asp-for="SkidataQrSubType" placeholder="напр. 15693 — надає SKIDATA" />
+            <div class="muted" style="margin:-8px 0 12px;">Формат штрих-коду для типу EXT — має збігатися з конфігурацією продукту в SKIDATA. Поки порожнє, QR не надсилається (абонемент створюється, розпізнавання QR вмикається після заповнення).</div>
             <label>Звʼязок user → customer</label>
             <select asp-for="SkidataCustomerLink">
                 <option value="b2b">b2bCustomerId</option>
