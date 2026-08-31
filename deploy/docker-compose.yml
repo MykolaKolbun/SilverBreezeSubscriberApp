@@ -1,5 +1,5 @@
 # ParkingSubscription — Raspberry Pi (ARM64) deployment stack.
-# Services: API + AdminPanel + Nginx APK/static share.
+# Services: API + AdminPanel + public Web client + Nginx APK/static share.
 #
 # PostgreSQL is NOT part of this stack: the app shares the EVCharging PostgreSQL
 # instance (container "db" / evchargingapi-db-1) on the external Docker network
@@ -9,7 +9,7 @@
 #
 # Copy this file + .env + nginx-apk.conf to the Pi (~/SilverBreezeSubscriberApp)
 # and run:  docker compose up -d
-# Host ports avoid the EVCharging stack on the same Pi:  API 8085, admin 8087, APK 8086.
+# Host ports avoid the EVCharging stack on the same Pi:  API 8085, APK 8086, admin 8087, web 8088.
 
 services:
   api:
@@ -69,6 +69,29 @@ services:
     networks:
       - default
       - evcharge
+
+  # Public Web client (server-rendered Razor Pages). Talks to the API over the
+  # internal Docker network (service "api"), so no CORS and no DB of its own.
+  # 8088 — 8081-8087 are taken by EVCharging and the services above.
+  web:
+    image: ${WEB_IMAGE:-ghcr.io/mykolakolbun/parkingsubscription-web:latest}
+    restart: unless-stopped
+    ports:
+      - "8088:8080"
+    environment:
+      ASPNETCORE_ENVIRONMENT: Production
+      # Reach the API by its compose service name on the shared default network.
+      Api__BaseUrl: "http://api:8080"
+    depends_on:
+      - api
+    networks:
+      - default
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 20s
 
   # Static file server for sharing the mobile APK (and any other static downloads).
   # Drop app-release.apk into ./apk on the Pi → downloadable at http://<pi>:8086/app-release.apk

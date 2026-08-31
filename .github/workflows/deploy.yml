@@ -52,6 +52,17 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
+      - name: Build and push ARM64 Web client image
+        uses: docker/build-push-action@v6
+        with:
+          context: ./backend
+          file: ./backend/ParkingSubscription.Web/Dockerfile
+          platforms: linux/arm64
+          push: true
+          tags: ghcr.io/mykolakolbun/parkingsubscription-web:latest
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
       - name: Install cloudflared
         run: |
           curl -L https://pkg.cloudflare.com/cloudflare-main.gpg | sudo tee /usr/share/keyrings/cloudflare-main.gpg >/dev/null

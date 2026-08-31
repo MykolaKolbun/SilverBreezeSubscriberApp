@@ -8,10 +8,15 @@ Tunnel. The mobile APK is built locally.
 | Service | Host port | Notes |
 |---------|-----------|-------|
 | `api` | 8085 → 8080 | ASP.NET Core Web API |
-| `admin` | 8087 → 8080 | Razor Pages admin panel |
 | `apk-share` | 8086 → 80 | Nginx static share for the APK |
+| `admin` | 8087 → 8080 | Razor Pages admin panel |
+| `web` | 8088 → 8080 | Public server-rendered Web client (Razor Pages) |
 
 There is **no `postgres` service** — the app shares the **EVCharging** PostgreSQL instance.
+
+The `web` client has **no database**: it calls the API over the internal Docker network
+(`Api__BaseUrl=http://api:8080`), so there is no CORS and no gateway config of its own. Its
+image is `ghcr.io/mykolakolbun/parkingsubscription-web` (built by CI alongside api/admin).
 
 ## Database — shared EVCharging PostgreSQL
 
@@ -46,7 +51,16 @@ up -d`. SSH to the Pi goes through `cloudflared access ssh`.
 
 ## Cloudflare Tunnel
 
-Ingress hostnames route to the container ports (e.g. `sweb…` → api, `sweb-admin…` → admin).
-The catch-all `- service: http_status:404` must stay **last** in `config.yml`, and Universal
-SSL only covers one subdomain level (use single-level hostnames like
-`sweb-admin.alternatiview.com.ua`).
+Ingress hostnames route to the container ports (e.g. `sweb…` → api :8085, `sweb-admin…` →
+admin :8087, and a new hostname for the Web client → `http://localhost:8088`). The catch-all
+`- service: http_status:404` must stay **last** in `config.yml`, and Universal SSL only covers
+one subdomain level (use single-level hostnames like `sweb-admin.alternatiview.com.ua`).
+
+> **New Web client hostname (manual, Pi-side):** the tunnel `config.yml` lives on the Pi, not
+> in this repo. To expose the Web client, add an ingress rule **above** the catch-all, e.g.
+> ```yaml
+>   - hostname: sweb-app.alternatiview.com.ua
+>     service: http://localhost:8088
+> ```
+> then `cloudflared tunnel ... ` reload (or restart the cloudflared service) and add the DNS
+> route for that hostname. Until then the client is reachable on the LAN at `http://<pi>:8088`.
