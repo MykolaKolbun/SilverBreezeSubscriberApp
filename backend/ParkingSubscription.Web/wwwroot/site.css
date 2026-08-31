@@ -13,9 +13,9 @@
     --bg-input:   #1A1F2E;   /* text inputs, secondary buttons */
     --bg-chip:    #1E2436;   /* chips, neutral pills */
 
-    /* Brand */
-    --primary:      #2EE89E; /* action color: buttons, links, accents */
-    --primary-dark: #1BC47D; /* pressed / hover variant */
+    /* Brand — SilverBreeze blue */
+    --primary:      #009BDD; /* action color: buttons, links, accents */
+    --primary-dark: #007DB3; /* pressed / hover variant */
 
     /* Text */
     --text-primary:    #FFFFFF; /* headings, main labels */
@@ -25,7 +25,7 @@
 
     /* Borders */
     --border:       #2A2D3E;
-    --border-focus: #2EE89E;
+    --border-focus: #009BDD;
 
     /* Status */
     --ok:      #2EE89E;
@@ -150,9 +150,17 @@ h3, .h3 { font-size: 18px; font-weight: 700; line-height: 24px; margin: 0 0 var(
 }
 
 .brand {
-    font-weight: 800;
-    font-size: 17px;
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-sm);
     text-decoration: none;
+    color: var(--text-primary);
+}
+.sb-mark { display: block; flex: 0 0 auto; }
+.sb-word {
+    font-weight: 800;
+    font-size: 18px;
+    letter-spacing: -0.2px;
     color: var(--text-primary);
 }
 
@@ -178,6 +186,99 @@ nav a.accent:hover { color: var(--primary-dark); }
 }
 
 .price { font-size: 20px; font-weight: 800; line-height: 26px; color: var(--primary); margin: var(--space-xs) 0; }
+
+/* ============================================================
+   Parking pass (Cards page) — the driver's barrier screen
+   ============================================================ */
+
+.pass-wrap { display: flex; flex-wrap: wrap; gap: var(--space-lg); }
+
+.pass {
+    width: 360px;
+    max-width: 100%;
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-xl);
+    overflow: hidden;
+    box-shadow: 0 8px 30px rgba(0, 0, 0, 0.18);
+}
+
+.pass-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 14px var(--space-lg);
+    background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+}
+.pass-head .brand-mini {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-sm);
+    color: #fff;
+    font-weight: 800;
+    font-size: 15px;
+    letter-spacing: 0.2px;
+}
+.pass-status {
+    display: inline-block;
+    padding: 3px 12px;
+    border-radius: var(--radius-full);
+    font-size: 12px;
+    font-weight: 700;
+    background: rgba(255, 255, 255, 0.9);
+    color: var(--primary-dark);
+}
+.pass-status.status-suspended,
+.pass-status.status-pending { color: #B45309; }
+.pass-status.status-blocked,
+.pass-status.status-expired,
+.pass-status.status-deleted { color: #B91C1C; }
+
+.pass-body { padding: var(--space-lg); text-align: center; }
+.pass-body .tag { color: var(--text-muted); margin-bottom: var(--space-md); }
+
+.pass .qr {
+    width: 240px;
+    height: 240px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+    background: #fff;
+    padding: var(--space-sm);
+    margin: 0 auto var(--space-sm);
+    display: block;
+}
+.pass-hint { color: var(--text-secondary); font-size: 13px; margin: 0 0 var(--space-md); }
+
+.pass-period {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--space-lg);
+    padding: var(--space-md) 0;
+    border-top: 1px solid var(--border);
+    border-bottom: 1px solid var(--border);
+    margin-bottom: var(--space-md);
+}
+.pass-period .lbl {
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: var(--text-muted);
+    margin-bottom: 2px;
+}
+.pass-period .val { font-weight: 700; font-size: 15px; }
+.pass-sep { color: var(--primary); font-size: 18px; font-weight: 700; }
+
+.pass-venue { color: var(--text-secondary); font-size: 13px; margin: 0 0 var(--space-md); }
+
+.wallet-row { display: flex; gap: var(--space-sm); justify-content: center; }
+.wallet-btn {
+    flex: 1;
+    font-size: 13px;
+    padding: 9px 10px;
+    text-align: center;
+    white-space: nowrap;
+}
 
 .qr {
     border: 1px solid var(--border);

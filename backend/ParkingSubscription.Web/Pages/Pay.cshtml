@@ -1,10 +1,10 @@
 @page
 @model PayModel
 @{
-    ViewData["Title"] = "Payment";
+    ViewData["Title"] = "Оплата";
 }
 
-<h1>Payment</h1>
+<h1>Оплата</h1>
 
 @if (Model.Error is not null)
 {
@@ -14,8 +14,8 @@
 @if (Model.Payment is { } p)
 {
     <div class="panel">
-        <p><strong>Amount:</strong> @Money.Format(p.AmountMinor, p.Currency)</p>
-        <p><strong>Status:</strong> <span class="status status-@p.Status.ToLower()">@p.Status</span></p>
+        <p><strong>Сума:</strong> @Money.Format(p.AmountMinor, p.Currency)</p>
+        <p><strong>Статус:</strong> <span class="status status-@p.Status.ToLower()">@p.Status</span></p>
         @if (p.FailureReason is not null)
         {
             <p class="muted">@p.FailureReason</p>
@@ -25,25 +25,25 @@
     @if (p.Status == "Pending")
     {
         <p class="muted">
-            The real payment provider is not connected yet. In dev mode you play its role —
-            choose how the payment ends:
+            Реальний платіжний провайдер ще не підключений. У режимі розробки ви граєте його роль —
+            оберіть, чим завершиться оплата:
         </p>
         <form method="post" class="inline-form">
             <input type="hidden" name="paymentId" value="@Model.PaymentId" />
             <input type="hidden" name="provider" value="@Model.Provider" />
-            <button type="submit" name="outcome" value="succeeded" class="primary">✔ Simulate successful payment</button>
-            <button type="submit" name="outcome" value="declined" class="danger">✖ Simulate declined</button>
+            <button type="submit" name="outcome" value="succeeded" class="primary">✔ Симулювати успішну оплату</button>
+            <button type="submit" name="outcome" value="declined" class="danger">✖ Симулювати відмову</button>
         </form>
     }
     else if (p.Status == "Succeeded")
     {
         <div class="success">
-            Payment complete — your parking card is active.
+            Оплату завершено — ваш абонемент активний.
             @if (p.FiscalReceiptId is not null)
             {
-                <br /><small>Fiscal receipt: @p.FiscalReceiptId</small>
+                <br /><small>Фіскальний чек: @p.FiscalReceiptId</small>
             }
         </div>
-        <p><a class="button primary" href="/Cards">Go to my card →</a></p>
+        <p><a class="button primary" href="/Cards">Перейти до мого пропуску →</a></p>
     }
 }

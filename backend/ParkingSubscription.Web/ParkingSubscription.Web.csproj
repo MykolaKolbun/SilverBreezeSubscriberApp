@@ -6,6 +6,9 @@
     <ImplicitUsings>enable</ImplicitUsings>
   </PropertyGroup>
 
-  <!-- No package references: everything used ships with the ASP.NET Core framework. -->
+  <ItemGroup>
+    <!-- Live .cshtml editing without a restart (enabled only in Development, see Program.cs). -->
+    <PackageReference Include="Microsoft.AspNetCore.Mvc.Razor.RuntimeCompilation" />
+  </ItemGroup>
 
 </Project>

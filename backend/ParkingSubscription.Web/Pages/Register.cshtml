@@ -1,10 +1,10 @@
 @page
 @model RegisterModel
 @{
-    ViewData["Title"] = "Register";
+    ViewData["Title"] = "Реєстрація";
 }
 
-<h1>Create account</h1>
+<h1>Створення акаунта</h1>
 
 @if (Model.Error is not null)
 {
@@ -13,10 +13,10 @@
 
 <form method="post" class="form">
     <label>Email <input type="email" name="email" value="@Model.Email" required /></label>
-    <label>Password (min 8 characters) <input type="password" name="password" minlength="8" required /></label>
-    <label>First name <input type="text" name="firstName" /></label>
-    <label>Surname <input type="text" name="surname" /></label>
-    <button type="submit" class="primary">Register</button>
+    <label>Пароль (мінімум 8 символів) <input type="password" name="password" minlength="8" required /></label>
+    <label>Імʼя <input type="text" name="firstName" /></label>
+    <label>Прізвище <input type="text" name="surname" /></label>
+    <button type="submit" class="primary">Зареєструватися</button>
 </form>
 
-<p class="muted">Already have an account? <a href="/Login">Log in</a></p>
+<p class="muted">Вже маєте акаунт? <a href="/Login">Увійти</a></p>

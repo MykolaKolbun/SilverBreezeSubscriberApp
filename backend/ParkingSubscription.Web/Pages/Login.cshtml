@@ -1,14 +1,14 @@
 @page
 @model LoginModel
 @{
-    ViewData["Title"] = "Log in";
+    ViewData["Title"] = "Увійти";
 }
 
-<h1>Log in</h1>
+<h1>Вхід</h1>
 
 @if (Model.Confirmed)
 {
-    <div class="success">Email confirmed — you can log in now.</div>
+    <div class="success">Email підтверджено — тепер можна увійти.</div>
 }
 @if (Model.Error is not null)
 {
@@ -17,8 +17,8 @@
 
 <form method="post" class="form">
     <label>Email <input type="email" name="email" value="@Model.Email" required /></label>
-    <label>Password <input type="password" name="password" required /></label>
-    <button type="submit" class="primary">Log in</button>
+    <label>Пароль <input type="password" name="password" required /></label>
+    <button type="submit" class="primary">Увійти</button>
 </form>
 
-<p class="muted">No account yet? <a href="/Register">Register</a></p>
+<p class="muted">Ще немає акаунта? <a href="/Register">Зареєструватися</a></p>

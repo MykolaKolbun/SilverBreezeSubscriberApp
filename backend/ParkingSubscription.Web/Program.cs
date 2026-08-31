@@ -2,7 +2,10 @@ using ParkingSubscription.Web;
 
 var builder = WebApplication.CreateBuilder(args);
 
-builder.Services.AddRazorPages();
+var razorPages = builder.Services.AddRazorPages();
+// Live-edit .cshtml without restarting the server (dev only).
+if (builder.Environment.IsDevelopment())
+    razorPages.AddRazorRuntimeCompilation();
 
 // Server-side session keeps the JWT out of the browser entirely.
 builder.Services.AddDistributedMemoryCache();

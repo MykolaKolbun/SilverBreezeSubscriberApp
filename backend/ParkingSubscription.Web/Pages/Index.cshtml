@@ -1,10 +1,10 @@
 @page
 @model IndexModel
 @{
-    ViewData["Title"] = "Plans";
+    ViewData["Title"] = "Тарифи";
 }
 
-<h1>Parking subscriptions</h1>
+<h1>Абонементи на паркінг</h1>
 
 @if (Model.Error is not null)
 {
@@ -14,13 +14,13 @@
 @if (!Model.LoggedIn)
 {
     <p class="lead">
-        Buy a contract parking card, get a QR code and a wallet pass.
-        <a href="/Register">Create an account</a> or <a href="/Login">log in</a> to see the plans.
+        Придбайте контрактний паркувальний абонемент, отримайте QR-код і пропуск у гаманець.
+        <a href="/Register">Створіть акаунт</a> або <a href="/Login">увійдіть</a>, щоб побачити тарифи.
     </p>
 }
 else if (Model.Plans.Count == 0)
 {
-    <p>No active plans right now.</p>
+    <p>Наразі активних тарифів немає.</p>
 }
 else
 {
@@ -30,10 +30,10 @@ else
             <div class="card">
                 <h2>@plan.Name</h2>
                 <p class="price">@Money.Format(plan.PriceMinor, plan.Currency)</p>
-                <p class="muted">Valid for @plan.DurationDays days</p>
+                <p class="muted">Діє @plan.DurationDays днів</p>
                 <form method="post">
                     <input type="hidden" name="planId" value="@plan.Id" />
-                    <button type="submit" class="primary">Buy</button>
+                    <button type="submit" class="primary">Придбати</button>
                 </form>
             </div>
         }

@@ -5,12 +5,14 @@
       "name": "api",
       "runtimeExecutable": "dotnet",
       "runtimeArgs": ["run", "--project", "backend/ParkingSubscription.Api", "--no-launch-profile", "--urls", "http://localhost:5024"],
+      "env": { "ASPNETCORE_ENVIRONMENT": "Development" },
       "port": 5024
     },
     {
       "name": "web",
       "runtimeExecutable": "dotnet",
       "runtimeArgs": ["run", "--project", "backend/ParkingSubscription.Web", "--no-launch-profile", "--urls", "http://localhost:5100"],
+      "env": { "ASPNETCORE_ENVIRONMENT": "Development" },
       "port": 5100
     },
     {
