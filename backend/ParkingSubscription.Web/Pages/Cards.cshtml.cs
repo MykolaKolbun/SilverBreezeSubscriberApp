@@ -8,6 +8,12 @@ public class CardsModel(ApiClient api) : PageModel
     public List<ParkingCardDto> Cards { get; private set; } = [];
     public string? Error { get; private set; }
 
+    // Wallet passes are still stubs (no real Apple/Google integration). Keep the
+    // buttons hidden until each provider is wired up; then flip the matching flag
+    // (later: drive it from config) so its button appears on its own.
+    public bool AppleWalletEnabled => false;
+    public bool GoogleWalletEnabled => false;
+
     public async Task<IActionResult> OnGetAsync()
     {
         if (!api.IsLoggedIn)

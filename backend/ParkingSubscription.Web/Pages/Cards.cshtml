@@ -63,10 +63,19 @@
 
                 <p class="pass-venue">Київ, вул. Павла Тичини 1В</p>
 
-                <div class="wallet-row">
-                    <a class="button wallet-btn" href="?handler=ApplePass&cardId=@card.Id">🍎 Apple Wallet</a>
-                    <a class="button wallet-btn" href="?handler=Google&cardId=@card.Id" target="_blank" rel="noopener">📱 Google Wallet</a>
-                </div>
+                @if (Model.AppleWalletEnabled || Model.GoogleWalletEnabled)
+                {
+                    <div class="wallet-row">
+                        @if (Model.AppleWalletEnabled)
+                        {
+                            <a class="button wallet-btn" href="?handler=ApplePass&cardId=@card.Id">🍎 Apple Wallet</a>
+                        }
+                        @if (Model.GoogleWalletEnabled)
+                        {
+                            <a class="button wallet-btn" href="?handler=Google&cardId=@card.Id" target="_blank" rel="noopener">📱 Google Wallet</a>
+                        }
+                    </div>
+                }
             </div>
         </div>
     }
