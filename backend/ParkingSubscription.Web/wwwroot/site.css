@@ -188,6 +188,37 @@ nav a.accent:hover { color: var(--primary-dark); }
 .price { font-size: 20px; font-weight: 800; line-height: 26px; color: var(--primary); margin: var(--space-xs) 0; }
 
 /* ============================================================
+   Plans grid (logged-in)
+   ============================================================ */
+
+.page-intro { margin-bottom: var(--space-lg); }
+.page-intro h1 { margin-bottom: var(--space-xs); }
+
+.plans {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+    gap: var(--space-md);
+}
+
+.plan {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    padding: var(--space-lg);
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    transition: border-color 0.15s, transform 0.15s;
+}
+.plan:hover { border-color: var(--text-muted); transform: translateY(-2px); }
+
+.plan-name { font-size: 16px; font-weight: 700; margin: 0 0 var(--space-sm); min-height: 44px; }
+.plan-price { font-size: 26px; font-weight: 800; line-height: 1.1; color: var(--text-primary); }
+.plan-per { font-size: 13px; color: var(--primary); font-weight: 600; margin-top: 2px; }
+.plan-dur { font-size: 13px; color: var(--text-secondary); margin: var(--space-xs) 0 var(--space-md); }
+.plan-buy { width: 100%; margin-top: auto; }
+
+/* ============================================================
    Parking pass (Cards page) — the driver's barrier screen
    ============================================================ */
 

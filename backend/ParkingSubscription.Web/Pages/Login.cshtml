@@ -1,24 +1,43 @@
 @page
 @model LoginModel
 @{
-    ViewData["Title"] = "Увійти";
+    ViewData["Title"] = "Вхід";
 }
 
 <h1>Вхід</h1>
 
-@if (Model.Confirmed)
-{
-    <div class="success">Email підтверджено — тепер можна увійти.</div>
-}
 @if (Model.Error is not null)
 {
     <div class="alert">@Model.Error</div>
 }
 
-<form method="post" class="form">
-    <label>Email <input type="email" name="email" value="@Model.Email" required /></label>
-    <label>Пароль <input type="password" name="password" required /></label>
-    <button type="submit" class="primary">Увійти</button>
-</form>
-
-<p class="muted">Ще немає акаунта? <a href="/Register">Зареєструватися</a></p>
+@if (!Model.CodeSent)
+{
+    <form method="post" asp-page-handler="Request" class="form">
+        <label>Email
+            <input type="email" asp-for="Email" autocomplete="email" required autofocus />
+        </label>
+        <button type="submit" class="primary">Отримати код</button>
+    </form>
+    <p class="muted">Ми надішлемо одноразовий код на пошту — пароль не потрібен.</p>
+}
+else
+{
+    <form method="post" asp-page-handler="Verify" class="form">
+        <input type="hidden" asp-for="Email" />
+        <label>Код із листа
+            <input type="text" asp-for="Code" value="@Model.DevCode" inputmode="numeric"
+                   autocomplete="one-time-code" pattern="[0-9]*" maxlength="6" required autofocus />
+        </label>
+        <button type="submit" class="primary">Увійти</button>
+    </form>
+    <p class="muted">Код надіслано на <strong>@Model.Email</strong>.</p>
+    @if (Model.DevCode is not null)
+    {
+        <p class="muted">Режим розробки: код підставлено автоматично.</p>
+    }
+    <form method="post" asp-page-handler="Request" class="inline-form">
+        <input type="hidden" asp-for="Email" />
+        <button type="submit" class="link-button">Надіслати код ще раз</button>
+    </form>
+}

@@ -22,19 +22,18 @@ public sealed class ApiClient(HttpClient http, IHttpContextAccessor accessor)
     public bool IsLoggedIn => Session.GetString("accessToken") is not null;
     public Guid UserId => Guid.Parse(Session.GetString("userId")!);
 
-    // ---- Auth ----
+    // ---- Auth (passwordless email code, same as the mobile app) ----
 
-    public async Task<RegisterResult> RegisterAsync(string email, string password, string? firstName, string? surname) =>
-        (await SendAsync<RegisterResult>(HttpMethod.Post, "/auth/register",
-            new { email, password, firstName, surname }, withAuth: false))!;
+    /// <summary>Step 1: request a one-time login code by email. DevCode is set only in the test phase.</summary>
+    public async Task<EmailCodeResult> RequestEmailCodeAsync(string email) =>
+        (await SendAsync<EmailCodeResult>(HttpMethod.Post, "/auth/email/request-code",
+            new { email }, withAuth: false))!;
 
-    public Task ConfirmEmailAsync(string email, string token) =>
-        SendAsync<object?>(HttpMethod.Post, "/auth/confirm-email", new { email, token }, withAuth: false);
-
-    public async Task LoginAsync(string email, string password)
+    /// <summary>Step 2: verify the code. Provisions the account on first login and stores the session.</summary>
+    public async Task VerifyEmailCodeAsync(string email, string code)
     {
-        var result = await SendAsync<AuthResult>(HttpMethod.Post, "/auth/login",
-            new { email, password }, withAuth: false);
+        var result = await SendAsync<AuthResult>(HttpMethod.Post, "/auth/email/verify",
+            new { email, code }, withAuth: false);
         Session.SetString("accessToken", result!.AccessToken);
         Session.SetString("userId", result.UserId.ToString());
     }
@@ -107,7 +106,7 @@ public sealed class ApiClient(HttpClient http, IHttpContextAccessor accessor)
         {
             Session.Clear(); // token expired or invalid — force a fresh login
             response.Dispose();
-            throw new ApiException("Your session has expired. Please log in again.");
+            throw new ApiException("Сесія завершилася. Будь ласка, увійдіть знову.");
         }
 
         // The API returns RFC7807 ProblemDetails; surface its title.
@@ -127,7 +126,7 @@ public sealed class ApiClient(HttpClient http, IHttpContextAccessor accessor)
 
 // ---- API response shapes (only the fields the pages actually use) ----
 
-public sealed record RegisterResult(Guid UserId, Guid CustomerId, string Email, string? DevConfirmationToken);
+public sealed record EmailCodeResult(string Email, string? DevCode);
 public sealed record AuthResult(string AccessToken, string RefreshToken, DateTimeOffset AccessTokenExpiresAt, Guid UserId, Guid CustomerId);
 public sealed record PlanDto(Guid Id, string Code, string Name, long PriceMinor, string Currency, int DurationDays);
 public sealed record InitiatePaymentResult(Guid PaymentId, string ProviderPaymentId, string ClientSecret, long AmountMinor, string Currency);

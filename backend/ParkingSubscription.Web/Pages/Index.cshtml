@@ -4,8 +4,6 @@
     ViewData["Title"] = "Тарифи";
 }
 
-<h1>Абонементи на паркінг</h1>
-
 @if (Model.Error is not null)
 {
     <div class="alert">@Model.Error</div>
@@ -13,27 +11,36 @@
 
 @if (!Model.LoggedIn)
 {
+    <h1>Абонементи на паркінг</h1>
     <p class="lead">
         Придбайте контрактний паркувальний абонемент, отримайте QR-код і пропуск у гаманець.
-        <a href="/Register">Створіть акаунт</a> або <a href="/Login">увійдіть</a>, щоб побачити тарифи.
+        <a href="/Login">Увійдіть за email</a>, щоб побачити тарифи — пароль не потрібен.
     </p>
 }
 else if (Model.Plans.Count == 0)
 {
+    <h1>Абонементи на паркінг</h1>
     <p>Наразі активних тарифів немає.</p>
 }
 else
 {
-    <div class="cards">
+    <div class="page-intro">
+        <h1>Оберіть абонемент</h1>
+        <p class="muted">Паркінг SilverBreeze · Київ, вул. Павла Тичини 1В</p>
+    </div>
+
+    <div class="plans">
         @foreach (var plan in Model.Plans)
         {
-            <div class="card">
-                <h2>@plan.Name</h2>
-                <p class="price">@Money.Format(plan.PriceMinor, plan.Currency)</p>
-                <p class="muted">Діє @plan.DurationDays днів</p>
+            var perDay = plan.DurationDays > 0 ? plan.PriceMinor / plan.DurationDays : 0;
+            <div class="plan">
+                <h3 class="plan-name">@plan.Name</h3>
+                <div class="plan-price">@Money.Format(plan.PriceMinor, plan.Currency)</div>
+                <div class="plan-per">@Money.Format(perDay, plan.Currency) / день</div>
+                <div class="plan-dur">Діє @plan.DurationDays днів</div>
                 <form method="post">
                     <input type="hidden" name="planId" value="@plan.Id" />
-                    <button type="submit" class="primary">Придбати</button>
+                    <button type="submit" class="primary plan-buy">Придбати</button>
                 </form>
             </div>
         }
