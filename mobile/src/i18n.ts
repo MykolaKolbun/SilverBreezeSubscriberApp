@@ -122,7 +122,7 @@ const uk: Dict = {
 };
 
 const en: Dict = {
-  'nav.pass': 'Pass',
+  'nav.pass': 'Subscription',
   'nav.profile': 'Profile',
 
   'auth.title.login': 'Sign in',
@@ -158,8 +158,8 @@ const en: Dict = {
   'pass.price': 'Price',
   'pass.buyMore': 'Buy another',
   'pass.upcoming': 'Upcoming',
-  'pass.empty.title': 'No active pass',
-  'pass.empty.body': 'Buy a parking pass for {name} and your QR will appear here.',
+  'pass.empty.title': 'No active subscription',
+  'pass.empty.body': 'Buy a parking subscription for {name} and your QR will appear here.',
   'pass.empty.cta': 'Choose a plan',
 
   'plans.title': 'Choose your plan',
@@ -212,11 +212,11 @@ const en: Dict = {
   'profile.surname': 'Surname',
   'profile.contactInfo': 'Contact details',
   'profile.completeTitle': 'Complete your profile',
-  'profile.completeBody': 'To buy a pass, enter your first name and surname. Phone is optional.',
+  'profile.completeBody': 'To buy a subscription, enter your first name and surname. Phone is optional.',
   'profile.completeHint': 'Enter your first name and surname to buy passes (phone optional).',
   'profile.account': 'Account',
   'profile.subscription': 'Subscription',
-  'profile.noActiveSub': 'No active pass',
+  'profile.noActiveSub': 'No active subscription',
   'profile.settings': 'Settings',
   'profile.notifications': 'Notifications',
   'profile.appearance': 'Appearance',
