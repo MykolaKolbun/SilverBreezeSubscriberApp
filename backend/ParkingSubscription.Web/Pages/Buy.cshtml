@@ -1,0 +1,36 @@
+@page
+@model BuyModel
+@{
+    ViewData["Title"] = "Оформлення";
+}
+
+<h1>Оформлення абонемента</h1>
+
+@if (Model.Error is not null)
+{
+    <div class="alert">@Model.Error</div>
+}
+
+@if (Model.Plan is { } plan)
+{
+    var end = Model.StartDate.AddDays(System.Math.Max(1, plan.DurationDays) - 1);
+    <div class="panel buy-summary">
+        <h3>@plan.Name</h3>
+        <p class="price">@Money.Format(plan.PriceMinor, plan.Currency)</p>
+        <p class="muted">Діє @plan.DurationDays днів</p>
+    </div>
+
+    <form method="post" class="form">
+        <label>Дата початку
+            <input type="date" asp-for="StartDate"
+                   min="@Model.MinStart.ToString("yyyy-MM-dd")" required />
+        </label>
+        <p class="muted">
+            Не раніше <strong>@Model.MinStart.ToString("dd.MM.yyyy")</strong> —
+            новий абонемент не може перетинатися з чинним.
+        </p>
+        <p class="muted">Період: <strong>@Model.StartDate.ToString("dd.MM.yyyy") – @end.ToString("dd.MM.yyyy")</strong></p>
+        <button type="submit" class="primary">Перейти до оплати</button>
+        <a href="/" class="link-button" style="margin-top:8px;">← До тарифів</a>
+    </form>
+}

@@ -46,9 +46,9 @@ public sealed class ApiClient(HttpClient http, IHttpContextAccessor accessor)
         (await SendAsync<List<PlanDto>>(HttpMethod.Get, "/plans"))!;
 
     /// <summary>Create the payment; RedirectUrl is the provider's hosted page (iPay) to send the browser to.</summary>
-    public async Task<InitiatePaymentResult> InitiatePaymentAsync(Guid planId) =>
+    public async Task<InitiatePaymentResult> InitiatePaymentAsync(Guid planId, DateOnly? startDate = null) =>
         (await SendAsync<InitiatePaymentResult>(HttpMethod.Post, "/payments",
-            new { userId = UserId, subscriptionPlanId = planId, client = "web" }))!;
+            new { userId = UserId, subscriptionPlanId = planId, startDate, client = "web" }))!;
 
     public async Task<PaymentDto> GetPaymentAsync(Guid paymentId) =>
         (await SendAsync<PaymentDto>(HttpMethod.Get, $"/payments/{paymentId}"))!;

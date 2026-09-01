@@ -23,23 +23,4 @@ public class IndexModel(ApiClient api) : PageModel
         }
     }
 
-    /// <summary>Buy: create the payment, then go to the payment page.</summary>
-    public async Task<IActionResult> OnPostAsync(Guid planId)
-    {
-        if (!LoggedIn)
-            return RedirectToPage("/Login");
-        try
-        {
-            var payment = await api.InitiatePaymentAsync(planId);
-            // Send the browser to the provider's hosted page (iPay). After payment the API's
-            // resolve endpoint confirms + fiscalizes server-side and returns to /Pay.
-            return Redirect(payment.RedirectUrl);
-        }
-        catch (ApiException ex)
-        {
-            Error = ex.Message;
-            await OnGetAsync();
-            return Page();
-        }
-    }
 }

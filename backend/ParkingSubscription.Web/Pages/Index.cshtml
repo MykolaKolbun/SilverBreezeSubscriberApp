@@ -38,10 +38,7 @@ else
                 <div class="plan-price">@Money.Format(plan.PriceMinor, plan.Currency)</div>
                 <div class="plan-per">@Money.Format(perDay, plan.Currency) / день</div>
                 <div class="plan-dur">Діє @plan.DurationDays днів</div>
-                <form method="post">
-                    <input type="hidden" name="planId" value="@plan.Id" />
-                    <button type="submit" class="primary plan-buy">Придбати</button>
-                </form>
+                <a href="/Buy?planId=@plan.Id" class="button primary plan-buy">Придбати</a>
             </div>
         }
     </div>
