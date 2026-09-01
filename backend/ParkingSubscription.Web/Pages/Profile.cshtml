@@ -1,0 +1,68 @@
+@page
+@model ProfileModel
+@{
+    ViewData["Title"] = "Профіль";
+}
+
+<h1>Профіль</h1>
+
+@if (Model.Error is not null)
+{
+    <div class="alert">@Model.Error</div>
+}
+@if (Model.Incomplete)
+{
+    <div class="alert">Заповніть ім'я та прізвище — без цього не можна придбати абонемент.</div>
+}
+
+<div class="profile-grid">
+    <div class="panel">
+        <h3>Контактні дані</h3>
+        <form method="post" asp-page-handler="Contact" class="form">
+            <label>Email <input type="email" value="@Model.Email" disabled /></label>
+            <label>Ім'я <input asp-for="FirstName" autocomplete="given-name" /></label>
+            <label>Прізвище <input asp-for="Surname" autocomplete="family-name" /></label>
+            <label>Телефон <input asp-for="Mobile" type="tel" autocomplete="tel" placeholder="+380..." /></label>
+            <div class="muted hint">Телефон не обов'язковий, але бажаний.</div>
+            @if (Model.Saved == "contact")
+            {
+                <div class="success">Збережено.</div>
+            }
+            <button type="submit" class="primary">Зберегти</button>
+        </form>
+    </div>
+
+    <div class="panel">
+        <h3>Автомобілі <span class="muted">(@Model.Vehicles.Count / @ProfileModel.MaxVehicles)</span></h3>
+        @if (Model.Vehicles.Count == 0)
+        {
+            <p class="muted">Ще не додано. Авто потрібне для в'їзду за номером.</p>
+        }
+        <div class="veh-list">
+            @foreach (var v in Model.Vehicles)
+            {
+                <div class="veh-row">
+                    <div><strong>@v.PlateNumber</strong> <span class="muted">@v.Make @v.Model</span></div>
+                    <form method="post" asp-page-handler="DeleteVehicle">
+                        <input type="hidden" name="vehicleId" value="@v.Id" />
+                        <button type="submit" class="link-button">Видалити</button>
+                    </form>
+                </div>
+            }
+        </div>
+
+        @if (Model.Vehicles.Count < ProfileModel.MaxVehicles)
+        {
+            <form method="post" asp-page-handler="AddVehicle" class="form" style="margin-top:var(--space-md);">
+                <label>Номер авто <input asp-for="Plate" placeholder="AA1234BB" required /></label>
+                <label>Марка <input asp-for="Make" placeholder="Toyota" /></label>
+                <label>Модель <input asp-for="CarModel" placeholder="Corolla" /></label>
+                <button type="submit" class="primary">Додати авто</button>
+            </form>
+        }
+        else
+        {
+            <p class="muted">Досягнуто ліміту (@ProfileModel.MaxVehicles).</p>
+        }
+    </div>
+</div>

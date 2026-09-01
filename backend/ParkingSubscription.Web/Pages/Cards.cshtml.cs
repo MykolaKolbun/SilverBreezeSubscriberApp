@@ -8,6 +8,12 @@ public class CardsModel(ApiClient api) : PageModel
     public List<ParkingCardDto> Cards { get; private set; } = [];
     public string? Error { get; private set; }
 
+    // Only the card whose period covers today is the live pass (full view); the rest
+    // (future stacked, or ended) are shown compactly.
+    public DateOnly Today { get; } = DateOnly.FromDateTime(DateTime.Now);
+    public ParkingCardDto? Current => Cards.FirstOrDefault(c => c.StartDate <= Today && c.EndDate >= Today);
+    public IEnumerable<ParkingCardDto> Others => Cards.Where(c => c != Current).OrderBy(c => c.StartDate);
+
     // Wallet passes are still stubs (no real Apple/Google integration). Keep the
     // buttons hidden until each provider is wired up; then flip the matching flag
     // (later: drive it from config) so its button appears on its own.

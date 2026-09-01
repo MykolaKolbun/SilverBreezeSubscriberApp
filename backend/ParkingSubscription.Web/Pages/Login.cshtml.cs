@@ -53,6 +53,10 @@ public class LoginModel(ApiClient api) : PageModel
         try
         {
             await api.VerifyEmailCodeAsync(Email.Trim(), Code.Trim());
+            // Prompt profile completion on first sign-in, like the app.
+            var user = await api.GetUserAsync();
+            if (string.IsNullOrWhiteSpace(user.FirstName) || string.IsNullOrWhiteSpace(user.Surname))
+                return RedirectToPage("/Profile");
             return RedirectToPage("/Cards");
         }
         catch (ApiException ex)

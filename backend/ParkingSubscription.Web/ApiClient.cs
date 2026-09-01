@@ -68,6 +68,39 @@ public sealed class ApiClient(HttpClient http, IHttpContextAccessor accessor)
         return result!.SaveUrl;
     }
 
+    // ---- Profile ----
+
+    public async Task<ApiUser> GetUserAsync() =>
+        (await SendAsync<ApiUser>(HttpMethod.Get, $"/users/{UserId}"))!;
+
+    public Task UpdateUserAsync(string? firstName, string? surname, string? mobile) =>
+        SendAsync<ApiUser>(HttpMethod.Put, $"/users/{UserId}", new { firstName, surname, mobile });
+
+    // ---- Vehicles ----
+
+    public async Task<List<ApiVehicle>> GetVehiclesAsync() =>
+        (await SendAsync<List<ApiVehicle>>(HttpMethod.Get, $"/users/{UserId}/vehicles"))!;
+
+    public Task CreateVehicleAsync(string plateNumber, string? make, string? model) =>
+        SendAsync<ApiVehicle>(HttpMethod.Post, "/vehicles",
+            new { userId = UserId, plateNumber, country = "UA", make, model });
+
+    public Task UpdateVehicleAsync(Guid id, string plateNumber, string? make, string? model) =>
+        SendAsync<ApiVehicle>(HttpMethod.Put, $"/vehicles/{id}",
+            new { plateNumber, country = "UA", make, model });
+
+    public Task DeleteVehicleAsync(Guid id) =>
+        SendAsync<object?>(HttpMethod.Delete, $"/vehicles/{id}");
+
+    // ---- Payment history & receipts ----
+
+    public async Task<List<PaymentDto>> GetPaymentsAsync() =>
+        (await SendAsync<List<PaymentDto>>(HttpMethod.Get, $"/users/{UserId}/payments"))!;
+
+    public Task<byte[]> GetReceiptPngAsync(Guid paymentId) => GetBytesAsync($"/payments/{paymentId}/receipt");
+
+    public Task<byte[]> GetReceiptPdfAsync(Guid paymentId) => GetBytesAsync($"/payments/{paymentId}/receipt.pdf");
+
     // ---- Plumbing ----
 
     private async Task<T?> SendAsync<T>(HttpMethod method, string url, object? body = null, bool withAuth = true)
@@ -126,7 +159,11 @@ public sealed record EmailCodeResult(string Email, string? DevCode);
 public sealed record AuthResult(string AccessToken, string RefreshToken, DateTimeOffset AccessTokenExpiresAt, Guid UserId, Guid CustomerId);
 public sealed record PlanDto(Guid Id, string Code, string Name, long PriceMinor, string Currency, int DurationDays);
 public sealed record InitiatePaymentResult(Guid PaymentId, string ProviderPaymentId, string RedirectUrl, long AmountMinor, string Currency);
-public sealed record PaymentDto(Guid Id, Guid? ParkingCardId, long AmountMinor, string Currency, string Status, string? FiscalReceiptId, string? FailureReason);
+public sealed record PaymentDto(
+    Guid Id, Guid? ParkingCardId, long AmountMinor, string Currency, string Status,
+    string? FiscalReceiptId, string? FiscalReceiptUrl, string? FailureReason, DateTimeOffset UpdatedAt);
+public sealed record ApiUser(Guid Id, string? FirstName, string? Surname, string? Email, string? Mobile);
+public sealed record ApiVehicle(Guid Id, string PlateNumber, string Country, string? Make, string? Model);
 public sealed record ParkingCardDto(Guid Id, DateOnly StartDate, DateOnly EndDate, string Status, string QrPayload);
 public sealed record PagedResult<T>(List<T> Items, string? NextPagingToken);
 public sealed record GoogleWalletLink(string SaveUrl);

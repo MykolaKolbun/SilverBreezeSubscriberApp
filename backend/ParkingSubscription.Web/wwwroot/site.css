@@ -219,6 +219,56 @@ nav a.accent:hover { color: var(--primary-dark); }
 .plan-buy { width: 100%; margin-top: auto; }
 
 /* ============================================================
+   Profile (contact + vehicles)
+   ============================================================ */
+
+.profile-grid { display: flex; flex-wrap: wrap; gap: var(--space-lg); align-items: flex-start; }
+.profile-grid > .panel { flex: 1 1 320px; min-width: 0; }
+.form .hint { margin: -4px 0 4px; }
+
+.veh-list { display: flex; flex-direction: column; }
+.veh-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-md);
+    padding: var(--space-sm) 0;
+    border-bottom: 1px solid var(--border);
+}
+.veh-row form { margin: 0; }
+
+/* ============================================================
+   Payment history
+   ============================================================ */
+
+.hist { display: flex; flex-direction: column; gap: var(--space-sm); }
+.hist-row {
+    display: flex;
+    align-items: center;
+    gap: var(--space-md);
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+    padding: var(--space-md);
+}
+.hist-main { flex: 1 1 auto; min-width: 0; }
+.hist-amount { font-weight: 800; font-size: 16px; }
+.hist-actions { display: flex; gap: var(--space-md); }
+
+/* Compact (non-current) subscriptions on the pass page */
+.pass-mini-list { display: flex; flex-direction: column; gap: var(--space-sm); max-width: 520px; }
+.pass-mini {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-md);
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+    padding: var(--space-md);
+}
+
+/* ============================================================
    Parking pass (Cards page) — the driver's barrier screen
    ============================================================ */
 

@@ -57,6 +57,12 @@ public class BuyModel(ApiClient api) : PageModel
     private async Task<IActionResult?> LoadAsync(Guid planId)
     {
         PlanId = planId;
+
+        // Gate: a complete profile (name + surname) is required before buying.
+        var user = await api.GetUserAsync();
+        if (string.IsNullOrWhiteSpace(user.FirstName) || string.IsNullOrWhiteSpace(user.Surname))
+            return RedirectToPage("/Profile");
+
         var plans = await api.GetPlansAsync();
         Plan = plans.FirstOrDefault(p => p.Id == planId);
         if (Plan is null)
