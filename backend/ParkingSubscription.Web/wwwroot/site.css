@@ -205,6 +205,21 @@ nav a.accent:hover { color: var(--primary-dark); }
 .lang-switch a.on { color: var(--primary); }
 .lang-switch a:hover { color: var(--text-primary); }
 
+/* Mobile header: brand on its own row, nav wraps below full-width so every link
+   and the theme/language controls stay reachable. */
+@media (max-width: 680px) {
+    .topbar { flex-wrap: wrap; row-gap: 10px; padding: var(--space-sm) var(--space-md); }
+    .brand { flex: 0 0 auto; }
+    nav {
+        width: 100%;
+        flex-wrap: wrap;
+        justify-content: flex-start;
+        gap: 10px 16px;
+    }
+    nav .inline-form { margin-left: 0; }
+    .lang-switch { margin-left: auto; }
+}
+
 /* ============================================================
    Cards (plans grid and parking cards)
    ============================================================ */
