@@ -62,26 +62,42 @@
     --radius-full: 999px; /* pills */
 }
 
+/* Light palette variables, reused by the explicit choice and the system rule below. */
+:root[data-theme="light"] {
+    --bg-primary: #F4F6FA;
+    --bg-card:    #FFFFFF;
+    --bg-input:   #F3F4F6;
+    --bg-chip:    #E9ECF2;
+    --text-primary:   #111827;
+    --text-secondary: #4B5563;
+    --text-muted:     #9CA3AF;
+    --border: #E5E7EB;
+    --ok-text:    #1BC47D;
+    --error-text: #DC2626;
+    --tint-green:  #DCFCE7;
+    --tint-orange: #FFF7ED;
+    --tint-red:    #FEF2F2;
+    --danger-bg:     #FEE2E2;
+    --danger-border: #EF4444;
+    --danger-text:   #DC2626;
+}
+
+/* System light — unless the user explicitly forced dark. */
 @media (prefers-color-scheme: light) {
-    :root {
+    :root:not([data-theme="dark"]) {
         --bg-primary: #F4F6FA;
         --bg-card:    #FFFFFF;
         --bg-input:   #F3F4F6;
         --bg-chip:    #E9ECF2;
-
         --text-primary:   #111827;
         --text-secondary: #4B5563;
         --text-muted:     #9CA3AF;
-
         --border: #E5E7EB;
-
         --ok-text:    #1BC47D;
         --error-text: #DC2626;
-
         --tint-green:  #DCFCE7;
         --tint-orange: #FFF7ED;
         --tint-red:    #FEF2F2;
-
         --danger-bg:     #FEE2E2;
         --danger-border: #EF4444;
         --danger-text:   #DC2626;
@@ -169,6 +185,25 @@ nav a { text-decoration: none; color: var(--text-secondary); font-weight: 600; f
 nav a:hover { color: var(--text-primary); }
 nav a.accent { color: var(--primary); }
 nav a.accent:hover { color: var(--primary-dark); }
+
+.icon-btn {
+    border: 1px solid var(--border);
+    background: var(--bg-input);
+    color: var(--text-primary);
+    border-radius: var(--radius-full);
+    width: 32px;
+    height: 32px;
+    padding: 0;
+    font-size: 15px;
+    line-height: 1;
+    cursor: pointer;
+}
+.icon-btn:hover { border-color: var(--text-muted); }
+
+.lang-switch { display: inline-flex; gap: 2px; font-size: 12px; font-weight: 700; }
+.lang-switch a { color: var(--text-muted); text-decoration: none; padding: 2px 4px; border-radius: var(--radius-sm); }
+.lang-switch a.on { color: var(--primary); }
+.lang-switch a:hover { color: var(--text-primary); }
 
 /* ============================================================
    Cards (plans grid and parking cards)

@@ -1,22 +1,10 @@
 @page
 @model CardsModel
 @{
-    ViewData["Title"] = "Мої пропуски";
-}
-@functions {
-    static string StatusLabel(string s) => s.ToLower() switch
-    {
-        "active" => "Активний",
-        "pending" => "Очікує",
-        "suspended" => "Призупинено",
-        "blocked" => "Заблоковано",
-        "expired" => "Прострочено",
-        "deleted" => "Видалено",
-        _ => s
-    };
+    ViewData["Title"] = L["cards.title"];
 }
 
-<h1>Мої пропуски</h1>
+<h1>@L["cards.title"]</h1>
 
 @if (Model.Error is not null)
 {
@@ -25,7 +13,7 @@
 
 @if (Model.Cards.Count == 0 && Model.Error is null)
 {
-    <p>У вас ще немає паркувального пропуску. <a href="/">Придбайте абонемент</a>, щоб його отримати.</p>
+    <p>@L["cards.emptyIntro"] <a href="/">@L["cards.emptyLink"]</a>@L["cards.emptyTail"]</p>
 }
 
 @if (Model.Current is { } card)
@@ -40,22 +28,22 @@
                 </svg>
                 SilverBreeze
             </span>
-            <span class="pass-status status-@card.Status.ToLower()">@StatusLabel(card.Status)</span>
+            <span class="pass-status status-@card.Status.ToLower()">@L.Status(card.Status)</span>
         </div>
 
         <div class="pass-body">
-            <div class="tag">Паркувальний пропуск</div>
-            <img class="qr" src="?handler=Qr&cardId=@card.Id" alt="QR-код для шлагбаума" width="240" height="240" />
-            <p class="pass-hint">Покажіть цей QR на шлагбаумі</p>
+            <div class="tag">@L["pass.tag"]</div>
+            <img class="qr" src="?handler=Qr&cardId=@card.Id" alt="QR" width="240" height="240" />
+            <p class="pass-hint">@L["pass.showQr"]</p>
 
             <div class="pass-period">
                 <div>
-                    <div class="lbl">Діє з</div>
+                    <div class="lbl">@L["pass.from"]</div>
                     <div class="val">@card.StartDate.ToString("dd.MM.yyyy")</div>
                 </div>
                 <div class="pass-sep">→</div>
                 <div>
-                    <div class="lbl">Діє до</div>
+                    <div class="lbl">@L["pass.to"]</div>
                     <div class="val">@card.EndDate.ToString("dd.MM.yyyy")</div>
                 </div>
             </div>
@@ -80,12 +68,12 @@
 }
 else if (Model.Cards.Count > 0)
 {
-    <div class="panel">Немає активного пропуску на сьогодні.</div>
+    <div class="panel">@L["pass.noCurrent"]</div>
 }
 
 @if (Model.Others.Any())
 {
-    <h3 style="margin-top:var(--space-xl);">Інші абонементи</h3>
+    <h3 style="margin-top:var(--space-xl);">@L["cards.others"]</h3>
     <div class="pass-mini-list">
         @foreach (var c in Model.Others)
         {
@@ -93,9 +81,9 @@ else if (Model.Cards.Count > 0)
             <div class="pass-mini">
                 <div>
                     <strong>@c.StartDate.ToString("dd.MM.yyyy") – @c.EndDate.ToString("dd.MM.yyyy")</strong>
-                    <div class="muted">@(upcoming ? $"розпочнеться {c.StartDate:dd.MM.yyyy}" : "завершено")</div>
+                    <div class="muted">@(upcoming ? L.Format("cards.startsOn", c.StartDate.ToString("dd.MM.yyyy")) : L["cards.ended"])</div>
                 </div>
-                <span class="status @(upcoming ? "status-pending" : "status-suspended")">@(upcoming ? "Заплановано" : "Завершено")</span>
+                <span class="status @(upcoming ? "status-pending" : "status-suspended")">@(upcoming ? L["cards.planned"] : L["cards.finished"])</span>
             </div>
         }
     </div>
@@ -104,6 +92,6 @@ else if (Model.Cards.Count > 0)
 @if (Model.Cards.Count > 0)
 {
     <p style="margin-top:var(--space-lg);">
-        <a href="/" class="button primary">Продовжити абонемент</a>
+        <a href="/" class="button primary">@L["cards.renew"]</a>
     </p>
 }

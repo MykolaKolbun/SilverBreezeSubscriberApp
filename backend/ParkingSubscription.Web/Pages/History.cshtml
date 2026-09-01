@@ -1,22 +1,10 @@
 @page
 @model HistoryModel
 @{
-    ViewData["Title"] = "Історія";
-}
-@functions {
-    static string StatusLabel(string s) => s.ToLower() switch
-    {
-        "succeeded" => "Успішно",
-        "pending" => "Обробляється",
-        "declined" => "Відхилено",
-        "failed" => "Помилка",
-        "timedout" => "Час вичерпано",
-        "refunded" => "Повернено",
-        _ => s
-    };
+    ViewData["Title"] = L["nav.history"];
 }
 
-<h1>Історія платежів</h1>
+<h1>@L["history.title"]</h1>
 
 @if (Model.Error is not null)
 {
@@ -25,7 +13,7 @@
 
 @if (Model.Payments.Count == 0 && Model.Error is null)
 {
-    <p class="muted">Платежів ще немає.</p>
+    <p class="muted">@L["history.empty"]</p>
 }
 
 <div class="hist">
@@ -36,12 +24,12 @@
                 <div class="hist-amount">@Money.Format(p.AmountMinor, p.Currency)</div>
                 <div class="muted">@p.UpdatedAt.ToLocalTime().ToString("dd.MM.yyyy HH:mm")</div>
             </div>
-            <span class="status status-@p.Status.ToLower()">@StatusLabel(p.Status)</span>
+            <span class="status status-@p.Status.ToLower()">@L.Status(p.Status)</span>
             <div class="hist-actions">
                 @if (p.FiscalReceiptId is not null)
                 {
-                    <a class="link-button" href="?handler=ReceiptPng&paymentId=@p.Id" target="_blank" rel="noopener">Чек</a>
-                    <a class="link-button" href="?handler=ReceiptPdf&paymentId=@p.Id">PDF</a>
+                    <a class="link-button" href="?handler=ReceiptPng&paymentId=@p.Id" target="_blank" rel="noopener">@L["history.receipt"]</a>
+                    <a class="link-button" href="?handler=ReceiptPdf&paymentId=@p.Id">@L["history.pdf"]</a>
                 }
             </div>
         </div>

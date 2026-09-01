@@ -1,5 +1,10 @@
 <!DOCTYPE html>
-<html lang="uk">
+@{
+    var loggedIn = Context.Session.GetString("accessToken") is not null;
+    var themeCookie = Context.Request.Cookies["sb_theme"];
+    var themeAttr = themeCookie is "light" or "dark" ? themeCookie : null;
+}
+<html lang="@L.Lang"@(themeAttr is not null ? $" data-theme=\"{themeAttr}\"" : "")>
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
@@ -7,9 +12,6 @@
     <link rel="stylesheet" href="~/site.css" asp-append-version="true" />
 </head>
 <body>
-@{
-    var loggedIn = Context.Session.GetString("accessToken") is not null;
-}
 <header class="topbar">
     <a class="brand" href="/" aria-label="SilverBreeze">
         <svg class="sb-mark" viewBox="0 0 22 32" width="20" height="29" fill="none" aria-hidden="true">
@@ -20,20 +22,25 @@
         <span class="sb-word">SilverBreeze</span>
     </a>
     <nav>
-        <a href="/">Тарифи</a>
+        <a href="/">@L["nav.plans"]</a>
         @if (loggedIn)
         {
-            <a href="/Cards">Мої пропуски</a>
-            <a href="/History">Історія</a>
-            <a href="/Profile">Профіль</a>
+            <a href="/Cards">@L["nav.cards"]</a>
+            <a href="/History">@L["nav.history"]</a>
+            <a href="/Profile">@L["nav.profile"]</a>
             <form method="post" asp-page="/Logout" class="inline-form">
-                <button type="submit" class="link-button">Вийти</button>
+                <button type="submit" class="link-button">@L["nav.logout"]</button>
             </form>
         }
         else
         {
-            <a href="/Login" class="accent">Увійти</a>
+            <a href="/Login" class="accent">@L["nav.login"]</a>
         }
+        <button type="button" class="icon-btn" onclick="sbToggleTheme()" title="@L["theme.aria"]" aria-label="@L["theme.aria"]">◐</button>
+        <span class="lang-switch">
+            <a href="#" onclick="sbSetLang('uk');return false;" class="@(L.Lang == "uk" ? "on" : "")">UA</a>
+            <a href="#" onclick="sbSetLang('en');return false;" class="@(L.Lang == "en" ? "on" : "")">EN</a>
+        </span>
     </nav>
 </header>
 
@@ -42,7 +49,21 @@
 </main>
 
 <footer>
-    <small>SilverBreeze · контрактний паркінг · Київ, вул. Павла Тичини 1В</small>
+    <small>@L["footer"]</small>
 </footer>
+
+<script>
+    function sbToggleTheme() {
+        var el = document.documentElement, cur = el.getAttribute('data-theme');
+        var sysDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+        var next = cur === 'dark' ? 'light' : (cur === 'light' ? 'dark' : (sysDark ? 'light' : 'dark'));
+        el.setAttribute('data-theme', next);
+        document.cookie = 'sb_theme=' + next + ';path=/;max-age=31536000;samesite=lax';
+    }
+    function sbSetLang(l) {
+        document.cookie = 'sb_lang=' + l + ';path=/;max-age=31536000;samesite=lax';
+        location.reload();
+    }
+</script>
 </body>
 </html>

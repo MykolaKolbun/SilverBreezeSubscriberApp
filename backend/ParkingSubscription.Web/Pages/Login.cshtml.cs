@@ -4,7 +4,7 @@ using Microsoft.AspNetCore.Mvc.RazorPages;
 namespace ParkingSubscription.Web.Pages;
 
 // Passwordless login, mirroring the mobile app: email -> one-time code -> in.
-public class LoginModel(ApiClient api) : PageModel
+public class LoginModel(ApiClient api, LocService L) : PageModel
 {
     [BindProperty] public string Email { get; set; } = "";
     [BindProperty] public string? Code { get; set; }
@@ -25,7 +25,7 @@ public class LoginModel(ApiClient api) : PageModel
     {
         if (string.IsNullOrWhiteSpace(Email))
         {
-            Error = "Вкажіть email.";
+            Error = L["err.needEmail"];
             return Page();
         }
         try
@@ -46,7 +46,7 @@ public class LoginModel(ApiClient api) : PageModel
     {
         if (string.IsNullOrWhiteSpace(Code))
         {
-            Error = "Введіть код із листа.";
+            Error = L["err.needCode"];
             CodeSent = true;
             return Page();
         }

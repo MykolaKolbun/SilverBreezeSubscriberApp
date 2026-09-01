@@ -4,7 +4,7 @@ using Microsoft.AspNetCore.Mvc.RazorPages;
 namespace ParkingSubscription.Web.Pages;
 
 // Profile: editable contact details + vehicles, mirroring the mobile ProfileScreen.
-public class ProfileModel(ApiClient api) : PageModel
+public class ProfileModel(ApiClient api, LocService L) : PageModel
 {
     public const int MaxVehicles = 3;
 
@@ -47,7 +47,7 @@ public class ProfileModel(ApiClient api) : PageModel
         if (!api.IsLoggedIn) return RedirectToPage("/Login");
         if (string.IsNullOrWhiteSpace(Plate))
         {
-            Error = "Вкажіть номер авто.";
+            Error = L["err.needPlate"];
             await LoadAsync();
             return Page();
         }

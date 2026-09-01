@@ -1,22 +1,10 @@
 @page
 @model PayModel
 @{
-    ViewData["Title"] = "Оплата";
-}
-@functions {
-    static string StatusLabel(string s) => s.ToLower() switch
-    {
-        "succeeded" => "Успішно",
-        "pending" => "Обробляється",
-        "declined" => "Відхилено",
-        "failed" => "Помилка",
-        "timedout" => "Час вичерпано",
-        "refunded" => "Повернено",
-        _ => s
-    };
+    ViewData["Title"] = L["pay.title"];
 }
 
-<h1>Оплата</h1>
+<h1>@L["pay.title"]</h1>
 
 @if (Model.Error is not null)
 {
@@ -26,8 +14,8 @@
 @if (Model.Payment is { } p)
 {
     <div class="panel">
-        <p><strong>Сума:</strong> @Money.Format(p.AmountMinor, p.Currency)</p>
-        <p><strong>Статус:</strong> <span class="status status-@p.Status.ToLower()">@StatusLabel(p.Status)</span></p>
+        <p><strong>@L["pay.amount"]:</strong> @Money.Format(p.AmountMinor, p.Currency)</p>
+        <p><strong>@L["pay.status"]:</strong> <span class="status status-@p.Status.ToLower()">@L.Status(p.Status)</span></p>
         @if (p.FailureReason is not null)
         {
             <p class="muted">@p.FailureReason</p>
@@ -37,22 +25,22 @@
     @if (p.Status == "Succeeded")
     {
         <div class="success">
-            Оплату завершено — ваш абонемент активний.
+            @L["pay.done"]
             @if (p.FiscalReceiptId is not null)
             {
-                <br /><small>Фіскальний чек: @p.FiscalReceiptId</small>
+                <br /><small>@L["pay.receipt"]: @p.FiscalReceiptId</small>
             }
         </div>
-        <p><a class="button primary" href="/Cards">Перейти до мого пропуску →</a></p>
+        <p><a class="button primary" href="/Cards">@L["pay.toPass"]</a></p>
     }
     else if (p.Status == "Pending")
     {
-        <p class="muted">Оплата ще обробляється. Оновіть статус за кілька секунд.</p>
-        <p><a class="button" href="/Pay?paymentId=@Model.PaymentId">Оновити статус</a></p>
+        <p class="muted">@L["pay.processing"]</p>
+        <p><a class="button" href="/Pay?paymentId=@Model.PaymentId">@L["pay.refresh"]</a></p>
     }
     else
     {
-        <div class="alert">Оплату не завершено.</div>
-        <p><a class="button primary" href="/">Обрати абонемент</a></p>
+        <div class="alert">@L["pay.failed"]</div>
+        <p><a class="button primary" href="/">@L["pay.choose"]</a></p>
     }
 }

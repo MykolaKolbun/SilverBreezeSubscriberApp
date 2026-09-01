@@ -17,6 +17,7 @@ builder.Services.AddSession(o =>
 });
 
 builder.Services.AddHttpContextAccessor();
+builder.Services.AddScoped<LocService>();
 builder.Services.AddHttpClient<ApiClient>(http =>
     http.BaseAddress = new Uri(builder.Configuration["Api:BaseUrl"] ?? "http://localhost:5024"));
 

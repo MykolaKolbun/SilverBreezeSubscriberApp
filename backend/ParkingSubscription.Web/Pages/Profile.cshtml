@@ -1,10 +1,10 @@
 @page
 @model ProfileModel
 @{
-    ViewData["Title"] = "Профіль";
+    ViewData["Title"] = L["profile.title"];
 }
 
-<h1>Профіль</h1>
+<h1>@L["profile.title"]</h1>
 
 @if (Model.Error is not null)
 {
@@ -12,31 +12,31 @@
 }
 @if (Model.Incomplete)
 {
-    <div class="alert">Заповніть ім'я та прізвище — без цього не можна придбати абонемент.</div>
+    <div class="alert">@L["profile.incomplete"]</div>
 }
 
 <div class="profile-grid">
     <div class="panel">
-        <h3>Контактні дані</h3>
+        <h3>@L["profile.contact"]</h3>
         <form method="post" asp-page-handler="Contact" class="form">
-            <label>Email <input type="email" value="@Model.Email" disabled /></label>
-            <label>Ім'я <input asp-for="FirstName" autocomplete="given-name" /></label>
-            <label>Прізвище <input asp-for="Surname" autocomplete="family-name" /></label>
-            <label>Телефон <input asp-for="Mobile" type="tel" autocomplete="tel" placeholder="+380..." /></label>
-            <div class="muted hint">Телефон не обов'язковий, але бажаний.</div>
+            <label>@L["common.email"] <input type="email" value="@Model.Email" disabled /></label>
+            <label>@L["profile.firstName"] <input asp-for="FirstName" autocomplete="given-name" /></label>
+            <label>@L["profile.surname"] <input asp-for="Surname" autocomplete="family-name" /></label>
+            <label>@L["profile.phone"] <input asp-for="Mobile" type="tel" autocomplete="tel" placeholder="+380..." /></label>
+            <div class="muted hint">@L["profile.phoneHint"]</div>
             @if (Model.Saved == "contact")
             {
-                <div class="success">Збережено.</div>
+                <div class="success">@L["common.saved"]</div>
             }
-            <button type="submit" class="primary">Зберегти</button>
+            <button type="submit" class="primary">@L["common.save"]</button>
         </form>
     </div>
 
     <div class="panel">
-        <h3>Автомобілі <span class="muted">(@Model.Vehicles.Count / @ProfileModel.MaxVehicles)</span></h3>
+        <h3>@L["profile.vehicles"] <span class="muted">(@Model.Vehicles.Count / @ProfileModel.MaxVehicles)</span></h3>
         @if (Model.Vehicles.Count == 0)
         {
-            <p class="muted">Ще не додано. Авто потрібне для в'їзду за номером.</p>
+            <p class="muted">@L["profile.noVehicles"]</p>
         }
         <div class="veh-list">
             @foreach (var v in Model.Vehicles)
@@ -45,7 +45,7 @@
                     <div><strong>@v.PlateNumber</strong> <span class="muted">@v.Make @v.Model</span></div>
                     <form method="post" asp-page-handler="DeleteVehicle">
                         <input type="hidden" name="vehicleId" value="@v.Id" />
-                        <button type="submit" class="link-button">Видалити</button>
+                        <button type="submit" class="link-button">@L["profile.delete"]</button>
                     </form>
                 </div>
             }
@@ -54,15 +54,15 @@
         @if (Model.Vehicles.Count < ProfileModel.MaxVehicles)
         {
             <form method="post" asp-page-handler="AddVehicle" class="form" style="margin-top:var(--space-md);">
-                <label>Номер авто <input asp-for="Plate" placeholder="AA1234BB" required /></label>
-                <label>Марка <input asp-for="Make" placeholder="Toyota" /></label>
-                <label>Модель <input asp-for="CarModel" placeholder="Corolla" /></label>
-                <button type="submit" class="primary">Додати авто</button>
+                <label>@L["profile.plate"] <input asp-for="Plate" placeholder="AA1234BB" required /></label>
+                <label>@L["profile.make"] <input asp-for="Make" placeholder="Toyota" /></label>
+                <label>@L["profile.model"] <input asp-for="CarModel" placeholder="Corolla" /></label>
+                <button type="submit" class="primary">@L["profile.addVehicle"]</button>
             </form>
         }
         else
         {
-            <p class="muted">Досягнуто ліміту (@ProfileModel.MaxVehicles).</p>
+            <p class="muted">@L.Format("profile.limit", ProfileModel.MaxVehicles)</p>
         }
     </div>
 </div>
