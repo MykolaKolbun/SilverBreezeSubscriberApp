@@ -284,12 +284,13 @@ public sealed class PaymentService(
         // Renewal-aware start: if the user already holds active cards, the new card
         // starts the day after the latest one ends (stacking), so a repeat purchase
         // does not collide with the one-active-card-per-period rule. Otherwise today.
-        var start = clock.Today;
-        var latestActiveEnd = await db.ParkingCards
+        var activeCards = await db.ParkingCards
             .Where(c => c.UserId == payment.UserId && c.Status == CardStatus.Active && !c.IsDeleted)
-            .OrderByDescending(c => c.EndDate)
-            .Select(c => (DateOnly?)c.EndDate)
-            .FirstOrDefaultAsync(ct);
+            .Select(c => new { c.StartDate, c.EndDate })
+            .ToListAsync(ct);
+
+        var start = clock.Today;
+        var latestActiveEnd = activeCards.Count > 0 ? activeCards.Max(c => c.EndDate) : (DateOnly?)null;
         if (latestActiveEnd is DateOnly le && le >= start)
             start = le.AddDays(1);
 
@@ -297,9 +298,12 @@ public sealed class PaymentService(
         if (payment.RequestedStartDate is DateOnly rs && rs > start)
             start = rs;
 
-        // Card dates come from the shared SubscriptionSchedule helper (single source);
-        // the next renewal stacks from end + 1 day (the floor computed above).
-        var end = SubscriptionSchedule.EndDate(start, plan.DurationDays);
+        // Card dates come from the shared SubscriptionSchedule helper (single source),
+        // anchored to the chain's original day-of-month so periods don't drift after
+        // short months; the next renewal stacks from end + 1 day.
+        var anchorDay = SubscriptionSchedule.AnchorDay(
+            activeCards.Select(c => (c.StartDate, c.EndDate)), start);
+        var end = SubscriptionSchedule.EndDate(start, plan.DurationDays, anchorDay);
         var card = await parkingCards.CreateAsync(
             new CreateParkingCardRequest(payment.UserId, plan.Id, start, end, null), ct);
 

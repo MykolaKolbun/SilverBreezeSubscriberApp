@@ -19,7 +19,9 @@ public sealed class PlansController(IPlanService plans) : ControllerBase
     [HttpGet("{id:guid}/period")]
     public async Task<ActionResult<PlanPeriodDto>> Period(Guid id, [FromQuery] DateOnly start, CancellationToken ct)
     {
-        var period = await plans.GetPeriodAsync(id, start, ct);
+        if (!Guid.TryParse(User.FindFirst("uid")?.Value, out var userId))
+            return Forbid();
+        var period = await plans.GetPeriodAsync(userId, id, start, ct);
         return period is null ? NotFound() : Ok(period);
     }
 }
