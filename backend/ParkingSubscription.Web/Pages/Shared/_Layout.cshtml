@@ -21,7 +21,8 @@
         </svg>
         <span class="sb-word">SilverBreeze</span>
     </a>
-    <nav>
+    <button type="button" class="nav-toggle" onclick="sbToggleMenu()" aria-label="Меню" aria-expanded="false">☰</button>
+    <nav id="sbnav">
         <a href="/">@L["nav.plans"]</a>
         @if (loggedIn)
         {
@@ -63,6 +64,12 @@
     function sbSetLang(l) {
         document.cookie = 'sb_lang=' + l + ';path=/;max-age=31536000;samesite=lax';
         location.reload();
+    }
+    function sbToggleMenu() {
+        var bar = document.querySelector('.topbar');
+        var open = bar.classList.toggle('open');
+        var btn = bar.querySelector('.nav-toggle');
+        if (btn) btn.setAttribute('aria-expanded', open ? 'true' : 'false');
     }
 </script>
 </body>

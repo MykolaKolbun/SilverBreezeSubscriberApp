@@ -12,6 +12,8 @@ public class BuyModel(ApiClient api) : PageModel
     public PlanDto? Plan { get; private set; }
     public DateOnly MinStart { get; private set; }
     [BindProperty] public DateOnly StartDate { get; set; }
+    // End date is fetched from the backend (single source), never computed here.
+    public DateOnly EndDate { get; private set; }
     public string? Error { get; private set; }
 
     public async Task<IActionResult> OnGetAsync(Guid planId)
@@ -24,6 +26,7 @@ public class BuyModel(ApiClient api) : PageModel
             return setup;
 
         StartDate = MinStart;
+        await FillPeriodAsync();
         return Page();
     }
 
@@ -48,8 +51,15 @@ public class BuyModel(ApiClient api) : PageModel
         catch (ApiException ex)
         {
             Error = ex.Message;
+            await FillPeriodAsync();
             return Page();
         }
+    }
+
+    private async Task FillPeriodAsync()
+    {
+        var period = await api.GetPeriodAsync(PlanId, StartDate);
+        EndDate = period?.EndDate ?? StartDate;
     }
 
     // Loads the plan and computes the earliest allowed start; returns a redirect only

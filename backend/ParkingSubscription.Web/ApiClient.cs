@@ -45,6 +45,10 @@ public sealed class ApiClient(HttpClient http, IHttpContextAccessor accessor)
     public async Task<List<PlanDto>> GetPlansAsync() =>
         (await SendAsync<List<PlanDto>>(HttpMethod.Get, "/plans"))!;
 
+    /// <summary>The plan's validity window for a start date — computed by the backend, not here.</summary>
+    public Task<PlanPeriodDto?> GetPeriodAsync(Guid planId, DateOnly start) =>
+        SendAsync<PlanPeriodDto>(HttpMethod.Get, $"/plans/{planId}/period?start={start:yyyy-MM-dd}");
+
     /// <summary>Create the payment; RedirectUrl is the provider's hosted page (iPay) to send the browser to.</summary>
     public async Task<InitiatePaymentResult> InitiatePaymentAsync(Guid planId, DateOnly? startDate = null) =>
         (await SendAsync<InitiatePaymentResult>(HttpMethod.Post, "/payments",
@@ -158,6 +162,7 @@ public sealed class ApiClient(HttpClient http, IHttpContextAccessor accessor)
 public sealed record EmailCodeResult(string Email, string? DevCode);
 public sealed record AuthResult(string AccessToken, string RefreshToken, DateTimeOffset AccessTokenExpiresAt, Guid UserId, Guid CustomerId);
 public sealed record PlanDto(Guid Id, string Code, string Name, long PriceMinor, string Currency, int DurationDays);
+public sealed record PlanPeriodDto(DateOnly StartDate, DateOnly EndDate);
 public sealed record InitiatePaymentResult(Guid PaymentId, string ProviderPaymentId, string RedirectUrl, long AmountMinor, string Currency);
 public sealed record PaymentDto(
     Guid Id, Guid? ParkingCardId, long AmountMinor, string Currency, string Status,

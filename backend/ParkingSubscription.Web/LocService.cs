@@ -34,7 +34,7 @@ public sealed class LocService(IHttpContextAccessor accessor)
     {
         // Nav / layout
         ["nav.plans"] = ("Тарифи", "Plans"),
-        ["nav.cards"] = ("Мої пропуски", "My passes"),
+        ["nav.cards"] = ("Мої абонементи", "My subscriptions"),
         ["nav.history"] = ("Історія", "History"),
         ["nav.profile"] = ("Профіль", "Profile"),
         ["nav.logout"] = ("Вийти", "Sign out"),
@@ -64,8 +64,8 @@ public sealed class LocService(IHttpContextAccessor accessor)
 
         // Index / plans
         ["index.subsTitle"] = ("Абонементи на паркінг", "Parking subscriptions"),
-        ["index.leadIntro"] = ("Придбайте контрактний паркувальний абонемент, отримайте QR-код і пропуск у гаманець.",
-                               "Buy a contract parking subscription, get a QR code and a wallet pass."),
+        ["index.leadIntro"] = ("Придбайте контрактний паркувальний абонемент і отримайте QR-код для в'їзду.",
+                               "Buy a contract parking subscription and get a QR code for entry."),
         ["index.leadLogin"] = ("Увійдіть за email", "Sign in with email"),
         ["index.leadTail"] = (", щоб побачити тарифи — пароль не потрібен.",
                               " to see the plans — no password needed."),
@@ -94,7 +94,7 @@ public sealed class LocService(IHttpContextAccessor accessor)
         ["pay.done"] = ("Оплату завершено — ваш абонемент активний.",
                         "Payment complete — your subscription is active."),
         ["pay.receipt"] = ("Фіскальний чек", "Fiscal receipt"),
-        ["pay.toPass"] = ("Перейти до мого пропуску →", "Go to my pass →"),
+        ["pay.toPass"] = ("Перейти до мого абонемента →", "Go to my subscription →"),
         ["pay.processing"] = ("Оплата ще обробляється. Оновіть статус за кілька секунд.",
                               "Payment is still processing. Refresh in a few seconds."),
         ["pay.refresh"] = ("Оновити статус", "Refresh status"),
@@ -102,15 +102,15 @@ public sealed class LocService(IHttpContextAccessor accessor)
         ["pay.choose"] = ("Обрати абонемент", "Choose a subscription"),
 
         // Cards / pass
-        ["cards.title"] = ("Мої пропуски", "My passes"),
-        ["cards.emptyIntro"] = ("У вас ще немає паркувального пропуску.", "You don't have a parking pass yet."),
+        ["cards.title"] = ("Мої абонементи", "My subscriptions"),
+        ["cards.emptyIntro"] = ("У вас ще немає паркувального абонемента.", "You don't have a parking subscription yet."),
         ["cards.emptyLink"] = ("Придбайте абонемент", "Buy a subscription"),
         ["cards.emptyTail"] = (", щоб його отримати.", " to get one."),
-        ["pass.tag"] = ("Паркувальний пропуск", "Parking pass"),
+        ["pass.tag"] = ("Паркувальний абонемент", "Parking subscription"),
         ["pass.showQr"] = ("Покажіть цей QR на шлагбаумі", "Show this QR at the barrier"),
         ["pass.from"] = ("Діє з", "Valid from"),
         ["pass.to"] = ("Діє до", "Valid to"),
-        ["pass.noCurrent"] = ("Немає активного пропуску на сьогодні.", "No active pass for today."),
+        ["pass.noCurrent"] = ("Немає активного абонемента на сьогодні.", "No active subscription for today."),
         ["cards.others"] = ("Інші абонементи", "Other subscriptions"),
         ["cards.startsOn"] = ("розпочнеться {0}", "starts {0}"),
         ["cards.ended"] = ("завершено", "ended"),

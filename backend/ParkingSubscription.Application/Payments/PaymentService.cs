@@ -297,11 +297,9 @@ public sealed class PaymentService(
         if (payment.RequestedStartDate is DateOnly rs && rs > start)
             start = rs;
 
-        // End date is a calendar month span: startDate + N months (N from the plan's
-        // day count when it is a whole number of 30-day months). The next (renewal)
-        // subscription then stacks from end + 1 day (the floor computed above).
-        var months = plan.DurationDays > 0 && plan.DurationDays % 30 == 0 ? plan.DurationDays / 30 : 0;
-        var end = months > 0 ? start.AddMonths(months) : start.AddDays(Math.Max(1, plan.DurationDays) - 1);
+        // Card dates come from the shared SubscriptionSchedule helper (single source);
+        // the next renewal stacks from end + 1 day (the floor computed above).
+        var end = SubscriptionSchedule.EndDate(start, plan.DurationDays);
         var card = await parkingCards.CreateAsync(
             new CreateParkingCardRequest(payment.UserId, plan.Id, start, end, null), ct);
 

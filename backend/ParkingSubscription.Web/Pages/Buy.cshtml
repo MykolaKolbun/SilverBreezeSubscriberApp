@@ -13,8 +13,6 @@
 
 @if (Model.Plan is { } plan)
 {
-    var months = plan.DurationDays > 0 && plan.DurationDays % 30 == 0 ? plan.DurationDays / 30 : 0;
-    var end = months > 0 ? Model.StartDate.AddMonths(months) : Model.StartDate.AddDays(System.Math.Max(1, plan.DurationDays) - 1);
     <div class="panel buy-summary">
         <h3>@plan.Name</h3>
         <p class="price">@Money.Format(plan.PriceMinor, plan.Currency)</p>
@@ -27,7 +25,7 @@
                    min="@Model.MinStart.ToString("yyyy-MM-dd")" required />
         </label>
         <p class="muted">@L.Format("buy.notBefore", Model.MinStart.ToString("dd.MM.yyyy"))</p>
-        <p class="muted">@L["buy.period"]: <strong>@Model.StartDate.ToString("dd.MM.yyyy") – @end.ToString("dd.MM.yyyy")</strong></p>
+        <p class="muted">@L["buy.period"]: <strong>@Model.StartDate.ToString("dd.MM.yyyy") – @Model.EndDate.ToString("dd.MM.yyyy")</strong></p>
         <button type="submit" class="primary">@L["buy.toPay"]</button>
         <a href="/" class="link-button" style="margin-top:8px;">@L["buy.back"]</a>
     </form>
