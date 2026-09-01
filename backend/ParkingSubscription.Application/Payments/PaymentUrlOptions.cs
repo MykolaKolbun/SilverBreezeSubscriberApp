@@ -14,4 +14,11 @@ public sealed class PaymentUrlOptions
 
     public string PublicBaseUrl { get; set; } = "http://localhost:8080";
     public string AppReturnUrl { get; set; } = "silverbreeze://payment";
+
+    /// <summary>
+    /// Where the resolve endpoint sends the browser for WEB clients (client=web) once the
+    /// payment is confirmed — the public URL of the Web client's payment-result page.
+    /// The mobile app keeps using <see cref="AppReturnUrl"/> (the deep link).
+    /// </summary>
+    public string WebReturnUrl { get; set; } = "http://localhost:5100/Pay";
 }

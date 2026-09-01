@@ -90,8 +90,11 @@ public sealed class PaymentService(
         // Distinct good/bad paths so both can be whitelisted in the iPay cabinet as fixed
         // URLs; the paymentId rides as a query param (iPay preserves it on redirect).
         var baseUrl = urls.PublicBaseUrl.TrimEnd('/');
-        var successUrl = $"{baseUrl}/payments/resolve/good?paymentId={payment.Id}";
-        var failureUrl = $"{baseUrl}/payments/resolve/bad?paymentId={payment.Id}";
+        // For a web client, carry client=web through the redirect so resolve returns the
+        // browser to the web page instead of the app deep link (iPay preserves query params).
+        var clientQs = string.Equals(req.Client, "web", StringComparison.OrdinalIgnoreCase) ? "&client=web" : "";
+        var successUrl = $"{baseUrl}/payments/resolve/good?paymentId={payment.Id}{clientQs}";
+        var failureUrl = $"{baseUrl}/payments/resolve/bad?paymentId={payment.Id}{clientQs}";
 
         var intent = await provider.CreatePaymentAsync(
             new PaymentInitiation(

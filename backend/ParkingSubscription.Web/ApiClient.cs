@@ -45,17 +45,13 @@ public sealed class ApiClient(HttpClient http, IHttpContextAccessor accessor)
     public async Task<List<PlanDto>> GetPlansAsync() =>
         (await SendAsync<List<PlanDto>>(HttpMethod.Get, "/plans"))!;
 
+    /// <summary>Create the payment; RedirectUrl is the provider's hosted page (iPay) to send the browser to.</summary>
     public async Task<InitiatePaymentResult> InitiatePaymentAsync(Guid planId) =>
         (await SendAsync<InitiatePaymentResult>(HttpMethod.Post, "/payments",
-            new { userId = UserId, subscriptionPlanId = planId }))!;
+            new { userId = UserId, subscriptionPlanId = planId, client = "web" }))!;
 
     public async Task<PaymentDto> GetPaymentAsync(Guid paymentId) =>
         (await SendAsync<PaymentDto>(HttpMethod.Get, $"/payments/{paymentId}"))!;
-
-    /// <summary>Dev-only: plays the role of the payment provider calling the webhook.</summary>
-    public async Task<PaymentDto> SimulateProviderCallbackAsync(string providerPaymentId, string status) =>
-        (await SendAsync<PaymentDto>(HttpMethod.Post, "/payments/webhook",
-            new { providerPaymentId, status }, withAuth: false))!;
 
     // ---- My cards ----
 
@@ -129,7 +125,7 @@ public sealed class ApiClient(HttpClient http, IHttpContextAccessor accessor)
 public sealed record EmailCodeResult(string Email, string? DevCode);
 public sealed record AuthResult(string AccessToken, string RefreshToken, DateTimeOffset AccessTokenExpiresAt, Guid UserId, Guid CustomerId);
 public sealed record PlanDto(Guid Id, string Code, string Name, long PriceMinor, string Currency, int DurationDays);
-public sealed record InitiatePaymentResult(Guid PaymentId, string ProviderPaymentId, string ClientSecret, long AmountMinor, string Currency);
+public sealed record InitiatePaymentResult(Guid PaymentId, string ProviderPaymentId, string RedirectUrl, long AmountMinor, string Currency);
 public sealed record PaymentDto(Guid Id, Guid? ParkingCardId, long AmountMinor, string Currency, string Status, string? FiscalReceiptId, string? FailureReason);
 public sealed record ParkingCardDto(Guid Id, DateOnly StartDate, DateOnly EndDate, string Status, string QrPayload);
 public sealed record PagedResult<T>(List<T> Items, string? NextPagingToken);

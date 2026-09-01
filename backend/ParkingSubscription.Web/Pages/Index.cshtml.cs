@@ -31,7 +31,9 @@ public class IndexModel(ApiClient api) : PageModel
         try
         {
             var payment = await api.InitiatePaymentAsync(planId);
-            return RedirectToPage("/Pay", new { paymentId = payment.PaymentId, provider = payment.ProviderPaymentId });
+            // Send the browser to the provider's hosted page (iPay). After payment the API's
+            // resolve endpoint confirms + fiscalizes server-side and returns to /Pay.
+            return Redirect(payment.RedirectUrl);
         }
         catch (ApiException ex)
         {

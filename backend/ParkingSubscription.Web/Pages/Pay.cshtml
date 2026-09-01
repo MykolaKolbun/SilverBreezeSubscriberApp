@@ -3,6 +3,18 @@
 @{
     ViewData["Title"] = "Оплата";
 }
+@functions {
+    static string StatusLabel(string s) => s.ToLower() switch
+    {
+        "succeeded" => "Успішно",
+        "pending" => "Обробляється",
+        "declined" => "Відхилено",
+        "failed" => "Помилка",
+        "timedout" => "Час вичерпано",
+        "refunded" => "Повернено",
+        _ => s
+    };
+}
 
 <h1>Оплата</h1>
 
@@ -15,27 +27,14 @@
 {
     <div class="panel">
         <p><strong>Сума:</strong> @Money.Format(p.AmountMinor, p.Currency)</p>
-        <p><strong>Статус:</strong> <span class="status status-@p.Status.ToLower()">@p.Status</span></p>
+        <p><strong>Статус:</strong> <span class="status status-@p.Status.ToLower()">@StatusLabel(p.Status)</span></p>
         @if (p.FailureReason is not null)
         {
             <p class="muted">@p.FailureReason</p>
         }
     </div>
 
-    @if (p.Status == "Pending")
-    {
-        <p class="muted">
-            Реальний платіжний провайдер ще не підключений. У режимі розробки ви граєте його роль —
-            оберіть, чим завершиться оплата:
-        </p>
-        <form method="post" class="inline-form">
-            <input type="hidden" name="paymentId" value="@Model.PaymentId" />
-            <input type="hidden" name="provider" value="@Model.Provider" />
-            <button type="submit" name="outcome" value="succeeded" class="primary">✔ Симулювати успішну оплату</button>
-            <button type="submit" name="outcome" value="declined" class="danger">✖ Симулювати відмову</button>
-        </form>
-    }
-    else if (p.Status == "Succeeded")
+    @if (p.Status == "Succeeded")
     {
         <div class="success">
             Оплату завершено — ваш абонемент активний.
@@ -45,5 +44,15 @@
             }
         </div>
         <p><a class="button primary" href="/Cards">Перейти до мого пропуску →</a></p>
+    }
+    else if (p.Status == "Pending")
+    {
+        <p class="muted">Оплата ще обробляється. Оновіть статус за кілька секунд.</p>
+        <p><a class="button" href="/Pay?paymentId=@Model.PaymentId">Оновити статус</a></p>
+    }
+    else
+    {
+        <div class="alert">Оплату не завершено.</div>
+        <p><a class="button primary" href="/">Обрати абонемент</a></p>
     }
 }

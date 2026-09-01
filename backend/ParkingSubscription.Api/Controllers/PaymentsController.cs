@@ -67,7 +67,8 @@ public sealed class PaymentsController(
     /// </summary>
     [HttpGet("resolve/{outcome:regex(^(good|bad)$)}")]
     [AllowAnonymous]
-    public async Task<IActionResult> Resolve(string outcome, [FromQuery] Guid paymentId, CancellationToken ct)
+    public async Task<IActionResult> Resolve(string outcome, [FromQuery] Guid paymentId,
+        [FromQuery] string? client, CancellationToken ct)
     {
         var good = string.Equals(outcome, "good", StringComparison.OrdinalIgnoreCase);
         string status;
@@ -82,8 +83,12 @@ public sealed class PaymentsController(
             status = "Error";
         }
 
-        var sep = urls.AppReturnUrl.Contains('?') ? '&' : '?';
-        return Redirect($"{urls.AppReturnUrl}{sep}paymentId={paymentId}&status={status}");
+        // Web clients return to the web result page; the mobile app to its deep link.
+        var target = string.Equals(client, "web", StringComparison.OrdinalIgnoreCase)
+            ? urls.WebReturnUrl
+            : urls.AppReturnUrl;
+        var sep = target.Contains('?') ? '&' : '?';
+        return Redirect($"{target}{sep}paymentId={paymentId}&status={status}");
     }
 
     /// <summary>

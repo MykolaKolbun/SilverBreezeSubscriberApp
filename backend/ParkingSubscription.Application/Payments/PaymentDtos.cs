@@ -1,6 +1,8 @@
 namespace ParkingSubscription.Application.Payments;
 
-public sealed record InitiatePaymentRequest(Guid UserId, Guid SubscriptionPlanId, DateOnly? StartDate);
+// Client is "web" for the server-rendered Web client (so resolve returns to a web page)
+// or null for the mobile app (resolve bounces to the app deep link).
+public sealed record InitiatePaymentRequest(Guid UserId, Guid SubscriptionPlanId, DateOnly? StartDate, string? Client = null);
 
 public sealed record InitiatePaymentResult(
     Guid PaymentId, string ProviderPaymentId, string RedirectUrl, long AmountMinor, string Currency);
