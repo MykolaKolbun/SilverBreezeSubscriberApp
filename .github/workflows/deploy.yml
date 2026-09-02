@@ -82,6 +82,9 @@ jobs:
           Host ${{ secrets.PI_HOST }}
             ProxyCommand cloudflared access ssh --hostname %h
             StrictHostKeyChecking no
+            ServerAliveInterval 30
+            ServerAliveCountMax 20
+            TCPKeepAlive yes
           EOF
 
           PI="${{ secrets.PI_USER }}@${{ secrets.PI_HOST }}"
@@ -112,10 +115,18 @@ jobs:
               done
             '
 
-          # Pull the freshly built image and (re)start the stack.
-          ssh "$PI" "
-            cd ~/SilverBreezeSubscriberApp &&
-            docker compose pull &&
-            docker compose down --remove-orphans --timeout 30 || true &&
-            docker compose up -d
-          "
+          # Pull the freshly built images and (re)start the stack. The pull is retried
+          # (registry/tunnel hiccups over the cloudflared SSH tunnel are transient), and
+          # the whole SSH command is retried too in case the session itself drops mid-pull.
+          for attempt in 1 2 3; do
+            ssh "$PI" '
+              cd ~/SilverBreezeSubscriberApp || exit 1
+              for i in 1 2 3 4 5; do
+                docker compose pull && break
+                echo "compose pull attempt $i failed; retrying in 15s..."; sleep 15
+              done
+              docker compose down --remove-orphans --timeout 30 || true
+              docker compose up -d
+            ' && break
+            echo "deploy ssh attempt $attempt failed; retrying in 20s..."; sleep 20
+          done
