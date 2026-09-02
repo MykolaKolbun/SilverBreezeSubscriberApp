@@ -119,10 +119,12 @@ body {
 }
 
 main {
-    max-width: 860px;
+    max-width: 600px;
     margin: 0 auto;
     padding: var(--space-lg);
 }
+/* Wider column for multi-column pages (plans grid, profile). */
+main.wide { max-width: 980px; }
 
 footer {
     text-align: center;

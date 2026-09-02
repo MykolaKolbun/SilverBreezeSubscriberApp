@@ -45,7 +45,7 @@
     </nav>
 </header>
 
-<main>
+<main class="@(ViewData["MainWide"] is true ? "wide" : null)">
     @RenderBody()
 </main>
 

@@ -2,6 +2,10 @@
 @model IndexModel
 @{
     ViewData["Title"] = L["nav.plans"];
+    if (Model.LoggedIn && Model.Plans.Count > 0)
+    {
+        ViewData["MainWide"] = true;
+    }
 }
 
 @if (Model.Error is not null)
